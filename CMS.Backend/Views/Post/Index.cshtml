@@ -1,0 +1,21 @@
+@model List<CMS.Data.Entities.Post>
+
+<h2 class="text-primary mb-3">DANH S�CH B�I VI?T (D? LI?U M?U)</h2>
+
+<div class="row">
+    @foreach (var item in Model)
+    {
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <img src="@item.ImageUrl" class="card-img-top" alt="@item.Title" />
+                <div class="card-body">
+                    <h5 class="card-title">@item.Title</h5>
+                    <p class="card-text">@item.Content</p>
+                </div>
+                <div class="card-footer text-muted">
+                    Mở bài viết: @item.Id
+                </div>
+            </div>
+        </div>
+    }
+</div>
