@@ -1,0 +1,80 @@
+@*
+Sinh Viên: Nguyễn Tuấn Tài
+Mã Sinh Viên: 2123110166
+Lớp: CCQ2311E
+Ngày Tạo: 22/5/2026
+Mô tả: Trang chi tiết một sản phẩm.
+*@
+
+@model CMS.Data.Entities.Product
+
+@{
+    ViewData["Title"] = "Chi tiết sản phẩm";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<section class="admin-card">
+    <div class="admin-card__header">
+        <div>
+            <p class="admin-eyebrow mb-1">Product Details</p>
+            <h2 class="h4 fw-bold mb-0"><i class="bi bi-eye"></i> Chi tiết sản phẩm</h2>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+                <i class="bi bi-pencil"></i> Chỉnh sửa
+            </a>
+            <a asp-action="Index" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Quay lại
+            </a>
+        </div>
+    </div>
+
+    <div class="admin-card__body">
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <img src="@(string.IsNullOrWhiteSpace(Model.ImageUrl) ? "https://placehold.co/480x360/e9ecef/6c757d?text=No+Image" : Model.ImageUrl)"
+                     class="img-fluid rounded-3 border"
+                     alt="Ảnh sản phẩm @Model.Name"
+                     referrerpolicy="no-referrer"
+                     onerror="this.onerror=null;this.src='https://placehold.co/480x360/e9ecef/6c757d?text=No+Image';" />
+            </div>
+            <div class="col-lg-8">
+                <table class="table table-bordered">
+                    <tr>
+                        <th style="width: 160px;" class="bg-light">Mã sản phẩm</th>
+                        <td>#@Model.Id</td>
+                    </tr>
+                    <tr>
+                        <th class="bg-light">Tên sản phẩm</th>
+                        <td><strong>@Model.Name</strong></td>
+                    </tr>
+                    <tr>
+                        <th class="bg-light">Loại sản phẩm</th>
+                        <td><span class="post-category-badge">@(Model.CategoryProduct?.Name ?? "Chưa phân loại")</span></td>
+                    </tr>
+                    <tr>
+                        <th class="bg-light">Giá bán</th>
+                        <td><strong class="text-success fs-5">@Model.Price.ToString("N0") ₫</strong></td>
+                    </tr>
+                    <tr>
+                        <th class="bg-light">Tồn kho</th>
+                        <td>
+                            @if (Model.StockQuantity > 0)
+                            {
+                                <span class="badge bg-success fs-6">@Model.StockQuantity sản phẩm</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">Hết hàng</span>
+                            }
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="bg-light">Mô tả</th>
+                        <td>@(string.IsNullOrWhiteSpace(Model.Description) ? "Chưa có mô tả" : Model.Description)</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>

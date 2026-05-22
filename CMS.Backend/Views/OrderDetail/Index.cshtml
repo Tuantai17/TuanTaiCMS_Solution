@@ -1,0 +1,67 @@
+@model IEnumerable<CMS.Data.Entities.OrderDetail>
+
+@{
+    ViewData["Title"] = "Quản lý chi tiết đơn hàng";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<section class="admin-card">
+    <div class="admin-card__header">
+        <div>
+            <p class="admin-eyebrow mb-1">Order Detail Management</p>
+            <h2 class="h4 fw-bold mb-0">Danh sách chi tiết đơn hàng</h2>
+        </div>
+        <a asp-action="Create" class="btn btn-success" id="order-detail-create-button">
+            <i class="bi bi-plus-circle"></i> Thêm chi tiết đơn hàng
+        </a>
+    </div>
+
+    <div class="admin-card__body">
+        @if (ViewBag.FilterOrderId != null)
+        {
+            <div class="alert alert-info d-flex justify-content-between align-items-center">
+                <span>Đang lọc chi tiết của đơn hàng <strong>#@ViewBag.FilterOrderId</strong></span>
+                <a asp-action="Index" class="btn btn-sm btn-outline-primary">Xem tất cả</a>
+            </div>
+        }
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Mã CT</th>
+                        <th>Đơn hàng</th>
+                        <th>Khách hàng</th>
+                        <th>Sản phẩm</th>
+                        <th>Số lượng</th>
+                        <th>Đơn giá</th>
+                        <th>Thành tiền</th>
+                        <th class="text-end" style="width: 160px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>#@item.Id</td>
+                            <td><a asp-controller="Order" asp-action="Details" asp-route-id="@item.OrderId">#@item.OrderId</a></td>
+                            <td>@(item.Order?.Customer?.FullName ?? "-")</td>
+                            <td><strong>@(item.Product?.Name ?? "Sản phẩm đã xóa")</strong></td>
+                            <td><span class="badge bg-primary">@item.Quantity</span></td>
+                            <td>@item.UnitPrice.ToString("N0") ₫</td>
+                            <td><strong class="text-success">@((item.Quantity * item.UnitPrice).ToString("N0")) ₫</strong></td>
+                            <td class="text-end">
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">Sửa</a>
+                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger" onclick="return confirm('Bạn có chắc muốn xóa chi tiết đơn hàng này không?')">Xóa</a>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Any())
+                    {
+                        <tr><td colspan="8" class="text-center py-4 text-muted">Chưa có chi tiết đơn hàng nào. <a asp-action="Create">Thêm ngay</a></td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>

@@ -103,6 +103,26 @@ Chú thích chi tiết:
                 <i class="bi bi-people-fill"></i>
                 <span>Quản lý Thành viên</span>
             </a>
+            <a id="nav-category-product" class="admin-nav__link @IsActive("CategoryProduct")" asp-controller="CategoryProduct" asp-action="Index">
+                <i class="bi bi-tags-fill"></i>
+                <span>Loại sản phẩm</span>
+            </a>
+            <a id="nav-product" class="admin-nav__link @IsActive("Product")" asp-controller="Product" asp-action="Index">
+                <i class="bi bi-box-seam-fill"></i>
+                <span>Quản lý Sản phẩm</span>
+            </a>
+            <a id="nav-customer" class="admin-nav__link @IsActive("Customer")" asp-controller="Customer" asp-action="Index">
+                <i class="bi bi-person-badge-fill"></i>
+                <span>Quản lý Khách hàng</span>
+            </a>
+            <a id="nav-order" class="admin-nav__link @IsActive("Order")" asp-controller="Order" asp-action="Index">
+                <i class="bi bi-cart-check-fill"></i>
+                <span>Quản lý Đơn hàng</span>
+            </a>
+            <a id="nav-order-detail" class="admin-nav__link @IsActive("OrderDetail")" asp-controller="OrderDetail" asp-action="Index">
+                <i class="bi bi-list-check"></i>
+                <span>Chi tiết Đơn hàng</span>
+            </a>
         </nav>
 
     </aside>
@@ -114,8 +134,25 @@ Chú thích chi tiết:
                 <h1 class="admin-page-title">@(ViewData["Title"] ?? "Dashboard")</h1>
             </div>
             <div class="admin-topbar__meta">
-                <i class="bi bi-calendar-check"></i>
-                <span>@DateTime.Now.ToString("dd/MM/yyyy")</span>
+                @if (User.Identity != null && User.Identity.IsAuthenticated)
+                {
+                    <div class="admin-user-chip" title="Thông tin tài khoản đang đăng nhập">
+                        <i class="bi bi-person-circle"></i>
+                        <span>
+                            Chào, <strong>@User.FindFirst("FullName")?.Value</strong>
+                            <small>(@User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value)</small>
+                        </span>
+                    </div>
+                    <a id="btn-logout" class="admin-logout-btn" asp-controller="Account" asp-action="Logout">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>Đăng xuất</span>
+                    </a>
+                }
+                else
+                {
+                    <i class="bi bi-calendar-check"></i>
+                    <span>@DateTime.Now.ToString("dd/MM/yyyy")</span>
+                }
             </div>
         </header>
 

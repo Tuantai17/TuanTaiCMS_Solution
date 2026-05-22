@@ -54,7 +54,7 @@ Chú thích chi tiết:
                                 <div class="text-muted small text-truncate" style="max-width: 360px;">@item.Content</div>
                             </td>
                             <td>
-                                <span class="badge text-bg-info">@(item.Category?.Name ?? "Chưa có danh mục")</span>
+                                <span class="post-category-badge">@(item.Category?.Name ?? "Chưa có danh mục")</span>
                             </td>
                             <td>@item.CreatedDate.ToString("dd/MM/yyyy")</td>
                             <td class="text-end">

@@ -1,4 +1,4 @@
-﻿/*
+/*
 Sinh Viên: Nguyễn Tuấn Tài
 Mã Sinh Viên: 2123110166
 Lớp: CCQ2311E
@@ -6,12 +6,15 @@ Ngày Tạo: 15/5/2026
 Mô tả: Controller quản lý danh mục bài viết, dùng để thêm, sửa, xóa và hiển thị danh mục trong hệ thống.
 */
 
+using Microsoft.AspNetCore.Authorization; // Buổi 5: Namespace cần thiết để dùng [Authorize]
 using Microsoft.AspNetCore.Mvc;
 using CMS.Data;
 using CMS.Data.Entities;
 
 // CategoryController nhận request liên quan đến đường dẫn /Category.
 // Kế thừa Controller để có thể trả về View, Redirect, NotFound...
+// Buổi 5: [Authorize] bắt buộc phải đăng nhập mới được truy cập các action bên dưới.
+[Authorize]
 public class CategoryController : Controller
 {
     // _context là biến dùng chung trong controller để thao tác với database.

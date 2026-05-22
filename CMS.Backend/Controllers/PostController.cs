@@ -9,6 +9,7 @@ Mô tả: Controller quản lý bài viết, gồm hiển thị danh sách, xem 
 // Nhóm thư viện phục vụ truy vấn database, xử lý MVC, upload file và tạo dropdown danh mục.
 using CMS.Data;
 using CMS.Data.Entities;
+using Microsoft.AspNetCore.Authorization; // Buổi 5: Namespace cần thiết để dùng [Authorize]
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +17,8 @@ using Microsoft.EntityFrameworkCore;
 namespace CMS.Backend.Controllers
 {
     // PostController xử lý các request bắt đầu bằng /Post.
+    // Buổi 5: [Authorize] bắt buộc phải đăng nhập mới được vào các action bên dưới.
+    [Authorize]
     public class PostController : Controller
     {
         // DbContext dùng để truy vấn bảng Posts và Categories.

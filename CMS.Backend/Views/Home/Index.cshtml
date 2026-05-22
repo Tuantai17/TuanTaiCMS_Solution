@@ -8,40 +8,47 @@ Mô tả: Trang bảng điều khiển quản trị của hệ thống CMS.
 Chú thích chi tiết:
 - View này là dashboard chính của Admin Panel.
 - Các thẻ chức năng giúp đi nhanh đến quản lý Danh mục, Bài viết và Thành viên.
-- Model vẫn nhận danh sách bài viết mới nhất từ HomeController để hiển thị nhanh dữ liệu gần đây.
+- Dashboard hiển thị đầy đủ danh sách bài viết kèm ảnh, danh mục, nội dung và ngày đăng.
 *@
 
 @model IEnumerable<CMS.Data.Entities.Post>
 
 @{
     ViewData["Title"] = "Bảng điều khiển";
+    var posts = Model?.ToList() ?? new List<CMS.Data.Entities.Post>();
+    var totalPosts = ViewBag.TotalPosts ?? posts.Count;
+    var totalCategories = ViewBag.TotalCategories ?? 0;
+    var totalUsers = ViewBag.TotalUsers ?? 0;
 }
 
 <section class="admin-stat-grid mb-4" aria-label="Lối tắt chức năng quản trị">
     <a class="admin-stat-card admin-gradient-blue" asp-controller="Category" asp-action="Index" id="dashboard-category-card">
         <i class="bi bi-grid-1x2-fill"></i>
         <h2>Danh mục</h2>
-        <p>Quản lý nhóm nội dung, thêm mới, chỉnh sửa và xóa danh mục bài viết.</p>
+        <p>@totalCategories danh mục đang có bài viết trong hệ thống.</p>
     </a>
 
     <a class="admin-stat-card admin-gradient-purple" asp-controller="Post" asp-action="Index" id="dashboard-post-card">
         <i class="bi bi-file-earmark-richtext-fill"></i>
         <h2>Bài viết</h2>
-        <p>Tạo bài viết mới, cập nhật nội dung, ảnh đại diện và chuyên mục hiển thị.</p>
+        <p>@totalPosts bài viết đang được quản lý, có thể xem ảnh và nội dung ngay tại Dashboard.</p>
     </a>
 
     <a class="admin-stat-card admin-gradient-green" asp-controller="User" asp-action="Index" id="dashboard-user-card">
         <i class="bi bi-people-fill"></i>
         <h2>Thành viên</h2>
-        <p>Quản lý tài khoản Admin, Editor và chuẩn bị dữ liệu đăng nhập cho Buổi 5.</p>
+        <p>@totalUsers tài khoản đang có sẵn trong hệ thống.</p>
     </a>
 </section>
 
-<section class="admin-card">
-    <div class="admin-card__header">
+<section class="admin-card dashboard-posts-card">
+    <div class="admin-card__header dashboard-posts-header">
         <div>
-            <p class="admin-eyebrow mb-1">Nội dung mới nhất</p>
-            <h2 class="h4 fw-bold mb-0">3 bài viết gần đây</h2>
+            <p class="admin-eyebrow mb-1">Quản lý nội dung</p>
+            <h2 class="h4 fw-bold mb-0">Danh sách bài viết đầy đủ</h2>
+            <p class="dashboard-posts-subtitle mb-0">
+                Hiển thị ảnh đại diện, tiêu đề, danh mục, nội dung tóm tắt và ngày đăng của từng bài viết.
+            </p>
         </div>
         <a asp-controller="Post" asp-action="Create" class="btn btn-primary" id="dashboard-create-post">
             <i class="bi bi-plus-circle"></i> Thêm bài viết
@@ -49,42 +56,70 @@ Chú thích chi tiết:
     </div>
 
     <div class="admin-card__body">
-        @if (Model != null && Model.Any())
+        @if (posts.Any())
         {
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead>
-                        <tr>
-                            <th>Tiêu đề</th>
-                            <th>Danh mục</th>
-                            <th>Ngày đăng</th>
-                            <th class="text-end">Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in Model)
-                        {
-                            <tr>
-                                <td class="fw-semibold">@item.Title</td>
-                                <td>
-                                    <span class="badge text-bg-info">@(item.Category?.Name ?? "Chưa có danh mục")</span>
-                                </td>
-                                <td>@item.CreatedDate.ToString("dd/MM/yyyy")</td>
-                                <td class="text-end">
-                                    <a asp-controller="Post" asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-primary btn-sm">
-                                        Xem chi tiết
-                                    </a>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+            <div class="dashboard-post-grid">
+                @foreach (var item in posts)
+                {
+                    var imageUrl = string.IsNullOrWhiteSpace(item.ImageUrl)
+                        ? "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360' viewBox='0 0 640 360'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' x2='1' y1='0' y2='1'%3E%3Cstop stop-color='%236c63ff'/%3E%3Cstop offset='1' stop-color='%2300c6ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='640' height='360' fill='url(%23g)'/%3E%3Ccircle cx='320' cy='150' r='46' fill='white' opacity='.22'/%3E%3Cpath d='M205 245l80-78 56 55 38-37 64 60H205z' fill='white' opacity='.72'/%3E%3Ctext x='320' y='305' text-anchor='middle' font-family='Arial' font-size='28' font-weight='700' fill='white'%3ETuanTaiCMS%3C/text%3E%3C/svg%3E"
+                        : item.ImageUrl;
+                    var fallbackImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360' viewBox='0 0 640 360'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' x2='1' y1='0' y2='1'%3E%3Cstop stop-color='%236c63ff'/%3E%3Cstop offset='1' stop-color='%2300c6ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='640' height='360' fill='url(%23g)'/%3E%3Ctext x='320' y='190' text-anchor='middle' font-family='Arial' font-size='30' font-weight='700' fill='white'%3EChưa có ảnh%3C/text%3E%3C/svg%3E";
+                    var contentPreview = string.IsNullOrWhiteSpace(item.Content)
+                        ? "Bài viết chưa có nội dung mô tả. Vui lòng cập nhật nội dung để hiển thị đầy đủ hơn."
+                        : item.Content;
+
+                    <article class="dashboard-post-item">
+                        <div class="dashboard-post-thumb-wrap">
+                            <img src="@imageUrl"
+                                 alt="Ảnh đại diện bài viết @item.Title"
+                                 class="dashboard-post-thumb"
+                                 onerror="this.onerror=null;this.src='@fallbackImage';" />
+                            <span class="dashboard-post-date">
+                                <i class="bi bi-calendar-event"></i>
+                                @item.CreatedDate.ToString("dd/MM/yyyy")
+                            </span>
+                        </div>
+
+                        <div class="dashboard-post-info">
+                            <div class="dashboard-post-meta">
+                                <span class="badge text-bg-info">
+                                    <i class="bi bi-folder2-open me-1"></i>@(item.Category?.Name ?? "Chưa có danh mục")
+                                </span>
+                                <span class="dashboard-post-id">#@item.Id</span>
+                            </div>
+
+                            <h3 class="dashboard-post-title">@item.Title</h3>
+                            <p class="dashboard-post-excerpt">@contentPreview</p>
+
+                            <div class="dashboard-post-actions">
+                                <a asp-controller="Post"
+                                   asp-action="Details"
+                                   asp-route-id="@item.Id"
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-eye"></i> Xem chi tiết
+                                </a>
+                                <a asp-controller="Post"
+                                   asp-action="Edit"
+                                   asp-route-id="@item.Id"
+                                   class="btn btn-outline-warning btn-sm">
+                                    <i class="bi bi-pencil-square"></i> Sửa
+                                </a>
+                            </div>
+                        </div>
+                    </article>
+                }
             </div>
         }
         else
         {
-            <div class="alert alert-info mb-0">
-                Hiện chưa có bài viết nào. Hãy bắt đầu bằng cách thêm bài viết mới.
+            <div class="dashboard-empty-state">
+                <i class="bi bi-file-earmark-plus"></i>
+                <h3>Hiện chưa có bài viết nào</h3>
+                <p>Hãy bắt đầu bằng cách thêm bài viết đầu tiên cho hệ thống CMS.</p>
+                <a asp-controller="Post" asp-action="Create" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Thêm bài viết mới
+                </a>
             </div>
         }
     </div>

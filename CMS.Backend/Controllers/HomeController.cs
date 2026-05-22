@@ -1,4 +1,4 @@
-﻿/*
+/*
 Sinh Viên: Nguyễn Tuấn Tài
 Mã Sinh Viên: 2123110166
 Lớp: CCQ2311E
@@ -33,20 +33,24 @@ namespace CMS.Backend.Controllers
             _logger = logger;
         }
 
-        // Action Index hiển thị trang chủ.
+        // Action Index hiển thị trang Dashboard.
         // Include lấy kèm thông tin Category để View đọc được item.Category.Name.
         // OrderByDescending sắp xếp bài viết mới nhất theo CreatedDate lên đầu.
-        // Take(3) chỉ lấy 3 bài viết đầu tiên sau khi đã sắp xếp.
+        // Không dùng Take(3) để Dashboard hiển thị đầy đủ dữ liệu bài viết theo yêu cầu.
         // ToList() thực thi truy vấn và chuyển kết quả thành danh sách.
         public IActionResult Index()
         {
-            var latestPosts = _context.Posts
+            // Lấy đúng dữ liệu có sẵn trong database để hiển thị ở các ô thống kê Dashboard.
+            ViewBag.TotalCategories = _context.Categories.Count();
+            ViewBag.TotalPosts = _context.Posts.Count();
+            ViewBag.TotalUsers = _context.Users.Count();
+
+            var posts = _context.Posts
                 .Include(p => p.Category)
                 .OrderByDescending(p => p.CreatedDate)
-                .Take(3)
                 .ToList();
 
-            return View(latestPosts);
+            return View(posts);
         }
 
         // Action Privacy trả về trang thông tin riêng tư.

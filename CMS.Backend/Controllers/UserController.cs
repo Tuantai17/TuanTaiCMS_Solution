@@ -9,12 +9,16 @@ Mô tả: Controller quản lý thành viên, gồm hiển thị danh sách, th�
 // Nhóm thư viện dùng cho MVC và truy vấn database.
 using CMS.Data;
 using CMS.Data.Entities;
+using Microsoft.AspNetCore.Authorization; // Buổi 5: Namespace cần thiết để dùng [Authorize]
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace CMS.Backend.Controllers
 {
     // UserController xử lý request liên quan đến người dùng.
+    // Buổi 5: [Authorize(Roles = "Admin")] chỉ cho phép tài khoản Admin truy cập.
+    // Nếu là Editor cố vào sẽ bị chuyển đến trang /Account/AccessDenied.
+    [Authorize(Roles = "Admin")]
     public class UserController : Controller
     {
         // _context giúp truy cập bảng Users trong database.
