@@ -1,9 +1,9 @@
-﻿@*
+@*
 Sinh Viên: Nguyễn Tuấn Tài
 Mã Sinh Viên: 2123110166
 Lớp: CCQ2311E
 Ngày Tạo: 15/5/2026
-Mô tả: Định nghĩa thực thể danh mục bài viết, dùng để phân loại và quản lý các bài viết trong hệ thống.
+Mô tả: Form thêm danh mục mới trong khu vực quản trị.
 
 Chú thích chi tiết:
 - View này hiển thị form thêm danh mục mới.
@@ -17,22 +17,32 @@ Chú thích chi tiết:
     ViewData["Title"] = "Thêm danh mục";
 }
 
-<div class="container mt-4">
-    <h2 class="text-primary">THÊM DANH MỤC MỚI</h2>
-    <hr />
-
-    <form asp-action="Create" method="post">
-        <div class="mb-3">
-            <label asp-for="Name" class="form-label">Tên danh mục:</label>
-            <input asp-for="Name" class="form-control" />
+<section class="admin-card">
+    <div class="admin-card__header">
+        <div>
+            <p class="admin-eyebrow mb-1">Create Category</p>
+            <h2 class="h4 fw-bold mb-0">Thêm danh mục mới</h2>
         </div>
+    </div>
 
-        <div class="mb-3">
-            <label asp-for="Description" class="form-label">Mô tả:</label>
-            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
-        </div>
+    <div class="admin-card__body">
+        <form asp-action="Create" method="post">
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label fw-bold">Tên danh mục:</label>
+                <input asp-for="Name" class="form-control" placeholder="Ví dụ: Công nghệ" required />
+            </div>
 
-        <button type="submit" class="btn btn-success">Lưu vào hệ thống</button>
-        <a asp-action="Index" class="btn btn-secondary">Hủy bỏ</a>
-    </form>
-</div>
+            <div class="mb-4">
+                <label asp-for="Description" class="form-label fw-bold">Mô tả:</label>
+                <textarea asp-for="Description" class="form-control" rows="4" placeholder="Nhập mô tả ngắn cho danh mục"></textarea>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-success" id="category-save-button">
+                    <i class="bi bi-check-circle"></i> Lưu vào hệ thống
+                </button>
+                <a asp-action="Index" class="btn btn-secondary">Hủy bỏ</a>
+            </div>
+        </form>
+    </div>
+</section>

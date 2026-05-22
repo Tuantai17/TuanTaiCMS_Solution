@@ -1,9 +1,9 @@
-﻿@*
+@*
 Sinh Viên: Nguyễn Tuấn Tài
 Mã Sinh Viên: 2123110166
 Lớp: CCQ2311E
 Ngày Tạo: 15/5/2026
-Mô tả: Định nghĩa thực thể danh mục bài viết, dùng để phân loại và quản lý các bài viết trong hệ thống.
+Mô tả: Trang chi tiết bài viết trong khu vực quản trị.
 
 Chú thích chi tiết:
 - View này hiển thị chi tiết một bài viết.
@@ -17,22 +17,30 @@ Chú thích chi tiết:
     ViewData["Title"] = Model.Title;
 }
 
-<div class="container mt-4">
-    <h2 class="text-primary">@Model.Title</h2>
-    <p>
-        <span class="badge bg-info text-dark">@(Model.Category?.Name ?? "Chưa có danh mục")</span>
-        <span class="text-muted small">Ngày đăng: @Model.CreatedDate.ToString("dd/MM/yyyy")</span>
-    </p>
-
-    <img src="@(string.IsNullOrWhiteSpace(Model.ImageUrl) ? "/images/no-image.png" : Model.ImageUrl)"
-         class="img-fluid mb-3 rounded shadow-sm"
-         alt="Ảnh bài viết @Model.Title" />
-
-    <div class="card">
-        <div class="card-body">
-            <p class="card-text">@Model.Content</p>
+<section class="admin-card">
+    <div class="admin-card__header">
+        <div>
+            <p class="admin-eyebrow mb-1">Post Details</p>
+            <h2 class="h4 fw-bold mb-0">@Model.Title</h2>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Sửa</a>
+            <a asp-action="Index" asp-route-id="@Model.CategoryId" class="btn btn-secondary">Quay lại</a>
         </div>
     </div>
 
-    <a asp-action="Index" asp-route-id="@Model.CategoryId" class="btn btn-secondary mt-3">Quay lại danh sách</a>
-</div>
+    <div class="admin-card__body">
+        <p>
+            <span class="badge text-bg-info">@(Model.Category?.Name ?? "Chưa có danh mục")</span>
+            <span class="text-muted small ms-2">Ngày đăng: @Model.CreatedDate.ToString("dd/MM/yyyy")</span>
+        </p>
+
+        <img src="@(string.IsNullOrWhiteSpace(Model.ImageUrl) ? "/images/no-image.png" : Model.ImageUrl)"
+             class="img-fluid mb-4 rounded-4 shadow-sm"
+             alt="Ảnh bài viết @Model.Title" />
+
+        <div class="fs-6 lh-lg">
+            @Model.Content
+        </div>
+    </div>
+</section>

@@ -1,63 +1,91 @@
-﻿@*
+@*
 Sinh Viên: Nguyễn Tuấn Tài
 Mã Sinh Viên: 2123110166
 Lớp: CCQ2311E
 Ngày Tạo: 15/5/2026
-Mô tả: Định nghĩa thực thể danh mục bài viết, dùng để phân loại và quản lý các bài viết trong hệ thống.
+Mô tả: Trang bảng điều khiển quản trị của hệ thống CMS.
 
 Chú thích chi tiết:
-- View này hiển thị 3 bài viết mới nhất trên trang chủ.
-- Model là danh sách Post được HomeController truyền sang.
-- Vòng lặp foreach tạo card cho từng bài viết, gồm ảnh, danh mục, tiêu đề, nội dung và ngày đăng.
+- View này là dashboard chính của Admin Panel.
+- Các thẻ chức năng giúp đi nhanh đến quản lý Danh mục, Bài viết và Thành viên.
+- Model vẫn nhận danh sách bài viết mới nhất từ HomeController để hiển thị nhanh dữ liệu gần đây.
 *@
 
 @model IEnumerable<CMS.Data.Entities.Post>
 
 @{
-    ViewData["Title"] = "Tin tức mới nhất";
+    ViewData["Title"] = "Bảng điều khiển";
 }
 
-<div class="container mt-5">
-    <div class="text-center mb-5">
-        <h1 class="display-5 fw-bold text-danger">TIN TỨC MỚI NHẤT</h1>
-        <p class="text-muted mb-0">Cập nhật nhanh 3 bài viết có ngày đăng gần đây nhất.</p>
+<section class="admin-stat-grid mb-4" aria-label="Lối tắt chức năng quản trị">
+    <a class="admin-stat-card admin-gradient-blue" asp-controller="Category" asp-action="Index" id="dashboard-category-card">
+        <i class="bi bi-grid-1x2-fill"></i>
+        <h2>Danh mục</h2>
+        <p>Quản lý nhóm nội dung, thêm mới, chỉnh sửa và xóa danh mục bài viết.</p>
+    </a>
+
+    <a class="admin-stat-card admin-gradient-purple" asp-controller="Post" asp-action="Index" id="dashboard-post-card">
+        <i class="bi bi-file-earmark-richtext-fill"></i>
+        <h2>Bài viết</h2>
+        <p>Tạo bài viết mới, cập nhật nội dung, ảnh đại diện và chuyên mục hiển thị.</p>
+    </a>
+
+    <a class="admin-stat-card admin-gradient-green" asp-controller="User" asp-action="Index" id="dashboard-user-card">
+        <i class="bi bi-people-fill"></i>
+        <h2>Thành viên</h2>
+        <p>Quản lý tài khoản Admin, Editor và chuẩn bị dữ liệu đăng nhập cho Buổi 5.</p>
+    </a>
+</section>
+
+<section class="admin-card">
+    <div class="admin-card__header">
+        <div>
+            <p class="admin-eyebrow mb-1">Nội dung mới nhất</p>
+            <h2 class="h4 fw-bold mb-0">3 bài viết gần đây</h2>
+        </div>
+        <a asp-controller="Post" asp-action="Create" class="btn btn-primary" id="dashboard-create-post">
+            <i class="bi bi-plus-circle"></i> Thêm bài viết
+        </a>
     </div>
 
-    @if (Model != null && Model.Any())
-    {
-        <div class="row g-4">
-            @foreach (var item in Model)
-            {
-                <div class="col-md-4">
-                    <div class="card shadow-sm border-0 h-100 overflow-hidden">
-                        <img src="@(string.IsNullOrWhiteSpace(item.ImageUrl) ? "/images/no-image.png" : item.ImageUrl)"
-                             class="card-img-top"
-                             alt="Ảnh đại diện bài viết @item.Title"
-                             style="height: 220px; object-fit: cover;" />
-
-                        <div class="card-body d-flex flex-column">
-                            <span class="badge bg-primary align-self-start mb-2">
-                                @(item.Category?.Name ?? "Chưa có danh mục")
-                            </span>
-                            <h5 class="card-title fw-bold text-dark">@item.Title</h5>
-                            <p class="card-text text-muted text-truncate">@item.Content</p>
-                            <a href="/Post/Details/@item.Id" class="btn btn-outline-danger btn-sm mt-auto align-self-start">
-                                Đọc tiếp
-                            </a>
-                        </div>
-
-                        <div class="card-footer bg-white text-muted small border-0">
-                            Ngày đăng: @item.CreatedDate.ToString("dd/MM/yyyy")
-                        </div>
-                    </div>
-                </div>
-            }
-        </div>
-    }
-    else
-    {
-        <div class="alert alert-info text-center shadow-sm">
-            Hiện chưa có bài viết nào để hiển thị trên trang chủ.
-        </div>
-    }
-</div>
+    <div class="admin-card__body">
+        @if (Model != null && Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Tiêu đề</th>
+                            <th>Danh mục</th>
+                            <th>Ngày đăng</th>
+                            <th class="text-end">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@item.Title</td>
+                                <td>
+                                    <span class="badge text-bg-info">@(item.Category?.Name ?? "Chưa có danh mục")</span>
+                                </td>
+                                <td>@item.CreatedDate.ToString("dd/MM/yyyy")</td>
+                                <td class="text-end">
+                                    <a asp-controller="Post" asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-primary btn-sm">
+                                        Xem chi tiết
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info mb-0">
+                Hiện chưa có bài viết nào. Hãy bắt đầu bằng cách thêm bài viết mới.
+            </div>
+        }
+    </div>
+</section>

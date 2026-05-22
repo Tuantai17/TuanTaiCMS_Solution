@@ -1,42 +1,73 @@
-﻿@*
+@*
 Sinh Viên: Nguyễn Tuấn Tài
 Mã Sinh Viên: 2123110166
 Lớp: CCQ2311E
 Ngày Tạo: 15/5/2026
-Mô tả: Định nghĩa thực thể danh mục bài viết, dùng để phân loại và quản lý các bài viết trong hệ thống.
+Mô tả: Trang danh sách bài viết trong khu vực quản trị.
 
 Chú thích chi tiết:
-- View này hiển thị danh sách bài viết dạng card.
+- View này hiển thị danh sách bài viết dạng bảng quản trị.
 - Model là danh sách Post, mỗi phần tử được render bằng vòng lặp foreach.
-- Category?.Name giúp tránh lỗi khi bài viết chưa có danh mục được nạp kèm.
+- Các nút Xem, Sửa và Xóa truyền Id qua route để controller xử lý đúng bản ghi.
 *@
 
 @model IEnumerable<CMS.Data.Entities.Post>
 
 @{
-    ViewData["Title"] = "Danh sách bài viết";
+    ViewData["Title"] = "Quản lý bài viết";
 }
 
-<div class="container mt-4">
-    <h2 class="mb-4 text-danger">DANH SÁCH BÀI VIẾT MỚI NHẤT</h2>
-    <div class="row">
-        @foreach (var item in Model)
-        {
-            <div class="col-md-4 mb-3">
-                <div class="card shadow-sm h-100">
-                    <img src="@(string.IsNullOrWhiteSpace(item.ImageUrl) ? "/images/no-image.png" : item.ImageUrl)"
-                         class="card-img-top"
-                         alt="Ảnh bài viết @item.Title"
-                         style="height: 220px; object-fit: cover;" />
-                    <div class="card-body">
-                        <span class="badge bg-info text-dark">@(item.Category?.Name ?? "Chưa có danh mục")</span>
-                        <h5 class="card-title text-primary">@item.Title</h5>
-                        <p class="card-text text-truncate">@item.Content</p>
-                        <p class="text-muted small">Ngày đăng: @item.CreatedDate.ToString("dd/MM/yyyy")</p>
-                        <a href="/Post/Details/@item.Id" class="btn btn-outline-primary btn-sm">Xem chi tiết</a>
-                    </div>
-                </div>
-            </div>
-        }
+<section class="admin-card">
+    <div class="admin-card__header">
+        <div>
+            <p class="admin-eyebrow mb-1">Post Management</p>
+            <h2 class="h4 fw-bold mb-0">Danh sách bài viết</h2>
+        </div>
+        <a asp-action="Create" class="btn btn-success" id="post-create-button">
+            <i class="bi bi-file-earmark-plus"></i> Thêm bài viết mới
+        </a>
     </div>
-</div>
+
+    <div class="admin-card__body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Ảnh</th>
+                        <th>Tiêu đề</th>
+                        <th>Danh mục</th>
+                        <th>Ngày đăng</th>
+                        <th class="text-end" style="width: 220px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                <img src="@(string.IsNullOrWhiteSpace(item.ImageUrl) ? "/images/no-image.png" : item.ImageUrl)"
+                                     class="post-thumb"
+                                     alt="Ảnh bài viết @item.Title" />
+                            </td>
+                            <td>
+                                <strong>@item.Title</strong>
+                                <div class="text-muted small text-truncate" style="max-width: 360px;">@item.Content</div>
+                            </td>
+                            <td>
+                                <span class="badge text-bg-info">@(item.Category?.Name ?? "Chưa có danh mục")</span>
+                            </td>
+                            <td>@item.CreatedDate.ToString("dd/MM/yyyy")</td>
+                            <td class="text-end">
+                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Xem</a>
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">Sửa</a>
+                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger" onclick="return confirm('Chúng ta có chắc chắn muốn xóa bài viết này không?')">
+                                    Xóa
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
