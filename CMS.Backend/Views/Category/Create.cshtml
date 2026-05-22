@@ -1,0 +1,38 @@
+﻿@*
+Sinh Viên: Nguyễn Tuấn Tài
+Mã Sinh Viên: 2123110166
+Lớp: CCQ2311E
+Ngày Tạo: 15/5/2026
+Mô tả: Định nghĩa thực thể danh mục bài viết, dùng để phân loại và quản lý các bài viết trong hệ thống.
+
+Chú thích chi tiết:
+- View này hiển thị form thêm danh mục mới.
+- asp-for liên kết input với thuộc tính của model Category.
+- Khi bấm nút Lưu, form gửi dữ liệu bằng POST về action Create trong CategoryController.
+*@
+
+@model CMS.Data.Entities.Category
+
+@{
+    ViewData["Title"] = "Thêm danh mục";
+}
+
+<div class="container mt-4">
+    <h2 class="text-primary">THÊM DANH MỤC MỚI</h2>
+    <hr />
+
+    <form asp-action="Create" method="post">
+        <div class="mb-3">
+            <label asp-for="Name" class="form-label">Tên danh mục:</label>
+            <input asp-for="Name" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Description" class="form-label">Mô tả:</label>
+            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-success">Lưu vào hệ thống</button>
+        <a asp-action="Index" class="btn btn-secondary">Hủy bỏ</a>
+    </form>
+</div>

@@ -1,5 +1,4 @@
-﻿
-/*
+﻿/*
 Sinh Viên: Nguyễn Tuấn Tài 
 Mã Sinh Viên: 2123110166
 Lớp: CCQ2311E
@@ -19,8 +18,8 @@ namespace CMS.Data.Entities
     {
         public int Id { get; set; }
         public string Title { get; set; } // Tiêu đề bài viết
-        public string Content { get; set; } // Nội dung chi tiết
-        public string ImageUrl { get; set; } // Hình ảnh đại diện
+        public string? Content { get; set; } // Nội dung chi tiết
+        public string? ImageUrl { get; set; } // Hình ảnh đại diện
         public DateTime CreatedDate { get; set; } = DateTime.Now;
 
         // Khóa ngoại liên kết tới Category

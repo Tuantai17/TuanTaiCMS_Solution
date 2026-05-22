@@ -1,0 +1,41 @@
+﻿@*
+Sinh Viên: Nguyễn Tuấn Tài
+Mã Sinh Viên: 2123110166
+Lớp: CCQ2311E
+Ngày Tạo: 15/5/2026
+Mô tả: Định nghĩa thực thể danh mục bài viết, dùng để phân loại và quản lý các bài viết trong hệ thống.
+
+Chú thích chi tiết:
+- View này hiển thị form chỉnh sửa thông tin danh mục.
+- Input hidden Id giúp controller biết chính xác danh mục cần cập nhật.
+- Các trường Name và Description được bind trực tiếp với model Category.
+*@
+
+@model CMS.Data.Entities.Category
+
+@{
+    ViewData["Title"] = "Chỉnh sửa danh mục";
+}
+
+<div class="container mt-4">
+    <h2 class="text-warning">CHỈNH SỬA DANH MỤC</h2>
+    <hr />
+
+
+    <form asp-action="Edit" method="post">
+        <input type="hidden" asp-for="Id" />
+
+        <div class="mb-3">
+            <label asp-for="Name" class="form-label fw-bold">Tên danh mục:</label>
+            <input asp-for="Name" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Description" class="form-label fw-bold">Mô tả:</label>
+            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-warning">Cập nhật thay đổi</button>
+        <a asp-action="Index" class="btn btn-secondary">Hủy bỏ</a>
+    </form>
+</div>

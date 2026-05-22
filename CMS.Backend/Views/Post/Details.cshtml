@@ -1,0 +1,38 @@
+﻿@*
+Sinh Viên: Nguyễn Tuấn Tài
+Mã Sinh Viên: 2123110166
+Lớp: CCQ2311E
+Ngày Tạo: 15/5/2026
+Mô tả: Định nghĩa thực thể danh mục bài viết, dùng để phân loại và quản lý các bài viết trong hệ thống.
+
+Chú thích chi tiết:
+- View này hiển thị chi tiết một bài viết.
+- Model là một đối tượng Post duy nhất được PostController truyền sang.
+- Trang hiển thị tên danh mục, ngày đăng, ảnh đại diện, nội dung và nút quay lại danh sách.
+*@
+
+@model CMS.Data.Entities.Post
+
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<div class="container mt-4">
+    <h2 class="text-primary">@Model.Title</h2>
+    <p>
+        <span class="badge bg-info text-dark">@(Model.Category?.Name ?? "Chưa có danh mục")</span>
+        <span class="text-muted small">Ngày đăng: @Model.CreatedDate.ToString("dd/MM/yyyy")</span>
+    </p>
+
+    <img src="@(string.IsNullOrWhiteSpace(Model.ImageUrl) ? "/images/no-image.png" : Model.ImageUrl)"
+         class="img-fluid mb-3 rounded shadow-sm"
+         alt="Ảnh bài viết @Model.Title" />
+
+    <div class="card">
+        <div class="card-body">
+            <p class="card-text">@Model.Content</p>
+        </div>
+    </div>
+
+    <a asp-action="Index" asp-route-id="@Model.CategoryId" class="btn btn-secondary mt-3">Quay lại danh sách</a>
+</div>

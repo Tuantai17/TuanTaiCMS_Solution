@@ -1,22 +1,55 @@
+﻿@*
+Sinh Viên: Nguyễn Tuấn Tài
+Mã Sinh Viên: 2123110166
+Lớp: CCQ2311E
+Ngày Tạo: 15/5/2026
+Mô tả: Định nghĩa thực thể danh mục bài viết, dùng để phân loại và quản lý các bài viết trong hệ thống.
+
+Chú thích chi tiết:
+- View này hiển thị danh sách danh mục lấy từ cơ sở dữ liệu.
+- Vòng lặp foreach duyệt từng Category trong Model để tạo từng dòng bảng.
+- Các nút Sửa và Xóa truyền Id qua route để controller xử lý đúng bản ghi.
+*@
+
 @model IEnumerable<CMS.Data.Entities.Category>
 
-<h2 class="text-primary">DANH S�CH DANH M?C (D? LI?U M?U)</h2>
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>T�n danh m?c</th>
-            <th>M� t?</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
+@{
+    ViewData["Title"] = "Danh sách danh mục";
+}
+
+<div class="container mt-4">
+    <h2 class="text-primary">DANH SÁCH DANH MỤC </h2>
+
+    <a asp-action="Create" class="btn btn-success mb-3">
+        <i class="bi bi-plus-circle"></i> Thêm danh mục mới
+    </a>
+
+    <table class="table table-bordered table-hover align-middle">
+        <thead class="table-light">
             <tr>
-                <td>@item.Id</td>
-                <td>@item.Name</td>
-                <td>@item.Description</td>
+                <th>ID</th>
+                <th>Tên danh mục</th>
+                <th>Mô tả</th>
+                <th style="width: 160px">Thao tác</th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.Id</td>
+                    <td>@item.Name</td>
+                    <td>@item.Description</td>
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@item.Id"
+                           class="btn btn-sm btn-outline-warning">Sửa</a>
+
+                        <a asp-action="Delete" asp-route-id="@item.Id"
+                           class="btn btn-sm btn-outline-danger"
+                           onclick="return confirm('Bạn có chắc chắn muốn xóa danh mục này?')">Xóa</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
