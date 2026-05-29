@@ -29,6 +29,7 @@ Mô tả: Trang danh sách sản phẩm trong khu vực quản trị.
             <table class="table table-hover align-middle">
                 <thead>
                     <tr>
+                        <th style="width: 80px;">Mã SP</th>
                         <th style="width: 80px;">Ảnh</th>
                         <th>Tên sản phẩm</th>
                         <th>Loại SP</th>
@@ -41,6 +42,9 @@ Mô tả: Trang danh sách sản phẩm trong khu vực quản trị.
                     @foreach (var item in Model)
                     {
                         <tr>
+                            <td>
+                                <span class="badge bg-light text-dark border">#@item.Id</span>
+                            </td>
                             <td>
                                 <img src="@(string.IsNullOrWhiteSpace(item.ImageUrl) ? "https://placehold.co/80x60/e9ecef/6c757d?text=No+Image" : item.ImageUrl)"
                                      class="post-thumb"
@@ -85,7 +89,7 @@ Mô tả: Trang danh sách sản phẩm trong khu vực quản trị.
                     @if (!Model.Any())
                     {
                         <tr>
-                            <td colspan="6" class="text-center py-4 text-muted">
+                            <td colspan="7" class="text-center py-4 text-muted">
                                 <i class="bi bi-box-seam fs-4 d-block mb-2"></i>
                                 Chưa có sản phẩm nào. <a asp-action="Create">Thêm ngay</a>
                             </td>
