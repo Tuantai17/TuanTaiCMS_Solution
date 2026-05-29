@@ -1,0 +1,84 @@
+@model CMS.Data.Entities.Post
+
+@{
+    ViewData["Title"] = "Chỉnh sửa bài viết";
+}
+
+<section class="admin-card">
+    <div class="admin-card__header">
+        <div>
+            <p class="admin-eyebrow mb-1">Edit Post</p>
+            <h2 class="h4 fw-bold mb-0"><i class="bi bi-pencil-square"></i> Chỉnh sửa bài viết</h2>
+        </div>
+    </div>
+
+    <div class="admin-card__body">
+        <form id="post-edit-form" asp-action="Edit" method="post" enctype="multipart/form-data">
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="ImageUrl" />
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+            }
+
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label fw-bold">Tiêu đề bài viết:</label>
+                        <input asp-for="Title" class="form-control" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Content" class="form-label fw-bold">Nội dung chi tiết:</label>
+                        <textarea asp-for="Content" class="form-control" rows="12"></textarea>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="mb-3">
+                        <label asp-for="CategoryId" class="form-label fw-bold">Chuyên mục:</label>
+                        <select asp-for="CategoryId" class="form-select" asp-items="ViewBag.CategoryList" required>
+                            <option value="">-- Chọn danh mục --</option>
+                        </select>
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+                    {
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Ảnh hiện tại:</label>
+                            <img src="@Model.ImageUrl" class="img-fluid rounded-4 border" alt="Ảnh hiện tại của bài viết @Model.Title" />
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Ảnh đại diện mới:</label>
+                        <input type="file" name="uploadImage" class="form-control" accept="image/*" />
+                        <small class="text-muted">Để trống nếu muốn giữ ảnh cũ.</small>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="CreatedDate" class="form-label fw-bold">Ngày đăng:</label>
+                        <input asp-for="CreatedDate" type="date" class="form-control" />
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-warning" id="post-update-button">
+                            <i class="bi bi-check-circle"></i> Cập nhật bài viết
+                        </button>
+                        <a asp-action="Index" class="btn btn-secondary">Quay lại danh sách</a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
+
+@section Scripts {
+<script>
+  document.getElementById('post-edit-form').addEventListener('submit', function (e) {
+    if (!confirm('Bạn có chắc muốn cập nhật bài viết này không?')) {
+      e.preventDefault();
+    }
+  });
+</script>
+}

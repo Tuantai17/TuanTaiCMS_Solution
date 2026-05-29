@@ -1,0 +1,48 @@
+@*
+Sinh Viên: Nguyễn Tuấn Tài
+Mã Sinh Viên: 2123110166
+Lớp: CCQ2311E
+Ngày Tạo: 15/5/2026
+Mô tả: Form thêm danh mục mới trong khu vực quản trị.
+
+Chú thích chi tiết:
+- View này hiển thị form thêm danh mục mới.
+- asp-for liên kết input với thuộc tính của model Category.
+- Khi bấm nút Lưu, form gửi dữ liệu bằng POST về action Create trong CategoryController.
+*@
+
+@model CMS.Data.Entities.Category
+
+@{
+    ViewData["Title"] = "Thêm danh mục";
+}
+
+<section class="admin-card">
+    <div class="admin-card__header">
+        <div>
+            <p class="admin-eyebrow mb-1">Create Category</p>
+            <h2 class="h4 fw-bold mb-0">Thêm danh mục mới</h2>
+        </div>
+    </div>
+
+    <div class="admin-card__body">
+        <form asp-action="Create" method="post">
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label fw-bold">Tên danh mục:</label>
+                <input asp-for="Name" class="form-control" placeholder="Ví dụ: Công nghệ" required />
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="Description" class="form-label fw-bold">Mô tả:</label>
+                <textarea asp-for="Description" class="form-control" rows="4" placeholder="Nhập mô tả ngắn cho danh mục"></textarea>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-success" id="category-save-button">
+                    <i class="bi bi-check-circle"></i> Lưu vào hệ thống
+                </button>
+                <a asp-action="Index" class="btn btn-secondary">Hủy bỏ</a>
+            </div>
+        </form>
+    </div>
+</section>

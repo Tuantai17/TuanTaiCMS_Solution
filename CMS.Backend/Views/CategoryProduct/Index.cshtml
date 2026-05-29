@@ -1,0 +1,76 @@
+@*
+Sinh Viên: Nguyễn Tuấn Tài
+Mã Sinh Viên: 2123110166
+Lớp: CCQ2311E
+Ngày Tạo: 22/5/2026
+Mô tả: Trang danh sách loại sản phẩm trong khu vực quản trị.
+*@
+
+@model IEnumerable<CMS.Data.Entities.CategoryProduct>
+
+@{
+    ViewData["Title"] = "Quản lý loại sản phẩm";
+}
+
+<section class="admin-card">
+    <div class="admin-card__header">
+        <div>
+            <p class="admin-eyebrow mb-1">Category Product Management</p>
+            <h2 class="h4 fw-bold mb-0">Danh sách loại sản phẩm</h2>
+        </div>
+        <a asp-action="Create" class="btn btn-success" id="category-product-create-button">
+            <i class="bi bi-plus-circle"></i> Thêm loại sản phẩm
+        </a>
+    </div>
+
+    <div class="admin-card__body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">#</th>
+                        <th>Tên loại sản phẩm</th>
+                        <th>Mô tả</th>
+                        <th style="width: 100px;">Số sản phẩm</th>
+                        <th class="text-end" style="width: 200px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td><span class="text-muted small">@item.Id</span></td>
+                            <td><strong>@item.Name</strong></td>
+                            <td>
+                                <span class="text-muted small text-truncate d-inline-block" style="max-width: 300px;">
+                                    @(string.IsNullOrWhiteSpace(item.Description) ? "Chưa có mô tả" : item.Description)
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">@(item.Products?.Count ?? 0) SP</span>
+                            </td>
+                            <td class="text-end">
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">
+                                    <i class="bi bi-pencil"></i> Sửa
+                                </a>
+                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger"
+                                   onclick="return confirm('Bạn có chắc muốn xóa loại sản phẩm này không?')">
+                                    <i class="bi bi-trash"></i> Xóa
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">
+                                <i class="bi bi-inbox fs-4 d-block mb-2"></i>
+                                Chưa có loại sản phẩm nào. <a asp-action="Create">Thêm ngay</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>

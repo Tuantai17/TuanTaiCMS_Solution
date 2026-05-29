@@ -1,0 +1,136 @@
+@*
+    Sinh Viên: Nguyễn Tuấn Tài
+    Mã Sinh Viên: 2123110166
+    Lớp: CCQ2311E
+    Ngày Tạo: 22/5/2026
+    Mô tả: Trang thông báo từ chối truy cập (403 Access Denied) khi người dùng không đủ quyền.
+*@
+
+@{
+    ViewData["Title"] = "Từ chối truy cập";
+    Layout = "_LayoutAdmin";
+}
+
+<div class="access-denied-wrapper">
+    <div class="access-denied-icon">
+        <i class="bi bi-shield-x-fill"></i>
+    </div>
+    <h1 class="access-denied-code">403</h1>
+    <h2 class="access-denied-title">Không có quyền truy cập</h2>
+    <p class="access-denied-desc">
+        Tài khoản của bạn không có đủ quyền hạn để xem trang này.<br />
+        Vui lòng liên hệ quản trị viên nếu bạn cần hỗ trợ.
+    </p>
+    <div class="access-denied-actions">
+        <a href="/" class="btn-go-home">
+            <i class="bi bi-house-fill me-2"></i>Quay về trang chủ
+        </a>
+        <a asp-controller="Account" asp-action="Logout" class="btn-logout-denied">
+            <i class="bi bi-box-arrow-right me-2"></i>Đăng xuất
+        </a>
+    </div>
+</div>
+
+<style>
+    .access-denied-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 60px 20px;
+        min-height: 500px;
+    }
+
+    .access-denied-icon {
+        width: 100px;
+        height: 100px;
+        background: linear-gradient(135deg, rgba(220, 53, 69, 0.15), rgba(220, 53, 69, 0.05));
+        border: 2px solid rgba(220, 53, 69, 0.3);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 24px;
+        font-size: 44px;
+        color: #dc3545;
+        animation: shake 0.5s ease;
+    }
+
+    @@keyframes shake {
+        0%, 100% { transform: rotate(0deg); }
+        25% { transform: rotate(-5deg); }
+        75% { transform: rotate(5deg); }
+    }
+
+    .access-denied-code {
+        font-size: 80px;
+        font-weight: 800;
+        color: #dc3545;
+        line-height: 1;
+        margin-bottom: 12px;
+        letter-spacing: -3px;
+    }
+
+    .access-denied-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1a1a2e;
+        margin-bottom: 12px;
+    }
+
+    .access-denied-desc {
+        color: #64748b;
+        font-size: 15px;
+        line-height: 1.7;
+        margin-bottom: 36px;
+        max-width: 400px;
+    }
+
+    .access-denied-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .btn-go-home {
+        display: inline-flex;
+        align-items: center;
+        padding: 11px 24px;
+        background: linear-gradient(135deg, #6c63ff, #8b5cf6);
+        color: #fff;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 12px rgba(108, 99, 255, 0.35);
+    }
+
+    .btn-go-home:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(108, 99, 255, 0.45);
+        color: #fff;
+    }
+
+    .btn-logout-denied {
+        display: inline-flex;
+        align-items: center;
+        padding: 11px 24px;
+        background: transparent;
+        color: #dc3545;
+        border: 1.5px solid #dc3545;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .btn-logout-denied:hover {
+        background: rgba(220, 53, 69, 0.08);
+        transform: translateY(-2px);
+        color: #dc3545;
+    }
+</style>

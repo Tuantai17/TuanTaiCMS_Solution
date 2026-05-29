@@ -1,0 +1,46 @@
+@*
+Sinh Viên: Nguyễn Tuấn Tài
+Mã Sinh Viên: 2123110166
+Lớp: CCQ2311E
+Ngày Tạo: 15/5/2026
+Mô tả: Trang chi tiết bài viết trong khu vực quản trị.
+
+Chú thích chi tiết:
+- View này hiển thị chi tiết một bài viết.
+- Model là một đối tượng Post duy nhất được PostController truyền sang.
+- Trang hiển thị tên danh mục, ngày đăng, ảnh đại diện, nội dung và nút quay lại danh sách.
+*@
+
+@model CMS.Data.Entities.Post
+
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<section class="admin-card">
+    <div class="admin-card__header">
+        <div>
+            <p class="admin-eyebrow mb-1">Post Details</p>
+            <h2 class="h4 fw-bold mb-0">@Model.Title</h2>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Sửa</a>
+            <a asp-action="Index" asp-route-id="@Model.CategoryId" class="btn btn-secondary">Quay lại</a>
+        </div>
+    </div>
+
+    <div class="admin-card__body">
+        <p>
+            <span class="badge text-bg-info">@(Model.Category?.Name ?? "Chưa có danh mục")</span>
+            <span class="text-muted small ms-2">Ngày đăng: @Model.CreatedDate.ToString("dd/MM/yyyy")</span>
+        </p>
+
+        <img src="@(string.IsNullOrWhiteSpace(Model.ImageUrl) ? "/images/no-image.png" : Model.ImageUrl)"
+             class="img-fluid mb-4 rounded-4 shadow-sm"
+             alt="Ảnh bài viết @Model.Title" />
+
+        <div class="fs-6 lh-lg">
+            @Model.Content
+        </div>
+    </div>
+</section>

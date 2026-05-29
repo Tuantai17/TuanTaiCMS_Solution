@@ -1,4 +1,17 @@
-﻿/* Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
+﻿/*
+Sinh Viên: Nguyễn Tuấn Tài
+Mã Sinh Viên: 2123110166
+Lớp: CCQ2311E
+Ngày Tạo: 15/5/2026
+Mô tả: Định nghĩa thực thể danh mục bài viết, dùng để phân loại và quản lý các bài viết trong hệ thống.
+
+Chú thích chi tiết:
+- File CSS này chứa style riêng cho layout dùng chung.
+- Các class được định nghĩa tại đây giúp giao diện đồng bộ hơn.
+- CSS được tách riêng để tránh viết style trực tiếp quá nhiều trong file Razor.
+*/
+
+/* Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
 for details on configuring this project to bundle and minify static web assets. */
 
 a.navbar-brand {

@@ -1,0 +1,88 @@
+@*
+Sinh Viên: Nguyễn Tuấn Tài
+Mã Sinh Viên: 2123110166
+Lớp: CCQ2311E
+Ngày Tạo: 22/5/2026
+Mô tả: Trang danh sách khách hàng trong khu vực quản trị.
+*@
+
+@model IEnumerable<CMS.Data.Entities.Customer>
+
+@{
+    ViewData["Title"] = "Quản lý khách hàng";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<section class="admin-card">
+    <div class="admin-card__header">
+        <div>
+            <p class="admin-eyebrow mb-1">Customer Management</p>
+            <h2 class="h4 fw-bold mb-0">Danh sách khách hàng</h2>
+        </div>
+        <a asp-action="Create" class="btn btn-success" id="customer-create-button">
+            <i class="bi bi-person-plus"></i> Thêm khách hàng
+        </a>
+    </div>
+
+    <div class="admin-card__body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">#</th>
+                        <th>Họ và tên</th>
+                        <th>Email</th>
+                        <th>Điện thoại</th>
+                        <th>Địa chỉ</th>
+                        <th class="text-end" style="width: 200px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td><span class="text-muted small">@item.Id</span></td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
+                                         style="width:34px;height:34px;font-size:14px;font-weight:700;flex-shrink:0;">
+                                        @item.FullName.Substring(0, 1).ToUpper()
+                                    </div>
+                                    <strong>@item.FullName</strong>
+                                </div>
+                            </td>
+                            <td><a href="mailto:@item.Email" class="text-decoration-none">@item.Email</a></td>
+                            <td>@(string.IsNullOrWhiteSpace(item.Phone) ? "-" : item.Phone)</td>
+                            <td>
+                                <span class="text-muted small text-truncate d-inline-block" style="max-width: 200px;">
+                                    @(string.IsNullOrWhiteSpace(item.Address) ? "Chưa cập nhật" : item.Address)
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">
+                                    <i class="bi bi-pencil"></i> Sửa
+                                </a>
+                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger"
+                                   onclick="return confirm('Bạn có chắc muốn xóa khách hàng này không?')">
+                                    <i class="bi bi-trash"></i> Xóa
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                <i class="bi bi-people fs-4 d-block mb-2"></i>
+                                Chưa có khách hàng nào. <a asp-action="Create">Thêm ngay</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>

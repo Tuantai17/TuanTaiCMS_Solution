@@ -1,0 +1,73 @@
+@model CMS.Data.Entities.Post
+
+@{
+    ViewData["Title"] = "Thêm bài viết mới";
+}
+
+<section class="admin-card">
+    <div class="admin-card__header">
+        <div>
+            <p class="admin-eyebrow mb-1">Create Post</p>
+            <h2 class="h4 fw-bold mb-0"><i class="bi bi-file-earmark-plus"></i> Thêm bài viết mới</h2>
+        </div>
+    </div>
+
+    <div class="admin-card__body">
+        <form id="post-create-form" asp-action="Create" method="post" enctype="multipart/form-data">
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+            }
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label fw-bold">Tiêu đề bài viết:</label>
+                        <input asp-for="Title" class="form-control" placeholder="Nhập tiêu đề..." required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Content" class="form-label fw-bold">Nội dung chi tiết:</label>
+                        <textarea asp-for="Content" class="form-control" rows="12" placeholder="Viết nội dung tại đây..."></textarea>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="mb-3">
+                        <label asp-for="CategoryId" class="form-label fw-bold">Chuyên mục:</label>
+                        <select asp-for="CategoryId" class="form-select" asp-items="ViewBag.CategoryList" required>
+                            <option value="">-- Chọn danh mục --</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Ảnh đại diện:</label>
+                        <input type="file" name="uploadImage" class="form-control" accept="image/*" />
+                        <small class="text-muted">Ảnh sẽ được lưu vào thư mục wwwroot/uploads.</small>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="CreatedDate" class="form-label fw-bold">Ngày đăng:</label>
+                        <input asp-for="CreatedDate" type="date" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success" id="post-save-button">
+                            <i class="bi bi-cloud-arrow-up"></i> Lưu và đăng bài
+                        </button>
+                        <a asp-action="Index" class="btn btn-secondary">Quay lại danh sách</a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
+
+@section Scripts {
+<script>
+  document.getElementById('post-create-form').addEventListener('submit', function (e) {
+    if (!confirm('Bạn có chắc muốn lưu và đăng bài viết này không?')) {
+      e.preventDefault();
+    }
+  });
+</script>
+}

@@ -1,0 +1,89 @@
+@*
+Sinh Viên: Nguyễn Tuấn Tài
+Mã Sinh Viên: 2123110166
+Lớp: CCQ2311E
+Ngày Tạo: 22/5/2026
+Mô tả: Form thêm sản phẩm mới.
+*@
+
+@model CMS.Data.Entities.Product
+
+@{
+    ViewData["Title"] = "Thêm sản phẩm mới";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<section class="admin-card">
+    <div class="admin-card__header">
+        <div>
+            <p class="admin-eyebrow mb-1">Create Product</p>
+            <h2 class="h4 fw-bold mb-0"><i class="bi bi-plus-circle"></i> Thêm sản phẩm mới</h2>
+        </div>
+    </div>
+
+    <div class="admin-card__body">
+        <form id="product-create-form" asp-action="Create" method="post" enctype="multipart/form-data">
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+            }
+
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="mb-3">
+                        <label asp-for="Name" class="form-label fw-bold">Tên sản phẩm: <span class="text-danger">*</span></label>
+                        <input asp-for="Name" class="form-control" placeholder="Nhập tên sản phẩm..." required />
+                        <span asp-validation-for="Name" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label fw-bold">Mô tả sản phẩm:</label>
+                        <textarea asp-for="Description" class="form-control" rows="6" placeholder="Mô tả chi tiết sản phẩm..."></textarea>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="mb-3">
+                        <label asp-for="CategoryProductId" class="form-label fw-bold">Loại sản phẩm: <span class="text-danger">*</span></label>
+                        <select asp-for="CategoryProductId" class="form-select" asp-items="ViewBag.CategoryProductList" required>
+                            <option value="">-- Chọn loại sản phẩm --</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Price" class="form-label fw-bold">Giá bán (₫): <span class="text-danger">*</span></label>
+                        <input asp-for="Price" class="form-control" type="number" min="0" step="1000" placeholder="0" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="StockQuantity" class="form-label fw-bold">Số lượng tồn kho:</label>
+                        <input asp-for="StockQuantity" class="form-control" type="number" min="0" placeholder="0" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Ảnh sản phẩm:</label>
+                        <input type="file" name="uploadImage" class="form-control" accept="image/*" />
+                        <small class="text-muted">Ảnh sẽ được lưu vào thư mục wwwroot/uploads.</small>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-success" id="product-save-button">
+                            <i class="bi bi-cloud-arrow-up"></i> Lưu sản phẩm
+                        </button>
+                        <a asp-action="Index" class="btn btn-secondary">Quay lại danh sách</a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
+
+@section Scripts {
+<script>
+  document.getElementById('product-create-form').addEventListener('submit', function (e) {
+    if (!confirm('Bạn có chắc muốn lưu sản phẩm này không?')) {
+      e.preventDefault();
+    }
+  });
+</script>
+}

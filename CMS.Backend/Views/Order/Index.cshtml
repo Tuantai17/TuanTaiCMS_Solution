@@ -1,0 +1,61 @@
+@model IEnumerable<CMS.Data.Entities.Order>
+
+@{
+    ViewData["Title"] = "Quản lý đơn hàng";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<section class="admin-card">
+    <div class="admin-card__header">
+        <div>
+            <p class="admin-eyebrow mb-1">Order Management</p>
+            <h2 class="h4 fw-bold mb-0">Danh sách đơn hàng</h2>
+        </div>
+        <a asp-action="Create" class="btn btn-success" id="order-create-button">
+            <i class="bi bi-cart-plus"></i> Thêm đơn hàng
+        </a>
+    </div>
+
+    <div class="admin-card__body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Mã ĐH</th>
+                        <th>Khách hàng</th>
+                        <th>Ngày đặt</th>
+                        <th>Trạng thái</th>
+                        <th>Số dòng hàng</th>
+                        <th>Ghi chú</th>
+                        <th class="text-end" style="width: 230px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        var badgeClass = item.Status switch { 0 => "bg-warning text-dark", 1 => "bg-primary", 2 => "bg-success", _ => "bg-secondary" };
+                        var statusText = item.Status switch { 0 => "Chờ duyệt", 1 => "Đang giao", 2 => "Đã xong", _ => "Không xác định" };
+                        <tr>
+                            <td><strong>#@item.Id</strong></td>
+                            <td>@(item.Customer?.FullName ?? "Chưa có khách hàng")</td>
+                            <td>@item.OrderDate.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td><span class="badge @badgeClass">@statusText</span></td>
+                            <td><span class="badge bg-info">@(item.OrderDetails?.Count ?? 0)</span></td>
+                            <td><span class="text-muted small">@(string.IsNullOrWhiteSpace(item.Notes) ? "-" : item.Notes)</span></td>
+                            <td class="text-end">
+                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                                <a asp-controller="OrderDetail" asp-action="Index" asp-route-orderId="@item.Id" class="btn btn-sm btn-outline-info">Chi tiết</a>
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">Sửa</a>
+                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger" onclick="return confirm('Bạn có chắc muốn xóa đơn hàng này không?')">Xóa</a>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Any())
+                    {
+                        <tr><td colspan="7" class="text-center py-4 text-muted">Chưa có đơn hàng nào. <a asp-action="Create">Thêm ngay</a></td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
