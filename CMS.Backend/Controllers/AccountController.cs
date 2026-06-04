@@ -50,8 +50,8 @@ namespace CMS.Backend.Controllers
 
             if (user != null)
             {
-                // Kiểm tra phân quyền: Chỉ cho phép tài khoản có Role là Admin truy cập hệ thống MVC quản trị.
-                if (user.Role != "Admin")
+                // Kiểm tra phân quyền: Chỉ cho phép tài khoản Admin hoặc Staff truy cập hệ thống MVC quản trị.
+                if (user.Role != "Admin" && user.Role != "Staff")
                 {
                     ViewBag.Error = "Tài khoản của bạn không có quyền truy cập hệ thống quản trị!";
                     return View();

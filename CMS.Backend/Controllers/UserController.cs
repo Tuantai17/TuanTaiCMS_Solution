@@ -34,7 +34,10 @@ namespace CMS.Backend.Controllers
         // ToList() thực thi truy vấn và trả dữ liệu về View/User/Index.cshtml.
         public IActionResult Index()
         {
-            var users = _context.Users.ToList();
+            var users = _context.Users
+                .Where(u => u.Role == "Admin" || u.Role == "Administrator" || u.Role == "Staff")
+                .ToList();
+
             return View(users);
         }
 

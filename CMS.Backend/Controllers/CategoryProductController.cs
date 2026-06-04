@@ -1,9 +1,9 @@
-/*
-Sinh Viên: Nguyễn Tuấn Tài
-Mã Sinh Viên: 2123110166
-Lớp: CCQ2311E
-Ngày Tạo: 22/5/2026
-Mô tả: Controller quản lý loại sản phẩm, gồm hiển thị danh sách, thêm, sửa và xóa loại sản phẩm.
+﻿/*
+Sinh ViÃªn: Nguyá»…n Tuáº¥n TÃ i
+MÃ£ Sinh ViÃªn: 2123110166
+Lá»›p: CCQ2311E
+NgÃ y Táº¡o: 22/5/2026
+MÃ´ táº£: Controller quáº£n lÃ½ loáº¡i sáº£n pháº©m, gá»“m hiá»ƒn thá»‹ danh sÃ¡ch, thÃªm, sá»­a vÃ  xÃ³a loáº¡i sáº£n pháº©m.
 */
 
 using CMS.Data;
@@ -14,8 +14,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CMS.Backend.Controllers
 {
-    // CategoryProductController xử lý các request bắt đầu bằng /CategoryProduct.
-    [Authorize(Roles = "Admin")]
+    // CategoryProductController xá»­ lÃ½ cÃ¡c request báº¯t Ä‘áº§u báº±ng /CategoryProduct.
+    [Authorize(Roles = "Admin,Staff")]
     public class CategoryProductController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -25,7 +25,7 @@ namespace CMS.Backend.Controllers
             _context = context;
         }
 
-        // Action Index hiển thị danh sách loại sản phẩm kèm số lượng sản phẩm thuộc mỗi loại.
+        // Action Index hiá»ƒn thá»‹ danh sÃ¡ch loáº¡i sáº£n pháº©m kÃ¨m sá»‘ lÆ°á»£ng sáº£n pháº©m thuá»™c má»—i loáº¡i.
         public IActionResult Index()
         {
             var categoriesProducts = _context.CategoriesProducts
@@ -36,14 +36,14 @@ namespace CMS.Backend.Controllers
             return View(categoriesProducts);
         }
 
-        // Action GET Create mở form thêm loại sản phẩm mới.
+        // Action GET Create má»Ÿ form thÃªm loáº¡i sáº£n pháº©m má»›i.
         [HttpGet]
         public IActionResult Create()
         {
             return View();
         }
 
-        // Action POST Create lưu loại sản phẩm mới vào database.
+        // Action POST Create lÆ°u loáº¡i sáº£n pháº©m má»›i vÃ o database.
         [HttpPost]
         public IActionResult Create(CategoryProduct model)
         {
@@ -54,7 +54,7 @@ namespace CMS.Backend.Controllers
 
             if (isNameDuplicated)
             {
-                ModelState.AddModelError(nameof(CategoryProduct.Name), "Tên loại sản phẩm đã tồn tại.");
+                ModelState.AddModelError(nameof(CategoryProduct.Name), "TÃªn loáº¡i sáº£n pháº©m Ä‘Ã£ tá»“n táº¡i.");
             }
 
             if (!ModelState.IsValid)
@@ -65,11 +65,11 @@ namespace CMS.Backend.Controllers
             _context.CategoriesProducts.Add(model);
             _context.SaveChanges();
 
-            TempData["SuccessMessage"] = "Loại sản phẩm đã được thêm thành công!";
+            TempData["SuccessMessage"] = "Loáº¡i sáº£n pháº©m Ä‘Ã£ Ä‘Æ°á»£c thÃªm thÃ nh cÃ´ng!";
             return RedirectToAction("Index");
         }
 
-        // Action GET Edit mở form chỉnh sửa loại sản phẩm theo id.
+        // Action GET Edit má»Ÿ form chá»‰nh sá»­a loáº¡i sáº£n pháº©m theo id.
         [HttpGet]
         public IActionResult Edit(int id)
         {
@@ -83,7 +83,7 @@ namespace CMS.Backend.Controllers
             return View(category);
         }
 
-        // Action POST Edit cập nhật loại sản phẩm vào database.
+        // Action POST Edit cáº­p nháº­t loáº¡i sáº£n pháº©m vÃ o database.
         [HttpPost]
         public IActionResult Edit(CategoryProduct model)
         {
@@ -101,7 +101,7 @@ namespace CMS.Backend.Controllers
 
             if (isNameDuplicated)
             {
-                ModelState.AddModelError(nameof(CategoryProduct.Name), "Tên loại sản phẩm đã tồn tại.");
+                ModelState.AddModelError(nameof(CategoryProduct.Name), "TÃªn loáº¡i sáº£n pháº©m Ä‘Ã£ tá»“n táº¡i.");
             }
 
             if (!ModelState.IsValid)
@@ -112,11 +112,11 @@ namespace CMS.Backend.Controllers
             _context.CategoriesProducts.Update(model);
             _context.SaveChanges();
 
-            TempData["SuccessMessage"] = "Loại sản phẩm đã được cập nhật thành công!";
+            TempData["SuccessMessage"] = "Loáº¡i sáº£n pháº©m Ä‘Ã£ Ä‘Æ°á»£c cáº­p nháº­t thÃ nh cÃ´ng!";
             return RedirectToAction("Index");
         }
 
-        // Action Delete xóa loại sản phẩm theo id.
+        // Action Delete xÃ³a loáº¡i sáº£n pháº©m theo id.
         public IActionResult Delete(int id)
         {
             var category = _context.CategoriesProducts
@@ -127,17 +127,18 @@ namespace CMS.Backend.Controllers
             {
                 if (category.Products != null && category.Products.Any())
                 {
-                    TempData["SuccessMessage"] = "Không thể xóa loại sản phẩm đang có sản phẩm. Vui lòng chuyển/xóa sản phẩm trước.";
+                    TempData["SuccessMessage"] = "KhÃ´ng thá»ƒ xÃ³a loáº¡i sáº£n pháº©m Ä‘ang cÃ³ sáº£n pháº©m. Vui lÃ²ng chuyá»ƒn/xÃ³a sáº£n pháº©m trÆ°á»›c.";
                     return RedirectToAction("Index");
                 }
 
                 _context.CategoriesProducts.Remove(category);
                 _context.SaveChanges();
 
-                TempData["SuccessMessage"] = "Loại sản phẩm đã được xóa thành công!";
+                TempData["SuccessMessage"] = "Loáº¡i sáº£n pháº©m Ä‘Ã£ Ä‘Æ°á»£c xÃ³a thÃ nh cÃ´ng!";
             }
 
             return RedirectToAction("Index");
         }
     }
 }
+

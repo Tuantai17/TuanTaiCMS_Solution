@@ -1,23 +1,48 @@
 # CMS Frontend - TuanTaiCMS
 
-Frontend của project **TuanTaiCMS** được xây dựng bằng **ReactJS** để phục vụ giao diện người dùng / khách hàng. Phần này kết nối với backend ASP.NET Core thông qua Web API để hiển thị sản phẩm, bài viết, đăng ký / đăng nhập khách hàng, đặt hàng và xem lịch sử mua hàng.
+Frontend của project **TuanTaiCMS** được xây dựng bằng **ReactJS** để phục vụ giao diện người dùng / khách hàng. Phần này kết nối với backend **ASP.NET Core Web API** để hiển thị sản phẩm, bài viết, đăng ký / đăng nhập khách hàng, đặt hàng và xem lịch sử mua hàng.
 
 ---
 
-## 1. Mục tiêu của frontend
+## 1. Tổng quan phân quyền hiện tại
 
-Frontend đảm nhiệm nhóm chức năng dành cho **User / Customer**:
+Project hiện được tách thành **3 nhóm quyền / nhóm người dùng** rõ ràng:
 
-| Nhóm | Cách xử lý hiện tại | Trạng thái |
-|---|---|---|
-| Admin | Đăng nhập vào backend MVC, được phép quản trị dữ liệu | Đã có ở project `CMS.Backend` |
-| User / Customer | Đăng ký, đăng nhập ở frontend, đặt hàng và xem lịch sử | Đã có ở `cms.frontend` |
+| Nhóm quyền | Khu vực sử dụng | Có vào Admin không? | Chức năng chính |
+|---|---|---:|---|
+| **Admin** | Backend MVC `CMS.Backend` | Có | Quản trị toàn quyền, quản lý Admin / Staff, sản phẩm, bài viết, khách hàng, đơn hàng |
+| **Staff** | Backend MVC `CMS.Backend` | Có | Nhân viên quản trị nghiệp vụ, được vào admin nhưng không được quản lý tài khoản Admin / Staff |
+| **User / Customer** | Frontend ReactJS `cms.frontend` | Không | Đăng ký, đăng nhập frontend, xem sản phẩm, đặt hàng, xem lịch sử mua hàng |
 
-> **Ghi chú:** Backend MVC chỉ dành cho **Admin** quản trị dữ liệu. Frontend ReactJS dành cho **User / Customer** mua hàng.
+> **Ghi chú quan trọng:**
+>
+> - **Admin** và **Staff** là tài khoản nội bộ, được lưu trong bảng `Users`.
+> - **User / Customer** là khách hàng mua hàng, được lưu trong bảng `Customers`.
+> - Customer không đăng nhập được trang Admin.
+> - Staff đăng nhập được Admin nhưng không vào được mục **Quản lý Admin / Staff**.
 
 ---
 
-## 2. Công nghệ sử dụng
+## 2. Mục tiêu của frontend
+
+Frontend đảm nhiệm toàn bộ nhóm chức năng dành cho **User / Customer**:
+
+- Xem trang chủ.
+- Xem danh sách sản phẩm.
+- Xem chi tiết sản phẩm.
+- Thêm sản phẩm vào giỏ hàng.
+- Đăng ký tài khoản khách hàng.
+- Đăng nhập tài khoản khách hàng.
+- Thanh toán đơn hàng.
+- Xem lịch sử mua hàng.
+- Xem danh sách bài viết / blog.
+- Xem chi tiết bài viết.
+
+Backend MVC dùng cho **Admin / Staff** quản trị dữ liệu; frontend ReactJS dùng cho **Customer** mua hàng.
+
+---
+
+## 3. Công nghệ sử dụng
 
 - ReactJS
 - React Router DOM
@@ -28,7 +53,7 @@ Frontend đảm nhiệm nhóm chức năng dành cho **User / Customer**:
 
 ---
 
-## 3. Cấu trúc thư mục chính
+## 4. Cấu trúc thư mục chính
 
 ```text
 cms.frontend/
@@ -42,7 +67,8 @@ cms.frontend/
 │   ├── components/
 │   │   ├── Header.jsx
 │   │   ├── Footer.jsx
-│   │   └── ProductCard.jsx
+│   │   ├── ProductCard.jsx
+│   │   └── PostList.jsx
 │   ├── pages/
 │   │   ├── Home.jsx
 │   │   ├── Shop.jsx
@@ -68,7 +94,7 @@ cms.frontend/
 
 ---
 
-## 4. Các route chính
+## 5. Các route chính
 
 Các route được khai báo trong `src/App.js`:
 
@@ -87,32 +113,82 @@ Các route được khai báo trong `src/App.js`:
 
 ---
 
-## 5. Luồng phân quyền và tài khoản
+## 6. Luồng phân quyền và tài khoản
 
-Project hiện được tách thành 2 nhóm người dùng rõ ràng:
+### 6.1. Admin
 
-### 5.1. Admin
+Admin là tài khoản nội bộ thuộc bảng `Users`.
 
-- Admin đăng nhập ở backend MVC.
-- Admin quản trị danh mục, sản phẩm, bài viết, khách hàng, đơn hàng.
-- Các controller quản trị trong backend dùng `[Authorize(Roles = "Admin")]`.
+Admin có thể:
 
-### 5.2. User / Customer
+- Đăng nhập backend MVC qua `/Account/Login`.
+- Truy cập toàn bộ khu vực quản trị.
+- Quản lý Admin / Staff.
+- Quản lý danh mục bài viết.
+- Quản lý bài viết.
+- Quản lý loại sản phẩm.
+- Quản lý sản phẩm.
+- Quản lý khách hàng.
+- Quản lý đơn hàng.
+- Quản lý chi tiết đơn hàng.
 
-- Customer đăng ký ở trang `/register`.
-- Customer đăng nhập ở trang `/login`.
-- Sau khi đăng nhập, thông tin customer được lưu vào `localStorage` với key `customer`.
-- Customer có thể:
-  - Xem sản phẩm.
-  - Thêm sản phẩm vào giỏ hàng.
-  - Thanh toán đơn hàng.
-  - Xem lịch sử mua hàng.
+Các controller quan trọng:
+
+- `UserController`: chỉ cho **Admin**.
+- Các controller nghiệp vụ khác: cho **Admin,Staff**.
+
+### 6.2. Staff
+
+Staff là tài khoản nội bộ thay thế vai trò `Editor` trước đây.
+
+Staff có thể:
+
+- Đăng nhập backend MVC qua `/Account/Login`.
+- Vào dashboard admin.
+- Quản lý danh mục, bài viết, sản phẩm, khách hàng, đơn hàng.
+
+Staff không được:
+
+- Vào mục **Quản lý Admin / Staff**.
+- Thêm, sửa, xóa tài khoản Admin / Staff.
+
+Phân quyền chính trong backend:
+
+```csharp
+[Authorize(Roles = "Admin,Staff")]
+```
+
+Riêng quản lý tài khoản nội bộ:
+
+```csharp
+[Authorize(Roles = "Admin")]
+```
+
+### 6.3. User / Customer
+
+Customer là khách hàng ở frontend, thuộc bảng `Customers`.
+
+Customer có thể:
+
+- Đăng ký ở trang `/register`.
+- Đăng nhập ở trang `/login`.
+- Xem sản phẩm.
+- Thêm sản phẩm vào giỏ hàng.
+- Thanh toán đơn hàng.
+- Xem lịch sử mua hàng.
+
+Customer không thể:
+
+- Đăng nhập trang admin backend.
+- Truy cập các trang quản trị MVC.
+
+Sau khi đăng nhập, thông tin customer được lưu trong `localStorage` với key `customer`.
 
 ---
 
-## 6. Các API frontend đang sử dụng
+## 7. Các API frontend đang sử dụng
 
-### 6.1. API đăng ký / đăng nhập customer
+### 7.1. API đăng ký / đăng nhập customer
 
 Service: `src/services/authService.js`
 
@@ -123,7 +199,7 @@ Service: `src/services/authService.js`
 
 Backend tương ứng: `CMS.Backend/Controllers/AuthController.cs`
 
-### 6.2. API sản phẩm
+### 7.2. API sản phẩm
 
 Service: `src/services/productService.js`
 
@@ -135,7 +211,7 @@ Service: `src/services/productService.js`
 
 Backend tương ứng: `CMS.Backend/Controllers/ProductsController.cs`
 
-### 6.3. API danh mục sản phẩm
+### 7.3. API danh mục sản phẩm
 
 Service: `src/services/categoryProductService.js`
 
@@ -145,18 +221,23 @@ Service: `src/services/categoryProductService.js`
 
 Backend tương ứng: `CMS.Backend/Controllers/CategoriesProductsController.cs`
 
-### 6.4. API bài viết
+### 7.4. API bài viết / blog
 
 Service: `src/services/blogService.js`
 
 | Method | API | Mục đích |
 |---|---|---|
+| GET | `/Categories` | Lấy chuyên mục bài viết |
 | GET | `/Posts` | Lấy danh sách bài viết |
+| GET | `/Posts/category/{categoryId}` | Lọc bài viết theo chuyên mục |
 | GET | `/Posts/{id}` | Lấy chi tiết bài viết |
 
-Backend tương ứng: `CMS.Backend/Controllers/PostsController.cs`
+Backend tương ứng:
 
-### 6.5. API đơn hàng
+- `CMS.Backend/Controllers/CategoriesController.cs`
+- `CMS.Backend/Controllers/PostsController.cs`
+
+### 7.5. API đơn hàng
 
 Service: `src/services/orderService.js`
 
@@ -169,7 +250,7 @@ Backend tương ứng: `CMS.Backend/Controllers/OrdersController.cs`
 
 ---
 
-## 7. LocalStorage đang sử dụng
+## 8. LocalStorage đang sử dụng
 
 | Key | Ý nghĩa |
 |---|---|
@@ -204,7 +285,7 @@ Ví dụ dữ liệu `cart`:
 
 ---
 
-## 8. Cách chạy frontend
+## 9. Cách chạy frontend
 
 Mở terminal tại thư mục `cms.frontend`:
 
@@ -223,7 +304,7 @@ http://localhost:3000
 
 ---
 
-## 9. Cấu hình API
+## 10. Cấu hình API
 
 File cấu hình axios nằm tại:
 
@@ -243,9 +324,9 @@ const axiosClient = axios.create({
 
 ---
 
-## 10. Luồng sử dụng chính
+## 11. Luồng sử dụng chính
 
-### 10.1. Luồng mua hàng
+### 11.1. Luồng mua hàng của Customer
 
 1. Customer vào trang `/products`.
 2. Chọn sản phẩm hoặc xem chi tiết sản phẩm.
@@ -258,20 +339,28 @@ const axiosClient = axios.create({
 9. Backend tạo đơn hàng, chi tiết đơn hàng và trừ số lượng tồn kho.
 10. Customer xem lại đơn hàng ở `/order-history`.
 
-### 10.2. Luồng đăng nhập customer
+### 11.2. Luồng đăng nhập Customer
 
 1. Customer nhập email và mật khẩu ở `/login`.
 2. Frontend gọi API `/Auth/CustomerLogin`.
 3. Nếu đăng nhập thành công, thông tin customer được lưu vào `localStorage`.
 4. Header cập nhật trạng thái tài khoản.
 
+### 11.3. Luồng đăng nhập Admin / Staff
+
+1. Admin hoặc Staff vào backend MVC tại `/Account/Login`.
+2. Nhập username và password.
+3. Nếu role là `Admin` hoặc `Staff`, hệ thống cho vào trang quản trị.
+4. Nếu role là `User/Customer`, hệ thống từ chối truy cập.
+5. Nếu Staff truy cập `/User`, hệ thống chuyển sang trang từ chối quyền.
+
 ---
 
-## 11. Minh chứng hiển thị theo luồng thực tế
+## 12. Minh chứng hiển thị theo luồng thực tế
 
 Phần frontend hiện đã hiển thị đúng theo luồng **User / Customer** như sau:
 
-### 11.1. Trang chi tiết sản phẩm
+### 12.1. Trang chi tiết sản phẩm
 
 Đường dẫn ví dụ:
 
@@ -293,7 +382,7 @@ Trang chi tiết sản phẩm hiển thị các thông tin chính:
 
 Khi khách hàng bấm **Thêm vào giỏ**, sản phẩm được lưu vào `localStorage` với key `cart` và số lượng trên Header được cập nhật.
 
-### 11.2. Trang giỏ hàng
+### 12.2. Trang giỏ hàng
 
 Đường dẫn:
 
@@ -316,7 +405,7 @@ Trang giỏ hàng hiển thị:
 - Tổng cộng thanh toán.
 - Nút **Tiến hành thanh toán**.
 
-### 11.3. Trang lịch sử mua hàng
+### 12.3. Trang lịch sử mua hàng
 
 Đường dẫn:
 
@@ -341,7 +430,7 @@ Frontend lấy dữ liệu lịch sử đơn hàng bằng API:
 GET /Orders/customer/{customerId}
 ```
 
-### 11.4. Màn hình quản lý đơn hàng phía Admin
+### 12.4. Màn hình quản lý đơn hàng phía Admin / Staff
 
 Phần này thuộc project backend MVC tại `CMS.Backend`.
 
@@ -351,7 +440,7 @@ Phần này thuộc project backend MVC tại `CMS.Backend`.
 https://localhost:7238/Order
 ```
 
-Admin có thể xem danh sách đơn hàng với các thông tin:
+Admin và Staff có thể xem danh sách đơn hàng với các thông tin:
 
 - Mã đơn hàng.
 - Tên khách hàng.
@@ -361,7 +450,7 @@ Admin có thể xem danh sách đơn hàng với các thông tin:
 - Ghi chú.
 - Các nút thao tác: xem, chi tiết, sửa, xóa.
 
-### 11.5. Màn hình chi tiết đơn hàng phía Admin
+### 12.5. Màn hình chi tiết đơn hàng phía Admin / Staff
 
 Đường dẫn ví dụ:
 
@@ -369,7 +458,7 @@ Admin có thể xem danh sách đơn hàng với các thông tin:
 https://localhost:7238/Order/Details/{id}
 ```
 
-Admin có thể xem chi tiết đơn hàng gồm:
+Admin và Staff có thể xem chi tiết đơn hàng gồm:
 
 - Tên khách hàng.
 - Email.
@@ -386,14 +475,21 @@ Admin có thể xem chi tiết đơn hàng gồm:
 
 ---
 
-## 12. Checklist kiểm thử trước khi nộp
+## 13. Checklist kiểm thử trước khi nộp
 
 - [ ] Chạy backend ASP.NET Core thành công.
 - [ ] Chạy frontend ReactJS thành công.
+- [ ] Admin đăng nhập được backend MVC.
+- [ ] Staff đăng nhập được backend MVC.
+- [ ] Staff bị chặn khi truy cập mục Quản lý Admin / Staff.
+- [ ] Customer/User không đăng nhập được backend MVC.
 - [ ] Đăng ký customer mới thành công.
-- [ ] Đăng nhập customer thành công.
+- [ ] Đăng nhập customer frontend thành công.
 - [ ] Sản phẩm hiển thị động từ API.
+- [ ] Danh mục sản phẩm hiển thị động từ API.
 - [ ] Bài viết hiển thị động từ API.
+- [ ] Chuyên mục bài viết lấy được từ API `/Categories`.
+- [ ] Ngày đăng bài viết hiển thị dạng Việt Nam.
 - [ ] Thêm sản phẩm vào giỏ hàng thành công.
 - [ ] Số lượng giỏ hàng trên Header cập nhật đúng.
 - [ ] Checkout tạo được đơn hàng.
@@ -404,18 +500,19 @@ Admin có thể xem chi tiết đơn hàng gồm:
 
 ---
 
-## 12. Ghi chú quan trọng
+## 14. Ghi chú quan trọng
 
 - Mật khẩu customer hiện đang xử lý đơn giản theo yêu cầu bài học. Nếu triển khai thực tế nên hash mật khẩu.
 - Customer hiện được lưu bằng `localStorage`, chưa dùng JWT hoặc cookie auth riêng cho frontend.
 - API đặt hàng nhận `CustomerId` từ frontend, phù hợp bài tập nhưng chưa phải mô hình bảo mật cao.
 - Backend MVC và Frontend ReactJS là 2 phần riêng:
-  - Backend MVC: dành cho Admin.
-  - Frontend ReactJS: dành cho User / Customer.
+  - Backend MVC: dành cho **Admin / Staff**.
+  - Frontend ReactJS: dành cho **User / Customer**.
+- Role `Staff` thay thế role `Editor` cũ để dễ hiểu hơn về nghiệp vụ nhân viên.
 
 ---
 
-## 13. Scripts có sẵn
+## 15. Scripts có sẵn
 
 Trong thư mục `cms.frontend`, có thể chạy:
 

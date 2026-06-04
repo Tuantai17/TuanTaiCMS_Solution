@@ -1,9 +1,9 @@
-/*
-Sinh Viên: Nguyễn Tuấn Tài
-Mã Sinh Viên: 2123110166
-Lớp: CCQ2311E
-Ngày Tạo: 22/5/2026
-Mô tả: Controller quản lý sản phẩm, gồm hiển thị danh sách, thêm, sửa, xóa và upload ảnh sản phẩm.
+﻿/*
+Sinh ViÃªn: Nguyá»…n Tuáº¥n TÃ i
+MÃ£ Sinh ViÃªn: 2123110166
+Lá»›p: CCQ2311E
+NgÃ y Táº¡o: 22/5/2026
+MÃ´ táº£: Controller quáº£n lÃ½ sáº£n pháº©m, gá»“m hiá»ƒn thá»‹ danh sÃ¡ch, thÃªm, sá»­a, xÃ³a vÃ  upload áº£nh sáº£n pháº©m.
 */
 
 using CMS.Data;
@@ -15,8 +15,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CMS.Backend.Controllers
 {
-    // ProductController xử lý các request bắt đầu bằng /Product.
-    [Authorize(Roles = "Admin")]
+    // ProductController xá»­ lÃ½ cÃ¡c request báº¯t Ä‘áº§u báº±ng /Product.
+    [Authorize(Roles = "Admin,Staff")]
     public class ProductController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -26,7 +26,7 @@ namespace CMS.Backend.Controllers
             _context = context;
         }
 
-        // Action Index hiển thị danh sách tất cả sản phẩm kèm loại sản phẩm.
+        // Action Index hiá»ƒn thá»‹ danh sÃ¡ch táº¥t cáº£ sáº£n pháº©m kÃ¨m loáº¡i sáº£n pháº©m.
         public IActionResult Index()
         {
             var products = _context.Products
@@ -37,7 +37,7 @@ namespace CMS.Backend.Controllers
             return View(products);
         }
 
-        // Action Details hiển thị chi tiết một sản phẩm theo id.
+        // Action Details hiá»ƒn thá»‹ chi tiáº¿t má»™t sáº£n pháº©m theo id.
         public IActionResult Details(int id)
         {
             var product = _context.Products
@@ -52,7 +52,7 @@ namespace CMS.Backend.Controllers
             return View(product);
         }
 
-        // Action GET Create mở form thêm sản phẩm mới.
+        // Action GET Create má»Ÿ form thÃªm sáº£n pháº©m má»›i.
         [HttpGet]
         public IActionResult Create()
         {
@@ -60,7 +60,7 @@ namespace CMS.Backend.Controllers
             return View();
         }
 
-        // Action POST Create lưu sản phẩm mới, xử lý upload ảnh nếu có.
+        // Action POST Create lÆ°u sáº£n pháº©m má»›i, xá»­ lÃ½ upload áº£nh náº¿u cÃ³.
         [HttpPost]
         public IActionResult Create(Product model, IFormFile? uploadImage)
         {
@@ -77,11 +77,11 @@ namespace CMS.Backend.Controllers
             _context.Products.Add(model);
             _context.SaveChanges();
 
-            TempData["SuccessMessage"] = "Sản phẩm đã được thêm thành công!";
+            TempData["SuccessMessage"] = "Sáº£n pháº©m Ä‘Ã£ Ä‘Æ°á»£c thÃªm thÃ nh cÃ´ng!";
             return RedirectToAction("Index");
         }
 
-        // Action GET Edit mở form chỉnh sửa sản phẩm.
+        // Action GET Edit má»Ÿ form chá»‰nh sá»­a sáº£n pháº©m.
         [HttpGet]
         public IActionResult Edit(int id)
         {
@@ -96,7 +96,7 @@ namespace CMS.Backend.Controllers
             return View(product);
         }
 
-        // Action POST Edit cập nhật sản phẩm, giữ nguyên ảnh cũ nếu không upload ảnh mới.
+        // Action POST Edit cáº­p nháº­t sáº£n pháº©m, giá»¯ nguyÃªn áº£nh cÅ© náº¿u khÃ´ng upload áº£nh má»›i.
         [HttpPost]
         public IActionResult Edit(Product model, IFormFile? uploadImage)
         {
@@ -121,11 +121,11 @@ namespace CMS.Backend.Controllers
             _context.Products.Update(model);
             _context.SaveChanges();
 
-            TempData["SuccessMessage"] = "Sản phẩm đã được cập nhật thành công!";
+            TempData["SuccessMessage"] = "Sáº£n pháº©m Ä‘Ã£ Ä‘Æ°á»£c cáº­p nháº­t thÃ nh cÃ´ng!";
             return RedirectToAction("Index");
         }
 
-        // Action Delete xóa sản phẩm theo id.
+        // Action Delete xÃ³a sáº£n pháº©m theo id.
         public IActionResult Delete(int id)
         {
             var product = _context.Products.Find(id);
@@ -135,13 +135,13 @@ namespace CMS.Backend.Controllers
                 _context.Products.Remove(product);
                 _context.SaveChanges();
 
-                TempData["SuccessMessage"] = "Sản phẩm đã được xóa thành công!";
+                TempData["SuccessMessage"] = "Sáº£n pháº©m Ä‘Ã£ Ä‘Æ°á»£c xÃ³a thÃ nh cÃ´ng!";
             }
 
             return RedirectToAction("Index");
         }
 
-        // Hàm dùng chung để nạp dropdown loại sản phẩm cho form Create/Edit.
+        // HÃ m dÃ¹ng chung Ä‘á»ƒ náº¡p dropdown loáº¡i sáº£n pháº©m cho form Create/Edit.
         private void LoadCategoryProductList(int? selectedId = null)
         {
             ViewBag.CategoryProductList = new SelectList(
@@ -152,7 +152,7 @@ namespace CMS.Backend.Controllers
             );
         }
 
-        // Hàm lưu ảnh upload vào wwwroot/uploads và trả về đường dẫn tương đối.
+        // HÃ m lÆ°u áº£nh upload vÃ o wwwroot/uploads vÃ  tráº£ vá» Ä‘Æ°á»ng dáº«n tÆ°Æ¡ng Ä‘á»‘i.
         private string? SaveUploadImage(IFormFile? uploadImage)
         {
             if (uploadImage == null || uploadImage.Length == 0)
@@ -179,3 +179,4 @@ namespace CMS.Backend.Controllers
         }
     }
 }
+
