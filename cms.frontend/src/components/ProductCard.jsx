@@ -97,16 +97,39 @@ const ProductCard = ({ item }) => {
       {/* Khối chân thẻ chứa nút bấm mua và tim yêu thích */}
       <div className="card-footer bg-white border-top-0 p-3 pt-0">
         <div className="d-flex align-items-center justify-content-between">
-          <button className="btn font-weight-bold text-uppercase py-2 flex-grow-1 mr-2" style={{ 
-            fontSize: '0.75rem',
-            backgroundColor: '#CF102D',
-            borderColor: '#CF102D',
-            color: '#ffffff',
-            borderRadius: '25px',
-            borderWidth: '1px',
-            borderStyle: 'solid',
-            transition: 'all 0.2s'
-          }}>
+          <button 
+            onClick={(e) => {
+              e.preventDefault();
+              const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+              const index = cart.findIndex(c => c.id === item.id);
+              if (index > -1) {
+                cart[index].quantity += 1;
+              } else {
+                cart.push({
+                  id: item.id,
+                  name: item.name,
+                  price: item.price,
+                  quantity: 1,
+                  imageUrl: item.imageUrl,
+                  sku: item.sku || `SKU${120000 + item.id}`
+                });
+              }
+              localStorage.setItem('cart', JSON.stringify(cart));
+              window.dispatchEvent(new Event('cartChange'));
+              alert(`Đã thêm "${item.name}" vào giỏ hàng thành công!`);
+            }}
+            className="btn font-weight-bold text-uppercase py-2 flex-grow-1 mr-2" 
+            style={{ 
+              fontSize: '0.75rem',
+              backgroundColor: '#CF102D',
+              borderColor: '#CF102D',
+              color: '#ffffff',
+              borderRadius: '25px',
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              transition: 'all 0.2s'
+            }}
+          >
             Thêm Vào Giỏ Hàng
           </button>
           

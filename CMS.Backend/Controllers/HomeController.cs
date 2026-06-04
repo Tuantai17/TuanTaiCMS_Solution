@@ -12,6 +12,7 @@ Mô tả: Controller xử lý trang chủ, trang riêng tư và trang lỗi củ
 // EntityFrameworkCore cung cấp Include để join bảng Category khi lấy bài viết.
 using CMS.Backend.Models;
 using CMS.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
@@ -38,6 +39,7 @@ namespace CMS.Backend.Controllers
         // OrderByDescending sắp xếp bài viết mới nhất theo CreatedDate lên đầu.
         // Không dùng Take(3) để Dashboard hiển thị đầy đủ dữ liệu bài viết theo yêu cầu.
         // ToList() thực thi truy vấn và chuyển kết quả thành danh sách.
+        [Authorize(Roles = "Admin")]
         public IActionResult Index()
         {
             // Lấy đúng dữ liệu có sẵn trong database để hiển thị ở các ô thống kê Dashboard.

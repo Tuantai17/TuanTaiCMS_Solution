@@ -15,7 +15,7 @@ using Microsoft.EntityFrameworkCore;
 namespace CMS.Backend.Controllers
 {
     // CategoryProductController xử lý các request bắt đầu bằng /CategoryProduct.
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     public class CategoryProductController : Controller
     {
         private readonly ApplicationDbContext _context;

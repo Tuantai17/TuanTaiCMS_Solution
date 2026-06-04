@@ -15,7 +15,7 @@ using Microsoft.EntityFrameworkCore;
 namespace CMS.Backend.Controllers
 {
     // CustomerController xử lý các request bắt đầu bằng /Customer.
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     public class CustomerController : Controller
     {
         private readonly ApplicationDbContext _context;

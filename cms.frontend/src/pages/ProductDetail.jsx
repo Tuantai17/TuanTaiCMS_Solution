@@ -114,7 +114,29 @@ const ProductDetail = () => {
           <div className="border-top pt-4 mt-4">
             <div className="row">
               <div className="col-12 col-sm-6 mb-2 mb-sm-0">
-                <button className="btn btn-danger btn-block rounded-pill font-weight-bold text-uppercase py-3" disabled={product.stockQuantity === 0}>
+                <button 
+                  onClick={() => {
+                    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+                    const index = cart.findIndex(c => c.id === product.id);
+                    if (index > -1) {
+                      cart[index].quantity += 1;
+                    } else {
+                      cart.push({
+                        id: product.id,
+                        name: product.name,
+                        price: product.price,
+                        quantity: 1,
+                        imageUrl: product.imageUrl,
+                        sku: product.sku || `#${1000 + product.id}`
+                      });
+                    }
+                    localStorage.setItem('cart', JSON.stringify(cart));
+                    window.dispatchEvent(new Event('cartChange'));
+                    alert(`Đã thêm "${product.name}" vào giỏ hàng thành công!`);
+                  }}
+                  className="btn btn-danger btn-block rounded-pill font-weight-bold text-uppercase py-3" 
+                  disabled={product.stockQuantity === 0}
+                >
                   <i className="fa-solid fa-cart-plus mr-2"></i> Thêm vào giỏ
                 </button>
               </div>

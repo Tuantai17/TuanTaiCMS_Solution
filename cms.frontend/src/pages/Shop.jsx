@@ -497,7 +497,29 @@ const Shop = () => {
                                 {new Intl.NumberFormat('vi-VN').format(Math.round(item.price / (1 - item.discountPercent / 100)))} VND
                               </span>
                             </div>
-                            <button className="btn btn-sm font-weight-bold text-white px-4 py-2" style={{ backgroundColor: '#CF102D', borderRadius: '25px' }}>
+                            <button 
+                              onClick={() => {
+                                const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+                                const index = cart.findIndex(c => c.id === item.id);
+                                if (index > -1) {
+                                  cart[index].quantity += 1;
+                                } else {
+                                  cart.push({
+                                    id: item.id,
+                                    name: item.name,
+                                    price: item.price,
+                                    quantity: 1,
+                                    imageUrl: item.imageUrl,
+                                    sku: item.sku || `SKU${120000 + item.id}`
+                                  });
+                                }
+                                localStorage.setItem('cart', JSON.stringify(cart));
+                                window.dispatchEvent(new Event('cartChange'));
+                                alert(`Đã thêm "${item.name}" vào giỏ hàng thành công!`);
+                              }}
+                              className="btn btn-sm font-weight-bold text-white px-4 py-2" 
+                              style={{ backgroundColor: '#CF102D', borderRadius: '25px' }}
+                            >
                               Thêm Vào Giỏ Hàng
                             </button>
                           </div>

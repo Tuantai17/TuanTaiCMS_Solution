@@ -17,8 +17,8 @@ using Microsoft.EntityFrameworkCore;
 namespace CMS.Backend.Controllers
 {
     // PostController xử lý các request bắt đầu bằng /Post.
-    // Buổi 5: [Authorize] bắt buộc phải đăng nhập mới được vào các action bên dưới.
-    [Authorize]
+    // Buổi 5: [Authorize(Roles = "Admin")] bắt buộc phải đăng nhập với quyền Admin mới được vào các action bên dưới.
+    [Authorize(Roles = "Admin")]
     public class PostController : Controller
     {
         // DbContext dùng để truy vấn bảng Posts và Categories.

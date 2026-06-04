@@ -16,7 +16,7 @@ using Microsoft.EntityFrameworkCore;
 namespace CMS.Backend.Controllers
 {
     // OrderController xử lý các request bắt đầu bằng /Order.
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     public class OrderController : Controller
     {
         private readonly ApplicationDbContext _context;

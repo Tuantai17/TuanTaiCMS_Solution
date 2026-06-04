@@ -14,7 +14,7 @@ using CMS.Data.Entities;
 // CategoryController nhận request liên quan đến đường dẫn /Category.
 // Kế thừa Controller để có thể trả về View, Redirect, NotFound...
 // Buổi 5: [Authorize] bắt buộc phải đăng nhập mới được truy cập các action bên dưới.
-[Authorize]
+[Authorize(Roles = "Admin")]
 public class CategoryController : Controller
 {
     // _context là biến dùng chung trong controller để thao tác với database.

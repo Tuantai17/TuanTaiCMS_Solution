@@ -11,6 +11,9 @@ import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import PostList from './pages/PostList';
 import PostDetail from './pages/PostDetail';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import OrderHistory from './pages/OrderHistory';
 
 // Import CSS từ assets/css/ theo đúng sơ đồ module hóa
 import './assets/css/App.css';
@@ -32,6 +35,9 @@ function App() {
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/blog" element={<PostList />} />
             <Route path="/blog/:id" element={<PostDetail />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/order-history" element={<OrderHistory />} />
           </Routes>
         </main>
         

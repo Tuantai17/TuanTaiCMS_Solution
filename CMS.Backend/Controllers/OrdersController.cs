@@ -7,6 +7,7 @@ Mô tả: API Controller quản lý đơn đặt hàng trực tiếp từ giỏ 
 */
 
 using Microsoft.AspNetCore.Mvc; // Import thư viện hỗ trợ xây dựng các API Controller của ASP.NET Core
+using Microsoft.EntityFrameworkCore; // Import thư viện hỗ trợ truy vấn Database bất đồng bộ và load quan hệ
 using CMS.Data; // Import namespace chứa lớp ngữ cảnh dữ liệu ApplicationDbContext
 using CMS.Data.Entities; // Import namespace chứa các lớp thực thể Entity mẫu của Solution
 
@@ -35,16 +36,23 @@ namespace CMS.Backend.Controllers
       // 1. Kiểm tra kịch bản lỗi bảo vệ hệ thống: Nếu dữ liệu truyền lên trống rỗng
       if (input == null)
       {
-        // Trả về mã lỗi 400 Bad Request kèm thông báo dữ liệu không hợp lệ bằng JSON
         return BadRequest(new { message = "Dữ liệu đơn hàng không hợp lệ hoặc trống rỗng" });
       }
 
-      // 2. Kiểm tra nếu mã khách hàng không hợp lệ (không lớn hơn 0)
+      // 2. Kiểm tra nếu mã khách hàng không hợp lệ
       if (input.CustomerId <= 0)
       {
-        // Trả về mã lỗi 400 Bad Request báo lỗi thông tin CustomerId
         return BadRequest(new { message = "Mã khách hàng CustomerId không hợp lệ" });
       }
+
+      // 3. Kiểm tra giỏ hàng trống
+      if (input.CartItems == null || input.CartItems.Count == 0)
+      {
+        return BadRequest(new { message = "Giỏ hàng rỗng. Vui lòng thêm sản phẩm trước khi đặt hàng!" });
+      }
+
+      // Bắt đầu Transaction để đảm bảo tính nhất quán của dữ liệu (nếu thêm đơn hàng thành công nhưng trừ tồn kho lỗi thì rollback toàn bộ)
+      using var transaction = await _context.Database.BeginTransactionAsync();
 
       try
       {
@@ -57,27 +65,104 @@ namespace CMS.Backend.Controllers
           Notes = input.Notes // Nhận ghi chú đơn hàng từ Frontend truyền lên
         };
 
-        // Bước B: Thêm đối tượng đơn hàng mới vào DbSet Orders tạm thời
+        // Thêm đối tượng đơn hàng mới vào DbSet Orders tạm thời
         _context.Orders.Add(newOrder);
+        await _context.SaveChangesAsync(); // Lưu trước để phát sinh ID đơn hàng (newOrder.Id)
 
-        // Bước C: Chốt lưu toàn bộ các thay đổi xuống cơ sở dữ liệu SQL Server để đồng bộ
-        await _context.SaveChangesAsync(); // Ép hệ thống sinh ra mã ID Đơn hàng tự động tăng và lưu lại
+        // Bước B: Duyệt qua mảng giỏ hàng, nạp vào bảng OrderDetails và trừ số lượng tồn kho Product
+        foreach (var cartItem in input.CartItems)
+        {
+          // Truy vấn tìm sản phẩm
+          var product = await _context.Products.FindAsync(cartItem.ProductId);
+          if (product == null)
+          {
+            await transaction.RollbackAsync();
+            return BadRequest(new { message = $"Sản phẩm có mã ID {cartItem.ProductId} không tồn tại trong hệ thống." });
+          }
 
-        // Bước D: Trả về mã thành công 201 Created và gửi ngược lại mã ID đơn hàng vừa tạo cùng thông báo
+          // Kiểm tra số lượng tồn kho
+          if (product.StockQuantity < cartItem.Quantity)
+          {
+            await transaction.RollbackAsync();
+            return BadRequest(new { message = $"Sản phẩm '{product.Name}' không đủ số lượng trong kho (Còn tồn: {product.StockQuantity}). Vui lòng điều chỉnh lại giỏ hàng!" });
+          }
+
+          // Khấu trừ số lượng tồn kho
+          product.StockQuantity -= cartItem.Quantity;
+
+          // Tạo chi tiết đơn hàng
+          var orderDetail = new OrderDetail
+          {
+            OrderId = newOrder.Id,
+            ProductId = cartItem.ProductId,
+            Quantity = cartItem.Quantity,
+            UnitPrice = product.Price // Lấy đơn giá thật của sản phẩm tại thời điểm mua gán vào UnitPrice
+          };
+
+          _context.OrderDetails.Add(orderDetail);
+        }
+
+        // Lưu toàn bộ chi tiết đơn hàng và cập nhật tồn kho sản phẩm xuống SQL Server
+        await _context.SaveChangesAsync();
+
+        // Chốt và commit giao dịch thành công
+        await transaction.CommitAsync();
+
         return StatusCode(201, new
         {
-          message = "Đặt hàng thành công!", // Lời nhắn thành công gửi lại Client
-          orderId = newOrder.Id // Mã ID đơn hàng mới sinh ra dưới Database
+          message = "Đặt hàng thành công!",
+          orderId = newOrder.Id
         });
       }
       catch (Exception ex)
       {
-        // Bảo vệ hệ thống: Trả về lỗi 500 nếu sập kết nối SQL hoặc gặp lỗi logic ngầm
+        // Có lỗi xảy ra, tiến hành hoàn tác dữ liệu
+        await transaction.RollbackAsync();
         return StatusCode(500, new
         {
           message = "Lỗi xử lý tạo đơn hàng ngầm bên phía Server",
           detail = ex.Message
         });
+      }
+    }
+
+    /// <summary>
+    /// API: Lấy lịch sử đơn hàng của một khách hàng cụ thể (Giao thức GET)
+    /// Đường dẫn gọi dữ liệu: GET https://localhost:xxxx/api/Orders/customer/{customerId}
+    /// </summary>
+    [HttpGet("customer/{customerId}")]
+    public async Task<IActionResult> GetByCustomer(int customerId)
+    {
+      try
+      {
+        var orders = await _context.Orders
+          .Where(o => o.CustomerId == customerId)
+          .Include(o => o.OrderDetails)
+            .ThenInclude(od => od.Product)
+          .OrderByDescending(o => o.OrderDate)
+          .Select(o => new
+          {
+            o.Id,
+            o.OrderDate,
+            o.Status,
+            o.Notes,
+            OrderDetails = o.OrderDetails.Select(od => new
+            {
+              od.Id,
+              od.ProductId,
+              od.Quantity,
+              od.UnitPrice,
+              ProductName = od.Product != null ? od.Product.Name : "Không xác định",
+              ProductImageUrl = od.Product != null ? od.Product.ImageUrl : ""
+            })
+          })
+          .ToListAsync();
+
+        return Ok(orders);
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, new { message = "Lỗi hệ thống khi tải lịch sử đơn hàng", detail = ex.Message });
       }
     }
   }
@@ -87,5 +172,12 @@ namespace CMS.Backend.Controllers
   {
     public int CustomerId { get; set; } // Mã định danh khách hàng đặt mua
     public string? Notes { get; set; } // Ghi chú đơn hàng (ví dụ: giao giờ hành chính, đóng gói kỹ...)
+    public List<CartItemInputDTO> CartItems { get; set; } = new List<CartItemInputDTO>(); // Mảng sản phẩm mua
+  }
+
+  public class CartItemInputDTO
+  {
+    public int ProductId { get; set; }
+    public int Quantity { get; set; }
   }
 }

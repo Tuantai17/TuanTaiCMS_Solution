@@ -42,6 +42,9 @@ namespace CMS.Backend.Controllers
             p.Title, // Tiêu đề bài viết
             p.ImageUrl, // Ảnh đại diện bài viết
             p.CreatedDate, // Ngày giờ tạo bài viết
+            ShortDescription = string.IsNullOrWhiteSpace(p.Content)
+              ? "Đang cập nhật nội dung tóm tắt cho bài viết..."
+              : (p.Content.Length > 180 ? p.Content.Substring(0, 180) + "..." : p.Content),
             CategoryName = p.Category != null ? p.Category.Name : "Không xác định" // Kéo trực tiếp tên chuyên mục bài viết thay vì ID cộc lốc
           })
           .ToListAsync(); // Chuyển đổi kết quả bất đồng bộ thành kiểu danh sách List

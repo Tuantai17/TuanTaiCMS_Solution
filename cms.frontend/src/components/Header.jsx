@@ -1,7 +1,61 @@
-import React from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 
 const Header = () => {
+  const [customer, setCustomer] = useState(null);
+  const [cartCount, setCartCount] = useState(0);
+  const navigate = useNavigate();
+
+  // Hàm tải dữ liệu trạng thái khách hàng & số lượng giỏ hàng từ localStorage
+  const loadHeaderState = () => {
+    // 1. Tải thông tin khách hàng
+    const storedCustomer = localStorage.getItem('customer');
+    if (storedCustomer) {
+      try {
+        setCustomer(JSON.parse(storedCustomer));
+      } catch (e) {
+        setCustomer(null);
+      }
+    } else {
+      setCustomer(null);
+    }
+
+    // 2. Tải số lượng giỏ hàng
+    const storedCart = localStorage.getItem('cart');
+    if (storedCart) {
+      try {
+        const cartItems = JSON.parse(storedCart);
+        const count = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+        setCartCount(count);
+      } catch (e) {
+        setCartCount(0);
+      }
+    } else {
+      setCartCount(0);
+    }
+  };
+
+  useEffect(() => {
+    loadHeaderState();
+
+    // Đăng ký lắng nghe các sự kiện tùy biến phát ra từ các trang khác
+    window.addEventListener('customerLoginStateChange', loadHeaderState);
+    window.addEventListener('cartChange', loadHeaderState);
+
+    return () => {
+      window.removeEventListener('customerLoginStateChange', loadHeaderState);
+      window.removeEventListener('cartChange', loadHeaderState);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('customer');
+    setCustomer(null);
+    // Phát sự kiện cập nhật trạng thái đăng nhập
+    window.dispatchEvent(new Event('customerLoginStateChange'));
+    navigate('/');
+  };
+
   return (
     <header className="main-header-wrapper shadow-sm">
       {/* 1. TOP BAR (Màu xanh đậm đặc trưng MyKingdom) */}
@@ -60,14 +114,46 @@ const Header = () => {
             </div>
 
             {/* Icons Tài khoản, Giỏ hàng, Ngôn ngữ bên phải */}
-            <div className="col-12 col-md-3 d-flex justify-content-center justify-content-md-end align-items-center gap-4 text-white">
-              <a href="#" className="text-white text-decoration-none mr-4" title="Tài khoản">
-                <i className="fa-solid fa-user fs-5"></i>
-              </a>
-              <Link to="/cart" className="text-white text-decoration-none mr-4 position-relative" title="Giỏ hàng">
+            <div className="col-12 col-md-3 d-flex justify-content-center justify-content-md-end align-items-center gap-3 text-white">
+              {/* Xử lý hiển thị phần Tài khoản khách hàng */}
+              {customer ? (
+                <div className="dropdown mr-2">
+                  <button className="btn btn-link text-white text-decoration-none dropdown-toggle p-0 d-flex align-items-center shadow-none" type="button" id="customerMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style={{ fontSize: '0.85rem' }}>
+                    <i className="fa-solid fa-user-check mr-1 fs-5"></i>
+                    <span className="font-weight-bold text-truncate" style={{ maxWidth: '100px' }}>{customer.fullName}</span>
+                  </button>
+                  <div className="dropdown-menu dropdown-menu-right" aria-labelledby="customerMenu" style={{ fontSize: '0.85rem' }}>
+                    <Link className="dropdown-item font-weight-bold" to="/order-history">
+                      <i className="fa-solid fa-clock-rotate-left mr-2 text-danger"></i> Lịch sử mua hàng
+                    </Link>
+                    <div className="dropdown-divider"></div>
+                    <button className="dropdown-item font-weight-bold text-danger" type="button" onClick={handleLogout}>
+                      <i className="fa-solid fa-right-from-bracket mr-2"></i> Đăng xuất
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="d-flex align-items-center mr-2" style={{ fontSize: '0.8rem', gap: '8px' }}>
+                  <Link to="/login" className="text-white text-decoration-none font-weight-bold hover-underline">
+                    Đăng nhập
+                  </Link>
+                  <span className="text-white-50">|</span>
+                  <Link to="/register" className="text-white text-decoration-none font-weight-bold hover-underline">
+                    Đăng ký
+                  </Link>
+                </div>
+              )}
+
+              {/* Giỏ hàng với số lượng Badge động */}
+              <Link to="/cart" className="text-white text-decoration-none mr-3 position-relative" title="Giỏ hàng">
                 <i className="fa-solid fa-bag-shopping fs-5"></i>
-                <span className="position-absolute translate-middle badge rounded-pill bg-warning text-dark border-light" style={{ top: '-10px', right: '-12px', fontSize: '0.7rem' }}>2</span>
+                {cartCount > 0 && (
+                  <span className="position-absolute translate-middle badge rounded-pill bg-warning text-dark border-light" style={{ top: '-10px', right: '-12px', fontSize: '0.7rem', fontWeight: 'bold' }}>
+                    {cartCount}
+                  </span>
+                )}
               </Link>
+
               <div className="d-flex align-items-center cursor-pointer">
                 <img src="https://flagcdn.com/w20/vn.png" alt="VN" className="mr-1" />
                 <i className="fa-solid fa-caret-down text-white-50" style={{ fontSize: '0.8rem' }}></i>

@@ -50,12 +50,19 @@ namespace CMS.Backend.Controllers
 
             if (user != null)
             {
+                // Kiểm tra phân quyền: Chỉ cho phép tài khoản có Role là Admin truy cập hệ thống MVC quản trị.
+                if (user.Role != "Admin")
+                {
+                    ViewBag.Error = "Tài khoản của bạn không có quyền truy cập hệ thống quản trị!";
+                    return View();
+                }
+
                 // Bước 2: Thiết lập danh tính (Claims) - tập hợp thông tin nhận dạng người dùng.
                 // Claim là các "mẩu thông tin" như tên, quyền hạn được đóng gói vào Cookie.
                 var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.Name, user.Username),
-                    new Claim(ClaimTypes.Role, user.Role), // Lưu vai trò: Admin hoặc Editor
+                    new Claim(ClaimTypes.Role, user.Role), // Lưu vai trò: Admin
                     new Claim("FullName", user.FullName)   // Claim tùy chỉnh lưu tên đầy đủ
                 };
 
