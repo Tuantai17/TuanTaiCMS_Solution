@@ -1,105 +1,107 @@
-﻿/*
-Sinh ViÃªn: Nguyá»…n Tuáº¥n TÃ i
-MÃ£ Sinh ViÃªn: 2123110166
-Lá»›p: CCQ2311E
-NgÃ y Táº¡o: 15/5/2026
-MÃ´ táº£: Controller quáº£n lÃ½ danh má»¥c bÃ i viáº¿t, dÃ¹ng Ä‘á»ƒ thÃªm, sá»­a, xÃ³a vÃ  hiá»ƒn thá»‹ danh má»¥c trong há»‡ thá»‘ng.
+/*
+Sinh Viên: Nguyễn Tuấn Tài
+Mã Sinh Viên: 2123110166
+Lớp: CCQ2311E
+Ngày Tạo: 15/5/2026
+Mô tả: Controller quản lý danh mục bài viết, dùng để thêm, sửa, xóa và hiển thị danh mục trong hệ thống.
 */
 
-using Microsoft.AspNetCore.Authorization; // Buá»•i 5: Namespace cáº§n thiáº¿t Ä‘á»ƒ dÃ¹ng [Authorize]
+using Microsoft.AspNetCore.Authorization; // Buổi 5: Namespace cần thiết để dùng [Authorize]
 using Microsoft.AspNetCore.Mvc;
 using CMS.Data;
 using CMS.Data.Entities;
 
-// CategoryController nháº­n request liÃªn quan Ä‘áº¿n Ä‘Æ°á»ng dáº«n /Category.
-// Káº¿ thá»«a Controller Ä‘á»ƒ cÃ³ thá»ƒ tráº£ vá» View, Redirect, NotFound...
-// Buá»•i 5: [Authorize] báº¯t buá»™c pháº£i Ä‘Äƒng nháº­p má»›i Ä‘Æ°á»£c truy cáº­p cÃ¡c action bÃªn dÆ°á»›i.
-[Authorize(Roles = "Admin,Staff")]
-public class CategoryController : Controller
+namespace CMS.Backend.Controllers
 {
-    // _context lÃ  biáº¿n dÃ¹ng chung trong controller Ä‘á»ƒ thao tÃ¡c vá»›i database.
-    // readonly giÃºp Ä‘áº£m báº£o biáº¿n chá»‰ Ä‘Æ°á»£c gÃ¡n má»™t láº§n trong constructor.
-    private readonly ApplicationDbContext _context;
-
-    // Constructor nháº­n ApplicationDbContext tá»« Dependency Injection.
-    // ASP.NET Core tá»± táº¡o vÃ  truyá»n context vÃ o khi controller Ä‘Æ°á»£c gá»i.
-    public CategoryController(ApplicationDbContext context)
+    // CategoryController nhận request liên quan đến đường dẫn /Category.
+    // Kế thừa Controller để có thể trả về View, Redirect, NotFound...
+    // Buổi 5: [Authorize] bắt buộc phải đăng nhập mới được truy cập các action bên dưới.
+    [Authorize(Roles = "Admin,Staff")]
+    public class CategoryController : Controller
     {
-        _context = context;
-    }
+        // _context là biến dùng chung trong controller để thao tác với database.
+        // readonly giúp đảm bảo biến chỉ được gán một lần trong constructor.
+        private readonly ApplicationDbContext _context;
 
-    // Action Index dÃ¹ng Ä‘á»ƒ hiá»ƒn thá»‹ danh sÃ¡ch táº¥t cáº£ danh má»¥c.
-    // ToList() thá»±c thi truy váº¥n vÃ  láº¥y dá»¯ liá»‡u tá»« báº£ng Categories vá» bá»™ nhá»›.
-    // return View(data) truyá»n danh sÃ¡ch danh má»¥c sang Views/Category/Index.cshtml.
-    public IActionResult Index()
-    {
-        var data = _context.Categories.ToList();
-        return View(data);
-    }
-
-    // Action GET Create dÃ¹ng Ä‘á»ƒ má»Ÿ form thÃªm danh má»¥c má»›i.
-    // HÃ m nÃ y chá»‰ tráº£ vá» giao diá»‡n nháº­p liá»‡u, chÆ°a lÆ°u dá»¯ liá»‡u vÃ o database.
-    [HttpGet]
-    public IActionResult Create()
-    {
-        return View();
-    }
-
-    // Action POST Create nháº­n dá»¯ liá»‡u ngÆ°á»i dÃ¹ng gá»­i tá»« form thÃªm má»›i.
-    // model chá»©a thÃ´ng tin danh má»¥c Ä‘Æ°á»£c bind tá»« cÃ¡c input asp-for trong View.
-    // Add(model) Ä‘Æ°a danh má»¥c vÃ o hÃ ng chá» thÃªm má»›i cá»§a Entity Framework.
-    // SaveChanges() ghi thay Ä‘á»•i tháº­t sá»± xuá»‘ng SQL Server.
-    [HttpPost]
-    public IActionResult Create(Category model)
-    {
-        _context.Categories.Add(model);
-        _context.SaveChanges();
-
-        return RedirectToAction("Index");
-    }
-
-    // Action Delete nháº­n id danh má»¥c cáº§n xÃ³a tá»« route.
-    // Find(id) tÃ¬m danh má»¥c theo khÃ³a chÃ­nh trong database.
-    // Kiá»ƒm tra null Ä‘á»ƒ trÃ¡nh lá»—i khi id khÃ´ng tá»“n táº¡i.
-    public IActionResult Delete(int id)
-    {
-        var category = _context.Categories.Find(id);
-
-        if (category != null)
+        // Constructor nhận ApplicationDbContext từ Dependency Injection.
+        // ASP.NET Core tự tạo và truyền context vào khi controller được gọi.
+        public CategoryController(ApplicationDbContext context)
         {
-            _context.Categories.Remove(category);
+            _context = context;
+        }
+
+        // Action Index dùng để hiển thị danh sách tất cả danh mục.
+        // ToList() thực thi truy vấn và lấy dữ liệu từ bảng Categories về bộ nhớ.
+        // return View(data) truyền danh sách danh mục sang Views/Category/Index.cshtml.
+        public IActionResult Index()
+        {
+            var data = _context.Categories.ToList();
+            return View(data);
+        }
+
+        // Action GET Create dùng để mở form thêm danh mục mới.
+        // Hàm này chỉ trả về giao diện nhập liệu, chưa lưu dữ liệu vào database.
+        [HttpGet]
+        public IActionResult Create()
+        {
+            return View();
+        }
+
+        // Action POST Create nhận dữ liệu người dùng gửi từ form thêm mới.
+        // model chứa thông tin danh mục được bind từ các input asp-for trong View.
+        // Add(model) đưa danh mục vào hàng chờ thêm mới của Entity Framework.
+        // SaveChanges() ghi thay đổi thực sự xuống SQL Server.
+        [HttpPost]
+        public IActionResult Create(Category model)
+        {
+            _context.Categories.Add(model);
             _context.SaveChanges();
+
+            return RedirectToAction("Index");
         }
 
-        return RedirectToAction("Index");
-    }
-
-    // Action GET Edit dÃ¹ng Ä‘á»ƒ má»Ÿ form chá»‰nh sá»­a danh má»¥c.
-    // Náº¿u khÃ´ng tÃ¬m tháº¥y dá»¯ liá»‡u theo id thÃ¬ tráº£ vá» lá»—i 404 báº±ng NotFound().
-    // Náº¿u tÃ¬m tháº¥y thÃ¬ truyá»n category sang View Ä‘á»ƒ Ä‘á»• dá»¯ liá»‡u cÅ© lÃªn form.
-    [HttpGet]
-    public IActionResult Edit(int id)
-    {
-        var category = _context.Categories.Find(id);
-
-        if (category == null)
+        // Action Delete nhận id danh mục cần xóa từ route.
+        // Find(id) tìm danh mục theo khóa chính trong database.
+        // Kiểm tra null để tránh lỗi khi id không tồn tại.
+        public IActionResult Delete(int id)
         {
-            return NotFound();
+            var category = _context.Categories.Find(id);
+
+            if (category != null)
+            {
+                _context.Categories.Remove(category);
+                _context.SaveChanges();
+            }
+
+            return RedirectToAction("Index");
         }
 
-        return View(category);
-    }
+        // Action GET Edit dùng để mở form chỉnh sửa danh mục.
+        // Nếu không tìm thấy dữ liệu theo id thì trả về lỗi 404 bằng NotFound().
+        // Nếu tìm thấy thì truyền category sang View để đổ dữ liệu cũ lên form.
+        [HttpGet]
+        public IActionResult Edit(int id)
+        {
+            var category = _context.Categories.Find(id);
 
-    // Action POST Edit nháº­n dá»¯ liá»‡u sau khi ngÆ°á»i dÃ¹ng báº¥m nÃºt cáº­p nháº­t.
-    // Update(model) Ä‘Ã¡nh dáº¥u báº£n ghi cáº§n sá»­a trong Entity Framework.
-    // SaveChanges() lÆ°u thay Ä‘á»•i xuá»‘ng database.
-    [HttpPost]
-    public IActionResult Edit(Category model)
-    {
-        _context.Categories.Update(model);
-        _context.SaveChanges();
+            if (category == null)
+            {
+                return NotFound();
+            }
 
-        return RedirectToAction("Index");
+            return View(category);
+        }
+
+        // Action POST Edit nhận dữ liệu sau khi người dùng bấm nút cập nhật.
+        // Update(model) đánh dấu bản ghi cần sửa trong Entity Framework.
+        // SaveChanges() lưu thay đổi xuống database.
+        [HttpPost]
+        public IActionResult Edit(Category model)
+        {
+            _context.Categories.Update(model);
+            _context.SaveChanges();
+
+            return RedirectToAction("Index");
+        }
     }
 }
-

@@ -1,9 +1,9 @@
-﻿/*
-Sinh ViÃªn: Nguyá»…n Tuáº¥n TÃ i
-MÃ£ Sinh ViÃªn: 2123110166
-Lá»›p: CCQ2311E
-NgÃ y Táº¡o: 22/5/2026
-MÃ´ táº£: Controller quáº£n lÃ½ Ä‘Æ¡n hÃ ng, gá»“m hiá»ƒn thá»‹ danh sÃ¡ch, thÃªm, sá»­a, xÃ³a vÃ  thay Ä‘á»•i tráº¡ng thÃ¡i Ä‘Æ¡n hÃ ng.
+/*
+Sinh Viên: Nguyễn Tuấn Tài
+Mã Sinh Viên: 2123110166
+Lớp: CCQ2311E
+Ngày Tạo: 22/5/2026
+Mô tả: Controller quản lý đơn hàng, gồm hiển thị danh sách, thêm, sửa, xóa và thay đổi trạng thái đơn hàng.
 */
 
 using CMS.Data;
@@ -15,7 +15,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CMS.Backend.Controllers
 {
-    // OrderController xá»­ lÃ½ cÃ¡c request báº¯t Ä‘áº§u báº±ng /Order.
+    // OrderController xử lý các request bắt đầu bằng /Order.
     [Authorize(Roles = "Admin,Staff")]
     public class OrderController : Controller
     {
@@ -26,7 +26,7 @@ namespace CMS.Backend.Controllers
             _context = context;
         }
 
-        // Action Index hiá»ƒn thá»‹ danh sÃ¡ch táº¥t cáº£ Ä‘Æ¡n hÃ ng kÃ¨m tÃªn khÃ¡ch hÃ ng.
+        // Action Index hiển thị danh sách tất cả đơn hàng kèm tên khách hàng.
         public IActionResult Index()
         {
             var orders = _context.Orders
@@ -38,7 +38,7 @@ namespace CMS.Backend.Controllers
             return View(orders);
         }
 
-        // Action Details hiá»ƒn thá»‹ chi tiáº¿t má»™t Ä‘Æ¡n hÃ ng kÃ¨m danh sÃ¡ch sáº£n pháº©m.
+        // Action Details hiển thị chi tiết một đơn hàng kèm danh sách sản phẩm.
         public IActionResult Details(int id)
         {
             var order = _context.Orders
@@ -55,7 +55,7 @@ namespace CMS.Backend.Controllers
             return View(order);
         }
 
-        // Action GET Create má»Ÿ form thÃªm Ä‘Æ¡n hÃ ng má»›i.
+        // Action GET Create mở form thêm đơn hàng mới.
         [HttpGet]
         public IActionResult Create()
         {
@@ -63,7 +63,7 @@ namespace CMS.Backend.Controllers
             return View();
         }
 
-        // Action POST Create lÆ°u Ä‘Æ¡n hÃ ng má»›i vÃ o database.
+        // Action POST Create lưu đơn hàng mới vào database.
         [HttpPost]
         public IActionResult Create(Order model)
         {
@@ -81,11 +81,11 @@ namespace CMS.Backend.Controllers
             _context.Orders.Add(model);
             _context.SaveChanges();
 
-            TempData["SuccessMessage"] = "ÄÆ¡n hÃ ng Ä‘Ã£ Ä‘Æ°á»£c táº¡o thÃ nh cÃ´ng!";
+            TempData["SuccessMessage"] = "Đơn hàng đã được tạo thành công!";
             return RedirectToAction("Index");
         }
 
-        // Action GET Edit má»Ÿ form chá»‰nh sá»­a Ä‘Æ¡n hÃ ng.
+        // Action GET Edit mở form chỉnh sửa đơn hàng.
         [HttpGet]
         public IActionResult Edit(int id)
         {
@@ -100,7 +100,7 @@ namespace CMS.Backend.Controllers
             return View(order);
         }
 
-        // Action POST Edit cáº­p nháº­t Ä‘Æ¡n hÃ ng vÃ o database.
+        // Action POST Edit cập nhật đơn hàng vào database.
         [HttpPost]
         public IActionResult Edit(Order model)
         {
@@ -125,11 +125,11 @@ namespace CMS.Backend.Controllers
             _context.Orders.Update(model);
             _context.SaveChanges();
 
-            TempData["SuccessMessage"] = "ÄÆ¡n hÃ ng Ä‘Ã£ Ä‘Æ°á»£c cáº­p nháº­t thÃ nh cÃ´ng!";
+            TempData["SuccessMessage"] = "Đơn hàng đã được cập nhật thành công!";
             return RedirectToAction("Index");
         }
 
-        // Action Delete xÃ³a Ä‘Æ¡n hÃ ng theo id (bao gá»“m cáº£ chi tiáº¿t Ä‘Æ¡n hÃ ng).
+        // Action Delete xóa đơn hàng theo id (bao gồm cả chi tiết đơn hàng và hoàn trả lại số lượng tồn kho sản phẩm).
         public IActionResult Delete(int id)
         {
             var order = _context.Orders
@@ -140,18 +140,26 @@ namespace CMS.Backend.Controllers
             {
                 if (order.OrderDetails != null && order.OrderDetails.Any())
                 {
+                    foreach (var detail in order.OrderDetails)
+                    {
+                        var product = _context.Products.Find(detail.ProductId);
+                        if (product != null)
+                        {
+                            product.StockQuantity += detail.Quantity; // Cộng hoàn lại số lượng tồn kho của sản phẩm
+                        }
+                    }
                     _context.OrderDetails.RemoveRange(order.OrderDetails);
                 }
                 _context.Orders.Remove(order);
                 _context.SaveChanges();
 
-                TempData["SuccessMessage"] = "ÄÆ¡n hÃ ng Ä‘Ã£ Ä‘Æ°á»£c xÃ³a thÃ nh cÃ´ng!";
+                TempData["SuccessMessage"] = "Đơn hàng đã được xóa thành công!";
             }
 
             return RedirectToAction("Index");
         }
 
-        // HÃ m dÃ¹ng chung Ä‘á»ƒ náº¡p dropdown khÃ¡ch hÃ ng cho form Create/Edit.
+        // Hàm dùng chung để nạp dropdown khách hàng cho form Create/Edit.
         private void LoadCustomerList(int? selectedId = null)
         {
             ViewBag.CustomerList = new SelectList(
@@ -163,4 +171,3 @@ namespace CMS.Backend.Controllers
         }
     }
 }
-

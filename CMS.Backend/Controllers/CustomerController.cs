@@ -1,9 +1,9 @@
-﻿/*
-Sinh ViÃªn: Nguyá»…n Tuáº¥n TÃ i
-MÃ£ Sinh ViÃªn: 2123110166
-Lá»›p: CCQ2311E
-NgÃ y Táº¡o: 22/5/2026
-MÃ´ táº£: Controller quáº£n lÃ½ khÃ¡ch hÃ ng, gá»“m hiá»ƒn thá»‹ danh sÃ¡ch, thÃªm, sá»­a vÃ  xÃ³a khÃ¡ch hÃ ng.
+/*
+Sinh Viên: Nguyễn Tuấn Tài
+Mã Sinh Viên: 2123110166
+Lớp: CCQ2311E
+Ngày Tạo: 22/5/2026
+Mô tả: Controller quản lý khách hàng, gồm hiển thị danh sách, thêm, sửa và xóa khách hàng.
 */
 
 using CMS.Data;
@@ -14,7 +14,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CMS.Backend.Controllers
 {
-    // CustomerController xá»­ lÃ½ cÃ¡c request báº¯t Ä‘áº§u báº±ng /Customer.
+    // CustomerController xử lý các request bắt đầu bằng /Customer.
     [Authorize(Roles = "Admin,Staff")]
     public class CustomerController : Controller
     {
@@ -25,7 +25,7 @@ namespace CMS.Backend.Controllers
             _context = context;
         }
 
-        // Action Index hiá»ƒn thá»‹ danh sÃ¡ch táº¥t cáº£ khÃ¡ch hÃ ng.
+        // Action Index hiển thị danh sách tất cả khách hàng.
         public IActionResult Index()
         {
             var customers = _context.Customers
@@ -35,7 +35,7 @@ namespace CMS.Backend.Controllers
             return View(customers);
         }
 
-        // Action Details hiá»ƒn thá»‹ chi tiáº¿t má»™t khÃ¡ch hÃ ng vÃ  danh sÃ¡ch Ä‘Æ¡n hÃ ng cá»§a há».
+        // Action Details hiển thị chi tiết một khách hàng và danh sách đơn hàng của họ.
         public IActionResult Details(int id)
         {
             var customer = _context.Customers
@@ -50,14 +50,14 @@ namespace CMS.Backend.Controllers
             return View(customer);
         }
 
-        // Action GET Create má»Ÿ form thÃªm khÃ¡ch hÃ ng má»›i.
+        // Action GET Create mở form thêm khách hàng mới.
         [HttpGet]
         public IActionResult Create()
         {
             return View();
         }
 
-        // Action POST Create lÆ°u khÃ¡ch hÃ ng má»›i vÃ o database.
+        // Action POST Create lưu khách hàng mới vào database.
         [HttpPost]
         public IActionResult Create(Customer model)
         {
@@ -69,11 +69,11 @@ namespace CMS.Backend.Controllers
             _context.Customers.Add(model);
             _context.SaveChanges();
 
-            TempData["SuccessMessage"] = "KhÃ¡ch hÃ ng Ä‘Ã£ Ä‘Æ°á»£c thÃªm thÃ nh cÃ´ng!";
+            TempData["SuccessMessage"] = "Khách hàng đã được thêm thành công!";
             return RedirectToAction("Index");
         }
 
-        // Action GET Edit má»Ÿ form chá»‰nh sá»­a khÃ¡ch hÃ ng.
+        // Action GET Edit mở form chỉnh sửa khách hàng.
         [HttpGet]
         public IActionResult Edit(int id)
         {
@@ -87,7 +87,7 @@ namespace CMS.Backend.Controllers
             return View(customer);
         }
 
-        // Action POST Edit cáº­p nháº­t thÃ´ng tin khÃ¡ch hÃ ng vÃ o database.
+        // Action POST Edit cập nhật thông tin khách hàng vào database.
         [HttpPost]
         public IActionResult Edit(Customer model)
         {
@@ -108,11 +108,11 @@ namespace CMS.Backend.Controllers
             _context.Customers.Update(model);
             _context.SaveChanges();
 
-            TempData["SuccessMessage"] = "ThÃ´ng tin khÃ¡ch hÃ ng Ä‘Ã£ Ä‘Æ°á»£c cáº­p nháº­t thÃ nh cÃ´ng!";
+            TempData["SuccessMessage"] = "Thông tin khách hàng đã được cập nhật thành công!";
             return RedirectToAction("Index");
         }
 
-        // Action Delete xÃ³a khÃ¡ch hÃ ng theo id.
+        // Action Delete xóa khách hàng theo id.
         public IActionResult Delete(int id)
         {
             var customer = _context.Customers.Find(id);
@@ -122,11 +122,10 @@ namespace CMS.Backend.Controllers
                 _context.Customers.Remove(customer);
                 _context.SaveChanges();
 
-                TempData["SuccessMessage"] = "KhÃ¡ch hÃ ng Ä‘Ã£ Ä‘Æ°á»£c xÃ³a thÃ nh cÃ´ng!";
+                TempData["SuccessMessage"] = "Khách hàng đã được xóa thành công!";
             }
 
             return RedirectToAction("Index");
         }
     }
 }
-

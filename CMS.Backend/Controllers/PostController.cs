@@ -1,39 +1,39 @@
-﻿/*
-Sinh ViÃªn: Nguyá»…n Tuáº¥n TÃ i
-MÃ£ Sinh ViÃªn: 2123110166
-Lá»›p: CCQ2311E
-NgÃ y Táº¡o: 15/5/2026
-MÃ´ táº£: Controller quáº£n lÃ½ bÃ i viáº¿t, gá»“m hiá»ƒn thá»‹ danh sÃ¡ch, xem chi tiáº¿t, thÃªm, sá»­a vÃ  xÃ³a bÃ i viáº¿t.
+/*
+Sinh Viên: Nguyễn Tuấn Tài
+Mã Sinh Viên: 2123110166
+Lớp: CCQ2311E
+Ngày Tạo: 15/5/2026
+Mô tả: Controller quản lý bài viết, gồm hiển thị danh sách, xem chi tiết, thêm, sửa và xóa bài viết.
 */
 
-// NhÃ³m thÆ° viá»‡n phá»¥c vá»¥ truy váº¥n database, xá»­ lÃ½ MVC, upload file vÃ  táº¡o dropdown danh má»¥c.
+// Nhóm thư viện phục vụ truy vấn database, xử lý MVC, upload file và tạo dropdown danh mục.
 using CMS.Data;
 using CMS.Data.Entities;
-using Microsoft.AspNetCore.Authorization; // Buá»•i 5: Namespace cáº§n thiáº¿t Ä‘á»ƒ dÃ¹ng [Authorize]
+using Microsoft.AspNetCore.Authorization; // Buổi 5: Namespace cần thiết để dùng [Authorize]
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace CMS.Backend.Controllers
 {
-    // PostController xá»­ lÃ½ cÃ¡c request báº¯t Ä‘áº§u báº±ng /Post.
-    // Buá»•i 5: [Authorize(Roles = "Admin,Staff")] báº¯t buá»™c pháº£i Ä‘Äƒng nháº­p vá»›i quyá»n Admin má»›i Ä‘Æ°á»£c vÃ o cÃ¡c action bÃªn dÆ°á»›i.
+    // PostController xử lý các request bắt đầu bằng /Post.
+    // Buổi 5: [Authorize(Roles = "Admin,Staff")] bắt buộc phải đăng nhập với quyền Admin/Staff mới được vào các action bên dưới.
     [Authorize(Roles = "Admin,Staff")]
     public class PostController : Controller
     {
-        // DbContext dÃ¹ng Ä‘á»ƒ truy váº¥n báº£ng Posts vÃ  Categories.
+        // DbContext dùng để truy vấn bảng Posts và Categories.
         private readonly ApplicationDbContext _context;
 
-        // Constructor nháº­n context tá»« há»‡ thá»‘ng Dependency Injection.
+        // Constructor nhận context từ hệ thống Dependency Injection.
         public PostController(ApplicationDbContext context)
         {
             _context = context;
         }
 
-        // Action Index hiá»ƒn thá»‹ danh sÃ¡ch bÃ i viáº¿t.
-        // Tham sá»‘ id lÃ  mÃ£ danh má»¥c, cÃ³ thá»ƒ null náº¿u ngÆ°á»i dÃ¹ng khÃ´ng lá»c danh má»¥c.
-        // Include láº¥y kÃ¨m Category Ä‘á»ƒ hiá»ƒn thá»‹ tÃªn danh má»¥c ngoÃ i View.
-        // OrderByDescending Ä‘Æ°a bÃ i viáº¿t má»›i nháº¥t lÃªn Ä‘áº§u danh sÃ¡ch.
+        // Action Index hiển thị danh sách bài viết.
+        // Tham số id là mã danh mục, có thể null nếu người dùng không lọc danh mục.
+        // Include lấy kèm Category để hiển thị tên danh mục ngoài View.
+        // OrderByDescending đưa bài viết mới nhất lên đầu danh sách.
         public IActionResult Index(int? id)
         {
             var posts = _context.Posts
@@ -41,8 +41,8 @@ namespace CMS.Backend.Controllers
                 .OrderByDescending(p => p.CreatedDate)
                 .ToList();
 
-            // Náº¿u id cÃ³ giÃ¡ trá»‹, chá»‰ giá»¯ láº¡i bÃ i viáº¿t thuá»™c danh má»¥c Ä‘Ã³.
-            // Where lá»c danh sÃ¡ch theo CategoryId trÃ¹ng vá»›i id Ä‘Æ°á»£c truyá»n vÃ o URL.
+            // Nếu id có giá trị, chỉ giữ lại bài viết thuộc danh mục đó.
+            // Where lọc danh sách theo CategoryId trùng với id được truyền vào URL.
             if (id != null)
             {
                 posts = posts
@@ -53,15 +53,15 @@ namespace CMS.Backend.Controllers
             return View(posts);
         }
 
-        // Action Details hiá»ƒn thá»‹ chi tiáº¿t má»™t bÃ i viáº¿t theo id.
-        // FirstOrDefault tráº£ vá» bÃ i viáº¿t Ä‘áº§u tiÃªn khá»›p Ä‘iá»u kiá»‡n hoáº·c null náº¿u khÃ´ng cÃ³.
+        // Action Details hiển thị chi tiết một bài viết theo id.
+        // FirstOrDefault trả về bài viết đầu tiên khớp điều kiện hoặc null nếu không có.
         public IActionResult Details(int id)
         {
             var post = _context.Posts
                 .Include(p => p.Category)
                 .FirstOrDefault(p => p.Id == id);
 
-            // Náº¿u khÃ´ng tÃ¬m tháº¥y bÃ i viáº¿t thÃ¬ tráº£ vá» trang lá»—i 404.
+            // Nếu không tìm thấy bài viết thì trả về trang lỗi 404.
             if (post == null)
             {
                 return NotFound();
@@ -70,8 +70,8 @@ namespace CMS.Backend.Controllers
             return View(post);
         }
 
-        // Action GET Create má»Ÿ form thÃªm bÃ i viáº¿t.
-        // ViewBag.CategoryList chá»©a danh sÃ¡ch danh má»¥c Ä‘á»ƒ hiá»ƒn thá»‹ dropdown trong View.
+        // Action GET Create mở form thêm bài viết.
+        // ViewBag.CategoryList chứa danh sách danh mục để hiển thị dropdown trong View.
         [HttpGet]
         public IActionResult Create()
         {
@@ -79,13 +79,13 @@ namespace CMS.Backend.Controllers
             return View();
         }
 
-        // Action POST Create nháº­n dá»¯ liá»‡u bÃ i viáº¿t tá»« form vÃ  xá»­ lÃ½ upload áº£nh náº¿u cÃ³.
-        // áº¢nh Ä‘Æ°á»£c lÆ°u trong wwwroot/uploads, database chá»‰ lÆ°u Ä‘Æ°á»ng dáº«n tÆ°Æ¡ng Ä‘á»‘i.
+        // Action POST Create nhận dữ liệu bài viết từ form và xử lý upload ảnh nếu có.
+        // Ảnh được lưu trong wwwroot/uploads, database chỉ lưu đường dẫn tương đối.
         [HttpPost]
         public IActionResult Create(Post model, IFormFile? uploadImage)
         {
-            // Bá» qua validation cá»§a navigation property vÃ¬ Category khÃ´ng Ä‘Æ°á»£c gá»­i tá»« form,
-            // chá»‰ cáº§n CategoryId lÃ  Ä‘á»§ Ä‘á»ƒ EF Core táº¡o liÃªn káº¿t.
+            // Bỏ qua validation của navigation property vì Category không được gửi từ form,
+            // chỉ cần CategoryId là đủ để EF Core tạo liên kết.
             ModelState.Remove(nameof(Post.Category));
 
             if (!ModelState.IsValid)
@@ -100,11 +100,11 @@ namespace CMS.Backend.Controllers
             _context.Posts.Add(model);
             _context.SaveChanges();
 
-            TempData["SuccessMessage"] = "BÃ i viáº¿t Ä‘Ã£ Ä‘Æ°á»£c lÆ°u vÃ  Ä‘Äƒng thÃ nh cÃ´ng!";
+            TempData["SuccessMessage"] = "Bài viết đã được lưu và đăng thành công!";
             return RedirectToAction("Index");
         }
 
-        // Action GET Edit dÃ¹ng Ä‘á»ƒ má»Ÿ form chá»‰nh sá»­a bÃ i viáº¿t.
+        // Action GET Edit dùng để mở form chỉnh sửa bài viết.
         [HttpGet]
         public IActionResult Edit(int id)
         {
@@ -119,8 +119,8 @@ namespace CMS.Backend.Controllers
             return View(post);
         }
 
-        // Action POST Edit cáº­p nháº­t bÃ i viáº¿t.
-        // Náº¿u khÃ´ng upload áº£nh má»›i thÃ¬ giá»¯ nguyÃªn ImageUrl cÅ©.
+        // Action POST Edit cập nhật bài viết.
+        // Nếu không upload ảnh mới thì giữ nguyên ImageUrl cũ.
         [HttpPost]
         public IActionResult Edit(Post model, IFormFile? uploadImage)
         {
@@ -146,11 +146,11 @@ namespace CMS.Backend.Controllers
             _context.Posts.Update(model);
             _context.SaveChanges();
 
-            TempData["SuccessMessage"] = "BÃ i viáº¿t Ä‘Ã£ Ä‘Æ°á»£c cáº­p nháº­t thÃ nh cÃ´ng!";
+            TempData["SuccessMessage"] = "Bài viết đã được cập nhật thành công!";
             return RedirectToAction("Index");
         }
 
-        // Action Delete xÃ³a bÃ i viáº¿t theo id nháº­n Ä‘Æ°á»£c tá»« giao diá»‡n.
+        // Action Delete xóa bài viết theo id nhận được từ giao diện.
         public IActionResult Delete(int id)
         {
             var post = _context.Posts.Find(id);
@@ -159,12 +159,14 @@ namespace CMS.Backend.Controllers
             {
                 _context.Posts.Remove(post);
                 _context.SaveChanges();
+
+                TempData["SuccessMessage"] = "Bài viết đã được xóa thành công!";
             }
 
             return RedirectToAction("Index");
         }
 
-        // HÃ m dÃ¹ng chung Ä‘á»ƒ náº¡p dropdown danh má»¥c cho form Create/Edit.
+        // Hàm dùng chung để nạp dropdown danh mục cho form Create/Edit.
         private void LoadCategoryList(int? selectedCategoryId = null)
         {
             ViewBag.CategoryList = new SelectList(
@@ -175,8 +177,8 @@ namespace CMS.Backend.Controllers
             );
         }
 
-        // HÃ m lÆ°u áº£nh upload vÃ o wwwroot/uploads vÃ  tráº£ vá» Ä‘Æ°á»ng dáº«n tÆ°Æ¡ng Ä‘á»‘i.
-        // Náº¿u ngÆ°á»i dÃ¹ng khÃ´ng chá»n file thÃ¬ tráº£ vá» null Ä‘á»ƒ controller giá»¯ dá»¯ liá»‡u cÅ©.
+        // Hàm lưu ảnh upload vào wwwroot/uploads và trả về đường dẫn tương đối.
+        // Nếu người dùng không chọn file thì trả về null để controller giữ dữ liệu cũ.
         private string? SaveUploadImage(IFormFile? uploadImage)
         {
             if (uploadImage == null || uploadImage.Length == 0)
@@ -203,4 +205,3 @@ namespace CMS.Backend.Controllers
         }
     }
 }
-
