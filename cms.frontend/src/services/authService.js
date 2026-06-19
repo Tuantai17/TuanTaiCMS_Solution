@@ -11,6 +11,24 @@ const authService = {
   customerLogin: (data) => {
     const url = '/Auth/CustomerLogin';
     return axiosClient.post(url, data);
+  },
+
+  // Gửi mã xác minh OTP qua Email (Bước 1)
+  sendResetCode: (email) => {
+    const url = '/Auth/SendResetCode';
+    return axiosClient.post(url, { email });
+  },
+
+  // Xác thực mã OTP nhập từ giao diện (Bước 2)
+  verifyResetCode: (email, code) => {
+    const url = '/Auth/VerifyResetCode';
+    return axiosClient.post(url, { email, code });
+  },
+
+  // Đặt lại mật khẩu mới (Bước 3)
+  resetPassword: (email, code, newPassword) => {
+    const url = '/Auth/ResetPassword';
+    return axiosClient.post(url, { email, code, newPassword });
   }
 };
 

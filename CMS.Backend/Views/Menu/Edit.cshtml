@@ -1,0 +1,80 @@
+@model CMS.Data.Entities.Menu
+
+@{
+    ViewData["Title"] = "Chỉnh sửa Menu";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<section class="admin-card">
+    <div class="admin-card__header">
+        <div>
+            <p class="admin-eyebrow mb-1">Edit Menu</p>
+            <h2 class="h4 fw-bold mb-0"><i class="bi bi-pencil-square"></i> Chỉnh sửa Menu</h2>
+        </div>
+    </div>
+
+    <div class="admin-card__body">
+        <form id="menu-edit-form" asp-action="Edit" method="post">
+            <input type="hidden" asp-for="Id" />
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+            }
+
+            <div class="row g-4">
+                <div class="col-md-8">
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label fw-bold">Tên Menu: <span class="text-danger">*</span></label>
+                        <input asp-for="Title" class="form-control" placeholder="Nhập tên Menu..." required />
+                        <span asp-validation-for="Title" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Url" class="form-label fw-bold">Đường dẫn (Link): <span class="text-danger">*</span></label>
+                        <input asp-for="Url" class="form-control" placeholder="Nhập link..." required />
+                        <small class="text-muted">Dùng "/" cho Trang chủ, "/products" cho Sản phẩm, "/blog" cho Tin tức, hoặc link liên kết ngoài.</small>
+                        <span asp-validation-for="Url" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label asp-for="ParentId" class="form-label fw-bold">Menu cha:</label>
+                        <select asp-for="ParentId" class="form-select" asp-items="ViewBag.ParentId">
+                            <option value="">-- Menu gốc (Không có cha) --</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Order" class="form-label fw-bold">Thứ tự hiển thị:</label>
+                        <input asp-for="Order" class="form-control" type="number" min="0" placeholder="0" />
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check form-switch p-0 ps-5 mt-2">
+                            <input asp-for="IsActive" class="form-check-input" type="checkbox" id="IsActiveSwitch" style="cursor: pointer; width: 2.2em; height: 1.1em;" />
+                            <label class="form-check-label fw-bold ms-1" for="IsActiveSwitch">Hiển thị Menu này (Active)</label>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-warning text-dark font-weight-bold" id="menu-save-button">
+                            <i class="bi bi-check-circle"></i> Cập nhật Menu
+                        </button>
+                        <a asp-action="Index" class="btn btn-secondary">Quay lại danh sách</a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
+
+@section Scripts {
+<script>
+  document.getElementById('menu-edit-form').addEventListener('submit', function (e) {
+    if (!confirm('Bạn có chắc chắn muốn lưu thay đổi cho menu này không?')) {
+      e.preventDefault();
+    }
+  });
+</script>
+}

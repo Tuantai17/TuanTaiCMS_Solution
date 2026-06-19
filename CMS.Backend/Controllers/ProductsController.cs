@@ -1,117 +1,174 @@
-/*
-Sinh Viên: Nguyễn Tuấn Tài
-Mã Sinh Viên: 2123110166
-Lớp: CCQ2311E
-Ngày Tạo: 22/5/2026
-Mô tả: API Controller quản lý sản phẩm thời trang và công nghệ, cung cấp dữ liệu JSON cho Frontend.
-*/
-
-using Microsoft.AspNetCore.Mvc; // Import thư viện hỗ trợ xây dựng các API Controller của ASP.NET Core
-using Microsoft.EntityFrameworkCore; // Import thư viện Entity Framework Core hỗ trợ truy xuất Database bất đồng bộ
-using CMS.Data; // Import namespace chứa lớp ngữ cảnh dữ liệu ApplicationDbContext
-using CMS.Data.Entities; // Import namespace chứa các lớp thực thể Entity mẫu của Solution
+using CMS.Data;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CMS.Backend.Controllers
 {
-  [Route("api/[controller]")] // Định nghĩa đường dẫn ánh xạ gọi API: api/Products
-  [ApiController] // Kích hoạt thuộc tính xác thực dữ liệu đầu vào tự động (Validation)
-  public class ProductsController : ControllerBase // Kế thừa ControllerBase để tối ưu bộ nhớ và tăng tốc độ xử lý gói tin JSON
+  [Route("api/[controller]")]
+  [ApiController]
+  public class ProductsController : ControllerBase
   {
-    private readonly ApplicationDbContext _context; // Khai báo đối tượng trung gian kết nối cơ sở dữ liệu
+    private readonly ApplicationDbContext _context;
 
-    // Hàm khởi tạo (Constructor): Nhận đối tượng kết nối cơ sở dữ liệu thông qua cơ chế Dependency Injection (DI)
     public ProductsController(ApplicationDbContext context)
     {
-      _context = context; // Gán đối tượng tiêm vào cho biến nội bộ
+      _context = context;
     }
 
-    // 1. Chỉ định phương thức GET lấy toàn bộ danh sách sản phẩm
-    // Đường dẫn gọi dữ liệu: GET https://localhost:xxxx/api/products
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll(
+        [FromQuery] string? search = null,
+        [FromQuery] decimal? minPrice = null,
+        [FromQuery] decimal? maxPrice = null,
+        [FromQuery] int? categoryId = null,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] string? filter = null,
+        [FromQuery] int? take = null)
     {
       try
       {
-        // Thực hiện quét bảng cơ sở dữ liệu Products dưới SQL Server một cách bất đồng bộ
-        var products = await _context.Products
-          .OrderByDescending(p => p.Id) // Sắp xếp sản phẩm theo thứ tự ID giảm dần (mới nhất lên đầu)
-          .Select(p => new // Kỹ thuật gọt tỉa (Projection) - chỉ lấy các trường cần thiết ra trang chủ để tối ưu băng thông
-          {
-            p.Id, // Mã ID sản phẩm
-            p.Name, // Tên sản phẩm
-            p.Price, // Đơn giá sản phẩm
-            p.ImageUrl, // Ảnh đại diện sản phẩm
-            p.StockQuantity, // Số lượng tồn kho sản phẩm
-            p.CategoryProductId // Mã danh mục sản phẩm liên kết
-          })
-          .ToListAsync(); // Chuyển đổi kết quả bất đồng bộ sang dạng danh sách mảng
+        var query = _context.Products.AsNoTracking().AsQueryable();
 
-        return Ok(products); // Trả về kết quả mảng JSON và mã trạng thái HTTP 200 OK
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+          var searchLower = search.Trim().ToLower();
+          query = query.Where(p => p.Name.ToLower().Contains(searchLower));
+        }
+
+        if (minPrice.HasValue)
+        {
+          query = query.Where(p => p.Price >= minPrice.Value);
+        }
+
+        if (maxPrice.HasValue)
+        {
+          query = query.Where(p => p.Price <= maxPrice.Value);
+        }
+
+        if (categoryId.HasValue && categoryId.Value > 0)
+        {
+          var categoryIds = await _context.CategoriesProducts
+              .Where(c => c.Id == categoryId.Value || c.ParentId == categoryId.Value)
+              .Select(c => c.Id)
+              .ToListAsync();
+
+          query = query.Where(p => categoryIds.Contains(p.CategoryProductId));
+        }
+
+        // Loc theo trang thai New hoac Sale
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+          if (filter.Equals("new", StringComparison.OrdinalIgnoreCase))
+            query = query.Where(p => p.IsNew);
+          else if (filter.Equals("sale", StringComparison.OrdinalIgnoreCase))
+            query = query.Where(p => p.IsSale);
+        }
+
+        var productQuery = query.Select(p => new
+        {
+          p.Id,
+          p.Name,
+          p.Price,
+          p.ImageUrl,
+          p.StockQuantity,
+          p.CategoryProductId,
+          p.IsNew,
+          p.IsSale,
+          p.SalePrice,
+          p.IsBestSelling,
+          DiscountPercent = p.IsSale && p.Price > 0
+            ? (int)Math.Round((1 - p.SalePrice / p.Price) * 100)
+            : 0,
+          SoldQuantity = _context.OrderDetails
+            .Where(od => od.ProductId == p.Id)
+            .Sum(od => (int?)od.Quantity) ?? 0
+        });
+
+        var sortKey = sortBy?.Trim().ToLower();
+        var isBestSelling = sortKey == "best-selling" || sortKey == "bestselling" || sortKey == "sold";
+        var filteredProducts = isBestSelling
+          ? productQuery.Where(p => p.IsBestSelling || p.SoldQuantity > 0)
+          : productQuery;
+
+        var sortedProducts = isBestSelling
+          ? filteredProducts.OrderByDescending(p => p.IsBestSelling).ThenByDescending(p => p.SoldQuantity).ThenByDescending(p => p.Id)
+          : filteredProducts.OrderByDescending(p => p.Id); // Mặc định sắp xếp theo ID giảm dần (Sản phẩm mới nhất)
+
+        var finalQuery = sortedProducts.AsQueryable();
+        if (take.HasValue && take.Value > 0)
+        {
+          finalQuery = finalQuery.Take(take.Value);
+        }
+
+        var products = await finalQuery.ToListAsync();
+
+        return Ok(products);
       }
       catch (Exception ex)
       {
-        // Trả về lỗi 500 Internal Server Error kèm thông báo lỗi chi tiết nếu có sự cố hệ thống
-        return StatusCode(500, new { message = "Lỗi hệ thống khi tải danh sách sản phẩm", detail = ex.Message });
+        return StatusCode(500, new { message = "Loi he thong khi tai danh sach san pham", detail = ex.Message });
       }
     }
 
-    // 2. Chỉ định phương thức GET lấy danh sách sản phẩm theo mã ID danh mục phân loại
-    // Đường dẫn gọi dữ liệu: GET https://localhost:xxxx/api/products/categoryproduct/{categoryProductId}
     [HttpGet("categoryproduct/{categoryProductId}")]
     public async Task<IActionResult> GetByCategoryProduct(int categoryProductId)
     {
       try
       {
-        // Thực hiện lọc danh sách các sản phẩm có CategoryProductId khớp với tham số truyền vào từ URL
         var products = await _context.Products
-          .Where(p => p.CategoryProductId == categoryProductId) // Lọc dữ liệu trong DB
-          .OrderByDescending(p => p.Id) // Sắp xếp sản phẩm mới nhất lên đầu
-          .Select(p => new // Kỹ thuật gọt tỉa dữ liệu giúp giảm nhẹ gói tin truyền tải qua mạng
+          .AsNoTracking()
+          .Where(p => p.CategoryProductId == categoryProductId)
+          .OrderByDescending(p => p.Id)
+          .Select(p => new
           {
-            p.Id, // Mã ID sản phẩm
-            p.Name, // Tên sản phẩm
-            p.Price, // Đơn giá sản phẩm
-            p.ImageUrl, // Ảnh sản phẩm
-            p.StockQuantity, // Số lượng tồn kho
-            p.CategoryProductId // Mã danh mục
+            p.Id,
+            p.Name,
+            p.Price,
+            p.ImageUrl,
+            p.StockQuantity,
+            p.CategoryProductId,
+            p.IsNew,
+            p.IsSale,
+            p.SalePrice,
+            p.IsBestSelling,
+            DiscountPercent = p.IsSale && p.Price > 0
+              ? (int)Math.Round((1 - p.SalePrice / p.Price) * 100)
+              : 0,
+            SoldQuantity = _context.OrderDetails
+              .Where(od => od.ProductId == p.Id)
+              .Sum(od => (int?)od.Quantity) ?? 0
           })
-          .ToListAsync(); // Chuyển kết quả sang dạng danh sách mảng
+          .ToListAsync();
 
-        return Ok(products); // Trả về mảng JSON kết quả lọc sản phẩm và mã trạng thái HTTP 200 OK
+        return Ok(products);
       }
       catch (Exception ex)
       {
-        // Trả về lỗi 500 nếu xảy ra sự cố ngoại lệ ngầm định
-        return StatusCode(500, new { message = "Lỗi hệ thống khi lọc sản phẩm theo danh mục", detail = ex.Message });
+        return StatusCode(500, new { message = "Loi he thong khi loc san pham theo danh muc", detail = ex.Message });
       }
     }
 
-    // 3. Chỉ định phương thức GET lấy chi tiết thông tin của duy nhất một sản phẩm theo ID khóa chính
-    // Đường dẫn gọi dữ liệu: GET https://localhost:xxxx/api/products/{id}
     [HttpGet("{id}")]
     public async Task<IActionResult> GetDetail(int id)
     {
       try
       {
-        // Quét bảng dữ liệu Products để tìm sản phẩm đầu tiên có mã ID khớp với tham số
         var product = await _context.Products
-          .Include(p => p.CategoryProduct) // Tải kèm thông tin bảng danh mục liên kết
-          .FirstOrDefaultAsync(p => p.Id == id); // Lấy bản ghi khớp đầu tiên hoặc null nếu không thấy
+          .AsNoTracking()
+          .Include(p => p.CategoryProduct)
+          .Include(p => p.ProductImages)
+          .FirstOrDefaultAsync(p => p.Id == id);
 
-        // Xử lý kịch bản lỗi bảo vệ hệ thống: ID không tồn tại trong Database
         if (product == null)
         {
-          // Trả về mã lỗi 404 kèm một gói tin JSON thông báo nhỏ gọn để Frontend tự xử lý UI
-          return NotFound(new { message = "Không tìm thấy sản phẩm này trong hệ thống" });
+          return NotFound(new { message = "Khong tim thay san pham nay trong he thong" });
         }
 
-        // Trả về toàn bộ đối tượng sản phẩm (bao gồm cả trường Description chứa mô tả chất liệu) kèm mã 200 OK
         return Ok(product);
       }
       catch (Exception ex)
       {
-        // Trả về lỗi 500 nếu sập kết nối SQL hoặc lỗi logic ngầm định
-        return StatusCode(500, new { message = "Lỗi xử lý hệ thống khi lấy chi tiết sản phẩm", detail = ex.Message });
+        return StatusCode(500, new { message = "Loi xu ly he thong khi lay chi tiet san pham", detail = ex.Message });
       }
     }
   }

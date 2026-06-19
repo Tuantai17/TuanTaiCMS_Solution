@@ -29,13 +29,33 @@ Chú thích chi tiết:
     </div>
 
     <div class="admin-card__body">
+        <!-- Bảng điều khiển xóa hàng loạt -->
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <button type="button" class="btn btn-danger" id="btnDeleteSelected" disabled>
+                <i class="bi bi-trash"></i> Xóa đã chọn
+            </button>
+            <button type="button" class="btn btn-secondary" id="btnDeselectAll" disabled>
+                Bỏ chọn
+            </button>
+            <span class="text-muted ms-2" id="selectedCountText">Đã chọn 0 danh mục</span>
+        </div>
+
+        <!-- Form ẩn để submit POST xóa nhiều -->
+        <form id="deleteSelectedForm" asp-action="DeleteSelected" method="post" style="display:none;">
+            @Html.AntiForgeryToken()
+        </form>
+
         <div class="table-responsive">
             <table class="table table-hover align-middle">
                 <thead>
                     <tr>
+                        <th style="width: 40px;">
+                            <input type="checkbox" class="form-check-input" id="selectAll" />
+                        </th>
                         <th style="width: 80px;">ID</th>
                         <th>Tên danh mục</th>
                         <th>Mô tả</th>
+                        <th style="width: 130px;">Số bài viết</th>
                         <th class="text-end" style="width: 180px;">Thao tác</th>
                     </tr>
                 </thead>
@@ -43,9 +63,15 @@ Chú thích chi tiết:
                     @foreach (var item in Model)
                     {
                         <tr>
+                            <td>
+                                <input type="checkbox" class="form-check-input category-checkbox" value="@item.Id" />
+                            </td>
                             <td class="fw-bold text-primary">#@item.Id</td>
                             <td class="fw-semibold">@item.Name</td>
                             <td>@item.Description</td>
+                            <td>
+                                <span class="badge bg-secondary">@(item.Posts?.Count ?? 0) bài viết</span>
+                            </td>
                             <td class="text-end">
                                 <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">
                                     Sửa
@@ -61,3 +87,90 @@ Chú thích chi tiết:
         </div>
     </div>
 </section>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const selectAllCheckbox = document.getElementById("selectAll");
+            const categoryCheckboxes = document.querySelectorAll(".category-checkbox");
+            const btnDeleteSelected = document.getElementById("btnDeleteSelected");
+            const btnDeselectAll = document.getElementById("btnDeselectAll");
+            const selectedCountText = document.getElementById("selectedCountText");
+            const deleteSelectedForm = document.getElementById("deleteSelectedForm");
+
+            function updateUIState() {
+                const checkedCheckboxes = document.querySelectorAll(".category-checkbox:checked");
+                const count = checkedCheckboxes.length;
+
+                // Cập nhật số lượng danh mục đã chọn
+                selectedCountText.textContent = `Đã chọn ${count} danh mục`;
+
+                // Bật/tắt trạng thái các nút bấm
+                if (count > 0) {
+                    btnDeleteSelected.removeAttribute("disabled");
+                    btnDeselectAll.removeAttribute("disabled");
+                } else {
+                    btnDeleteSelected.setAttribute("disabled", "true");
+                    btnDeselectAll.setAttribute("disabled", "true");
+                }
+
+                // Cập nhật trạng thái checkbox "selectAll" ở header
+                selectAllCheckbox.checked = (count === categoryCheckboxes.length && categoryCheckboxes.length > 0);
+            }
+
+            // Xử lý sự kiện checkbox "Chọn tất cả"
+            selectAllCheckbox.addEventListener("change", function () {
+                categoryCheckboxes.forEach(cb => {
+                    cb.checked = selectAllCheckbox.checked;
+                });
+                updateUIState();
+            });
+
+            // Xử lý sự kiện cho từng checkbox danh mục
+            categoryCheckboxes.forEach(cb => {
+                cb.addEventListener("change", function () {
+                    updateUIState();
+                });
+            });
+
+            // Nút "Bỏ chọn"
+            btnDeselectAll.addEventListener("click", function () {
+                categoryCheckboxes.forEach(cb => {
+                    cb.checked = false;
+                });
+                selectAllCheckbox.checked = false;
+                updateUIState();
+            });
+
+            // Nút "Xóa đã chọn"
+            btnDeleteSelected.addEventListener("click", function () {
+                const checkedCheckboxes = document.querySelectorAll(".category-checkbox:checked");
+                if (checkedCheckboxes.length === 0) {
+                    alert("Vui lòng chọn ít nhất một danh mục.");
+                    return;
+                }
+
+                if (confirm("Bạn có chắc muốn xóa các danh mục đã chọn không?")) {
+                    // Xóa các input cũ đã append (nếu có)
+                    const oldInputs = deleteSelectedForm.querySelectorAll("input[name='ids']");
+                    oldInputs.forEach(input => input.remove());
+
+                    // Append danh sách ID đã chọn vào form
+                    checkedCheckboxes.forEach(cb => {
+                        const input = document.createElement("input");
+                        input.type = "hidden";
+                        input.name = "ids";
+                        input.value = cb.value;
+                        deleteSelectedForm.appendChild(input);
+                    });
+
+                    // Submit form
+                    deleteSelectedForm.submit();
+                }
+            });
+
+            // Khởi tạo trạng thái ban đầu
+            updateUIState();
+        });
+    </script>
+}

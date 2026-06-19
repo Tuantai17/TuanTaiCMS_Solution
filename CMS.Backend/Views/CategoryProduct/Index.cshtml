@@ -3,7 +3,7 @@ Sinh Viên: Nguyễn Tuấn Tài
 Mã Sinh Viên: 2123110166
 Lớp: CCQ2311E
 Ngày Tạo: 22/5/2026
-Mô tả: Trang danh sách loại sản phẩm trong khu vực quản trị.
+Mô tả: Trang danh sách loại sản phẩm trong khu vực quản trị, hiển thị dạng cây phân cấp.
 *@
 
 @model IEnumerable<CMS.Data.Entities.CategoryProduct>
@@ -24,12 +24,33 @@ Mô tả: Trang danh sách loại sản phẩm trong khu vực quản trị.
     </div>
 
     <div class="admin-card__body">
+        @* --- Bảng điều khiển xóa hàng loạt --- *@
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <button type="button" class="btn btn-danger" id="btnDeleteSelected" disabled>
+                <i class="bi bi-trash"></i> Xóa đã chọn
+            </button>
+            <button type="button" class="btn btn-secondary" id="btnDeselectAll" disabled>
+                Bỏ chọn
+            </button>
+            <span class="text-muted ms-2" id="selectedCountText">Đã chọn 0 loại sản phẩm</span>
+        </div>
+
+        @* --- Form ẩn để submit POST xóa nhiều --- *@
+        <form id="deleteSelectedForm" asp-action="DeleteSelected" method="post" style="display:none;">
+            @Html.AntiForgeryToken()
+        </form>
+
         <div class="table-responsive">
             <table class="table table-hover align-middle">
                 <thead>
                     <tr>
-                        <th style="width: 60px;">#</th>
+                        <th style="width: 40px;">
+                            <input type="checkbox" class="form-check-input" id="selectAll" />
+                        </th>
+                        <th style="width: 60px;">Mã</th>
+                        <th style="width: 80px;">Ảnh</th>
                         <th>Tên loại sản phẩm</th>
+                        <th>Danh mục cha</th>
                         <th>Mô tả</th>
                         <th style="width: 100px;">Số sản phẩm</th>
                         <th class="text-end" style="width: 200px;">Thao tác</th>
@@ -38,11 +59,53 @@ Mô tả: Trang danh sách loại sản phẩm trong khu vực quản trị.
                 <tbody>
                     @foreach (var item in Model)
                     {
-                        <tr>
-                            <td><span class="text-muted small">@item.Id</span></td>
-                            <td><strong>@item.Name</strong></td>
+                        var indent = item.Depth * 24;
+                        var isChild = item.Depth > 0;
+                        <tr class="@(isChild ? "table-light" : "")">
                             <td>
-                                <span class="text-muted small text-truncate d-inline-block" style="max-width: 300px;">
+                                <input type="checkbox" class="form-check-input category-checkbox" value="@item.Id" />
+                            </td>
+                            <td><span class="text-muted small">@item.Id</span></td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                {
+                                    <img src="@item.ImageUrl" alt="@item.Name" class="rounded" style="width: 48px; height: 48px; object-fit: cover;" />
+                                }
+                                else
+                                {
+                                    <span class="d-inline-flex align-items-center justify-content-center bg-light rounded" style="width: 48px; height: 48px;">
+                                        <i class="bi bi-image text-muted"></i>
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                <div style="padding-left: @(indent)px;" class="d-flex align-items-center gap-2">
+                                    @if (isChild)
+                                    {
+                                        <i class="bi bi-arrow-return-right text-muted small"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-folder-fill text-warning"></i>
+                                    }
+                                    <strong class="@(isChild ? "fw-normal" : "")">@item.Name</strong>
+                                </div>
+                            </td>
+                            <td>
+                                @{
+                                    var parent = Model.FirstOrDefault(c => c.Id == item.ParentId);
+                                    if (parent != null)
+                                    {
+                                        <span class="badge bg-secondary">@parent.Name</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-light text-dark">Danh mục gốc</span>
+                                    }
+                                }
+                            </td>
+                            <td>
+                                <span class="text-muted small text-truncate d-inline-block" style="max-width: 250px;">
                                     @(string.IsNullOrWhiteSpace(item.Description) ? "Chưa có mô tả" : item.Description)
                                 </span>
                             </td>
@@ -63,7 +126,7 @@ Mô tả: Trang danh sách loại sản phẩm trong khu vực quản trị.
                     @if (!Model.Any())
                     {
                         <tr>
-                            <td colspan="5" class="text-center py-4 text-muted">
+                            <td colspan="8" class="text-center py-4 text-muted">
                                 <i class="bi bi-inbox fs-4 d-block mb-2"></i>
                                 Chưa có loại sản phẩm nào. <a asp-action="Create">Thêm ngay</a>
                             </td>
@@ -74,3 +137,75 @@ Mô tả: Trang danh sách loại sản phẩm trong khu vực quản trị.
         </div>
     </div>
 </section>
+
+@section Scripts {
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const selectAllCheckbox = document.getElementById("selectAll");
+    const categoryCheckboxes = document.querySelectorAll(".category-checkbox");
+    const btnDeleteSelected = document.getElementById("btnDeleteSelected");
+    const btnDeselectAll = document.getElementById("btnDeselectAll");
+    const selectedCountText = document.getElementById("selectedCountText");
+    const deleteSelectedForm = document.getElementById("deleteSelectedForm");
+
+    function updateCheckboxUI() {
+        const checkedCheckboxes = document.querySelectorAll(".category-checkbox:checked");
+        const count = checkedCheckboxes.length;
+
+        selectedCountText.textContent = `Đã chọn ${count} loại sản phẩm`;
+
+        if (count > 0) {
+            btnDeleteSelected.removeAttribute("disabled");
+            btnDeselectAll.removeAttribute("disabled");
+        } else {
+            btnDeleteSelected.setAttribute("disabled", "true");
+            btnDeselectAll.setAttribute("disabled", "true");
+        }
+
+        selectAllCheckbox.checked = (count === categoryCheckboxes.length && categoryCheckboxes.length > 0);
+    }
+
+    selectAllCheckbox.addEventListener("change", function () {
+        categoryCheckboxes.forEach(cb => { cb.checked = selectAllCheckbox.checked; });
+        updateCheckboxUI();
+    });
+
+    categoryCheckboxes.forEach(cb => {
+        cb.addEventListener("change", function () { updateCheckboxUI(); });
+    });
+
+    btnDeselectAll.addEventListener("click", function () {
+        categoryCheckboxes.forEach(cb => { cb.checked = false; });
+        selectAllCheckbox.checked = false;
+        updateCheckboxUI();
+    });
+
+    btnDeleteSelected.addEventListener("click", function () {
+        const checkedCheckboxes = document.querySelectorAll(".category-checkbox:checked");
+        if (checkedCheckboxes.length === 0) {
+            alert("Vui lòng chọn ít nhất một loại sản phẩm.");
+            return;
+        }
+
+        if (confirm(`Bạn có chắc muốn xóa ${checkedCheckboxes.length} loại sản phẩm đã chọn không?`)) {
+            // Xóa input cũ trong form
+            const oldInputs = deleteSelectedForm.querySelectorAll("input[name='ids']");
+            oldInputs.forEach(input => input.remove());
+
+            // Thêm các ID đã chọn vào form
+            checkedCheckboxes.forEach(cb => {
+                const input = document.createElement("input");
+                input.type = "hidden";
+                input.name = "ids";
+                input.value = cb.value;
+                deleteSelectedForm.appendChild(input);
+            });
+
+            deleteSelectedForm.submit();
+        }
+    });
+
+    updateCheckboxUI();
+});
+</script>
+}

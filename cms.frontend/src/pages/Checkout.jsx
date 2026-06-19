@@ -129,8 +129,8 @@ const Checkout = () => {
       {/* breadcrumb */}
       <nav aria-label="breadcrumb">
         <ol className="breadcrumb bg-transparent p-0 mb-4" style={{ fontSize: '0.85rem' }}>
-          <li className="breadcrumb-item"><a href="/" className="text-secondary text-decoration-none">Trang chủ</a></li>
-          <li className="breadcrumb-item"><a href="/cart" className="text-secondary text-decoration-none">Giỏ hàng</a></li>
+          <li className="breadcrumb-item"><Link to="/" className="text-secondary text-decoration-none">Trang chủ</Link></li>
+          <li className="breadcrumb-item"><Link to="/cart" className="text-secondary text-decoration-none">Giỏ hàng</Link></li>
           <li className="breadcrumb-item active text-danger font-weight-bold" aria-current="page">Tiến hành thanh toán</li>
         </ol>
       </nav>

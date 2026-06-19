@@ -6,8 +6,8 @@ const Register = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -17,6 +17,17 @@ const Register = () => {
     e.preventDefault();
     setError('');
     setSuccess('');
+
+    if (password !== confirmPassword) {
+      setError('Mật khẩu nhập lại không khớp!');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Mật khẩu bảo mật phải có tối thiểu 6 ký tự!');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -25,26 +36,14 @@ const Register = () => {
         email,
         password,
         phone,
-        address
+        address: '' // Trống, người dùng sẽ cập nhật sau khi đăng nhập thành công
       });
 
-      setSuccess('Đăng ký tài khoản thành công!');
-      
-      // Tự động đăng nhập: Lưu thông tin trả về của Customer vào localStorage
-      localStorage.setItem('customer', JSON.stringify({
-        customerId: response.customerId,
-        fullName: response.fullName,
-        email: response.email,
-        phone: phone,
-        address: address
-      }));
-      
-      // Phát sự kiện cập nhật trạng thái đăng nhập
-      window.dispatchEvent(new Event('customerLoginStateChange'));
+      setSuccess('Đăng ký tài khoản thành công! Đang chuyển hướng sang trang đăng nhập để bạn xác minh...');
 
-      // Chờ 1.5 giây để người dùng thấy thông báo thành công rồi chuyển hướng về Trang chủ
+      // Chờ 1.5 giây để người dùng thấy thông báo thành công rồi chuyển hướng về trang Đăng nhập
       setTimeout(() => {
-        navigate('/');
+        navigate('/login');
       }, 1500);
     } catch (err) {
       if (err.response && err.response.data && err.response.data.message) {
@@ -64,7 +63,7 @@ const Register = () => {
           <div className="card shadow-lg border-0 rounded-lg overflow-hidden">
             {/* Header Form mang bản sắc MyKingdom */}
             <div className="bg-danger text-white text-center py-4 px-3" style={{ background: 'linear-gradient(135deg, #CF102D, #ff3d57)' }}>
-              <h4 className="font-weight-bold text-uppercase mb-1">
+               <h4 className="font-weight-bold text-uppercase mb-1">
                 <i className="fa-solid fa-user-plus mr-2"></i> Đăng Ký Thành Viên
               </h4>
               <p className="small mb-0 opacity-75">Tham gia vương quốc đồ chơi để nhận nhiều ưu đãi đặc biệt</p>
@@ -134,13 +133,14 @@ const Register = () => {
                 </div>
 
                 <div className="mb-4">
-                  <label className="small font-weight-bold text-secondary">Địa chỉ giao hàng mặc định</label>
+                  <label className="small font-weight-bold text-secondary">Nhập lại mật khẩu *</label>
                   <input
-                    type="text"
+                    type="password"
                     className="form-control rounded-pill px-3 shadow-none border-secondary-50"
-                    placeholder="Số nhà, tên đường, phường/xã, quận/huyện..."
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="Nhập lại mật khẩu bảo mật..."
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
                   />
                 </div>
 

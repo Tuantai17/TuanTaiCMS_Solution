@@ -41,7 +41,9 @@ namespace CMS.Backend.Controllers
           {
             c.Id, // Mã ID của danh mục sản phẩm
             c.Name, // Tên danh mục (ví dụ: Điện thoại, Laptop, Phụ kiện...)
-            c.Description // Mô tả ngắn về danh mục sản phẩm tương ứng
+            c.Description, // Mô tả ngắn về danh mục sản phẩm tương ứng
+            c.ParentId, // Mã ID của danh mục cha
+            c.ImageUrl // Đường dẫn ảnh đại diện của danh mục sản phẩm
           })
           .ToListAsync(); // Chuyển đổi dữ liệu bất đồng bộ sang dạng danh sách mảng
 

@@ -7,6 +7,8 @@ Mô tả: Controller quản lý bài viết, gồm hiển thị danh sách, xem 
 */
 
 // Nhóm thư viện phục vụ truy vấn database, xử lý MVC, upload file và tạo dropdown danh mục.
+using System.Collections.Generic;
+using System.Linq;
 using CMS.Data;
 using CMS.Data.Entities;
 using Microsoft.AspNetCore.Authorization; // Buổi 5: Namespace cần thiết để dùng [Authorize]
@@ -23,6 +25,7 @@ namespace CMS.Backend.Controllers
     {
         // DbContext dùng để truy vấn bảng Posts và Categories.
         private readonly ApplicationDbContext _context;
+        private const int PageSize = 10; // Số bài viết mỗi trang trong admin
 
         // Constructor nhận context từ hệ thống Dependency Injection.
         public PostController(ApplicationDbContext context)
@@ -30,25 +33,38 @@ namespace CMS.Backend.Controllers
             _context = context;
         }
 
-        // Action Index hiển thị danh sách bài viết.
+        // Action Index hiển thị danh sách bài viết có phân trang.
         // Tham số id là mã danh mục, có thể null nếu người dùng không lọc danh mục.
+        // page là trang hiện tại để phân trang.
         // Include lấy kèm Category để hiển thị tên danh mục ngoài View.
         // OrderByDescending đưa bài viết mới nhất lên đầu danh sách.
-        public IActionResult Index(int? id)
+        public IActionResult Index(int? id, int page = 1)
         {
-            var posts = _context.Posts
+            var query = _context.Posts
                 .Include(p => p.Category)
                 .OrderByDescending(p => p.CreatedDate)
-                .ToList();
+                .AsQueryable();
 
             // Nếu id có giá trị, chỉ giữ lại bài viết thuộc danh mục đó.
             // Where lọc danh sách theo CategoryId trùng với id được truyền vào URL.
             if (id != null)
             {
-                posts = posts
-                    .Where(p => p.CategoryId == id)
-                    .ToList();
+                query = query.Where(p => p.CategoryId == id);
             }
+
+            // Tính tổng số bài viết và phân trang
+            var totalPosts = query.Count();
+            var totalPages = (int)Math.Ceiling((double)totalPosts / PageSize);
+            page = Math.Max(1, Math.Min(page, Math.Max(1, totalPages)));
+
+            var posts = query
+                .Skip((page - 1) * PageSize)
+                .Take(PageSize)
+                .ToList();
+
+            ViewBag.CurrentPage = page;
+            ViewBag.TotalPages = totalPages;
+            ViewBag.TotalPosts = totalPosts;
 
             return View(posts);
         }
@@ -164,6 +180,98 @@ namespace CMS.Backend.Controllers
             }
 
             return RedirectToAction("Index");
+        }
+
+        // Action POST DeleteSelected nhận danh sách các id bài viết cần xóa.
+        // ValidateAntiForgeryToken để chống tấn công giả mạo request giả mạo chéo trang (CSRF).
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult DeleteSelected(List<int> ids)
+        {
+            if (ids == null || !ids.Any())
+            {
+                TempData["ErrorMessage"] = "Vui lòng chọn ít nhất một bài viết.";
+                return RedirectToAction("Index");
+            }
+
+            int deletedCount = 0;
+            foreach (var id in ids)
+            {
+                var post = _context.Posts.Find(id);
+                if (post != null)
+                {
+                    _context.Posts.Remove(post);
+                    deletedCount++;
+                }
+            }
+
+            if (deletedCount > 0)
+            {
+                _context.SaveChanges();
+                TempData["SuccessMessage"] = "Đã xóa thành công các bài viết đã chọn.";
+            }
+
+            return RedirectToAction("Index");
+        }
+
+        // Action POST ToggleFeatured bật/tắt trạng thái hiển thị trên trang chủ (AJAX).
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public IActionResult ToggleFeatured(int id)
+        {
+            var post = _context.Posts.Find(id);
+            if (post == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy bài viết." });
+            }
+
+            post.IsFeatured = !post.IsFeatured;
+            _context.SaveChanges();
+
+            return Json(new
+            {
+                success = true,
+                isFeatured = post.IsFeatured,
+                message = post.IsFeatured
+                    ? "Bài viết đã được bật hiển thị trên trang chủ."
+                    : "Bài viết đã tắt hiển thị trên trang chủ."
+            });
+        }
+
+        // API Endpoint hỗ trợ upload ảnh của CKEditor
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public IActionResult UploadImage(IFormFile upload)
+        {
+            if (upload == null || upload.Length == 0)
+            {
+                return Json(new { uploaded = false, error = new { message = "Không nhận được file ảnh." } });
+            }
+
+            try
+            {
+                var folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+
+                if (!Directory.Exists(folder))
+                {
+                    Directory.CreateDirectory(folder);
+                }
+
+                var fileName = Guid.NewGuid() + Path.GetExtension(upload.FileName);
+                var filePath = Path.Combine(folder, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    upload.CopyTo(stream);
+                }
+
+                var url = "/uploads/" + fileName;
+                return Json(new { uploaded = true, url = url });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { uploaded = false, error = new { message = "Lỗi hệ thống: " + ex.Message } });
+            }
         }
 
         // Hàm dùng chung để nạp dropdown danh mục cho form Create/Edit.

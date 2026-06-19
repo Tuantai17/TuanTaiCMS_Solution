@@ -9,7 +9,8 @@ Mô tả: API Controller quản lý đơn đặt hàng trực tiếp từ giỏ 
 using Microsoft.AspNetCore.Mvc; // Import thư viện hỗ trợ xây dựng các API Controller của ASP.NET Core
 using Microsoft.EntityFrameworkCore; // Import thư viện hỗ trợ truy vấn Database bất đồng bộ và load quan hệ
 using CMS.Data; // Import namespace chứa lớp ngữ cảnh dữ liệu ApplicationDbContext
-using CMS.Data.Entities; // Import namespace chứa các lớp thực thể Entity mẫu của Solution
+using CMS.Data.Entities;
+using CMS.Backend.Helpers;
 
 namespace CMS.Backend.Controllers
 {
@@ -18,11 +19,13 @@ namespace CMS.Backend.Controllers
   public class OrdersController : ControllerBase // Kế thừa ControllerBase để tối ưu bộ nhớ cho API thuần dữ liệu JSON
   {
     private readonly ApplicationDbContext _context; // Khai báo đối tượng trung gian kết nối cơ sở dữ liệu SQL Server
+    private readonly EmailHelper _emailHelper; // Khai báo đối tượng helper gửi email
 
     // Hàm khởi tạo (Constructor): "Tiêm" (Inject) ngữ cảnh dữ liệu cơ sở dữ liệu vào Controller thông qua DI
-    public OrdersController(ApplicationDbContext context)
+    public OrdersController(ApplicationDbContext context, EmailHelper emailHelper)
     {
       _context = context; // Gán context được tiêm vào cho biến nội bộ sử dụng
+      _emailHelper = emailHelper;
     }
 
     /// <summary>
@@ -107,6 +110,87 @@ namespace CMS.Backend.Controllers
 
         // Chốt và commit giao dịch thành công
         await transaction.CommitAsync();
+
+        // Gửi email xác nhận đơn hàng bất đồng bộ
+        var customer = await _context.Customers.FindAsync(input.CustomerId);
+        if (customer != null && !string.IsNullOrWhiteSpace(customer.Email))
+        {
+            var orderDetailsList = await _context.OrderDetails
+                .Where(od => od.OrderId == newOrder.Id)
+                .Include(od => od.Product)
+                .ToListAsync();
+
+            decimal totalAmount = 0;
+            var itemsHtml = "";
+            foreach (var detail in orderDetailsList)
+            {
+                var productName = detail.Product?.Name ?? "Sản phẩm";
+                var qty = detail.Quantity;
+                var price = detail.UnitPrice;
+                var subTotal = qty * price;
+                totalAmount += subTotal;
+                itemsHtml += $"<tr><td style='border: 1px solid #ddd; padding: 8px;'>{productName}</td><td style='border: 1px solid #ddd; padding: 8px; text-align: center;'>{qty}</td><td style='border: 1px solid #ddd; padding: 8px; text-align: right;'>{price:N0}₫</td><td style='border: 1px solid #ddd; padding: 8px; text-align: right;'>{subTotal:N0}₫</td></tr>";
+            }
+
+            var htmlBody = $@"
+                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 20px; border-radius: 10px;'>
+                    <div style='text-align: center; border-bottom: 2px solid #CF102D; padding-bottom: 10px; margin-bottom: 20px;'>
+                        <h2 style='color: #CF102D; margin: 0;'>MyKingdom - Xác Nhận Đơn Hàng</h2>
+                    </div>
+                    <p>Xin chào <strong>{customer.FullName}</strong>,</p>
+                    <p>Cảm ơn bạn đã đặt mua sản phẩm tại <strong>Vương Quốc Đồ Chơi MyKingdom</strong>. Đơn hàng của bạn đã được tiếp nhận thành công và đang chờ xử lý.</p>
+                    
+                    <h3 style='color: #002664; border-bottom: 1px solid #eee; padding-bottom: 5px;'>Thông tin đơn hàng #{newOrder.Id}</h3>
+                    <p><strong>Ngày đặt hàng:</strong> {newOrder.OrderDate:dd/MM/yyyy HH:mm}</p>
+                    <p><strong>Trạng thái:</strong> Chờ duyệt</p>
+                    {(string.IsNullOrWhiteSpace(newOrder.Notes) ? "" : $"<p><strong>Ghi chú:</strong> {newOrder.Notes}</p>")}
+
+                    <h3 style='color: #002664; border-bottom: 1px solid #eee; padding-bottom: 5px;'>Chi tiết sản phẩm</h3>
+                    <table style='width: 100%; border-collapse: collapse; margin-bottom: 20px;'>
+                        <thead>
+                            <tr style='background-color: #f2f2f2;'>
+                                <th style='border: 1px solid #ddd; padding: 8px; text-align: left;'>Tên sản phẩm</th>
+                                <th style='border: 1px solid #ddd; padding: 8px; text-align: center; width: 80px;'>SL</th>
+                                <th style='border: 1px solid #ddd; padding: 8px; text-align: right; width: 100px;'>Đơn giá</th>
+                                <th style='border: 1px solid #ddd; padding: 8px; text-align: right; width: 120px;'>Thành tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {itemsHtml}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan='3' style='border: 1px solid #ddd; padding: 8px; text-align: right; font-weight: bold;'>Tổng tiền thanh toán:</td>
+                                <td style='border: 1px solid #ddd; padding: 8px; text-align: right; font-weight: bold; color: #CF102D;'>{totalAmount:N0}₫</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <p style='font-size: 0.9em; color: #666; text-align: center; border-top: 1px solid #eee; padding-top: 15px; margin-top: 25px;'>
+                        Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ tổng đài hỗ trợ <strong>1900 1208</strong> hoặc phản hồi email này.<br/>
+                        Chúc bạn và gia đình có những giây phút vui chơi tuyệt vời!
+                    </p>
+                </div>
+            ";
+
+            try
+            {
+                _ = Task.Run(async () => {
+                    try
+                    {
+                        await _emailHelper.SendEmailAsync(customer.Email, $"[MyKingdom] Xác nhận đơn đặt hàng #{newOrder.Id} thành công", htmlBody);
+                    }
+                    catch (Exception emailEx)
+                    {
+                        Console.WriteLine($">>> Lỗi gửi thư: {emailEx.Message}");
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($">>> Lỗi khi kích hoạt luồng gửi mail: {ex.Message}");
+            }
+        }
 
         return StatusCode(201, new
         {

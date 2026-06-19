@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import orderService from '../services/orderService';
+import { getMediaUrl } from '../utils/mediaUrl';
 
 const OrderHistory = () => {
   const [customer, setCustomer] = useState(null);
@@ -72,7 +73,7 @@ const OrderHistory = () => {
       {/* breadcrumb */}
       <nav aria-label="breadcrumb">
         <ol className="breadcrumb bg-transparent p-0 mb-4" style={{ fontSize: '0.85rem' }}>
-          <li className="breadcrumb-item"><a href="/" className="text-secondary text-decoration-none">Trang chủ</a></li>
+          <li className="breadcrumb-item"><Link to="/" className="text-secondary text-decoration-none">Trang chủ</Link></li>
           <li className="breadcrumb-item active text-danger font-weight-bold" aria-current="page">Lịch sử mua hàng</li>
         </ol>
       </nav>
@@ -131,7 +132,7 @@ const OrderHistory = () => {
                   {order.orderDetails.map((detail, idx) => (
                     <div className="d-flex align-items-center p-3 px-4 border-bottom" key={detail.id || idx}>
                       <img 
-                        src={detail.productImageUrl || "https://placehold.co/100x100/e9ecef/6c757d?text=No+Image"} 
+                        src={getMediaUrl(detail.productImageUrl, "https://placehold.co/100x100/e9ecef/6c757d?text=No+Image")} 
                         alt={detail.productName} 
                         className="rounded border mr-3" 
                         style={{ width: '50px', height: '50px', objectFit: 'cover' }} 

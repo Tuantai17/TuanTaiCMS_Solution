@@ -26,7 +26,7 @@
                 <div class="col-md-6">
                     <label asp-for="PasswordHash" class="form-label fw-bold">Mật khẩu:</label>
                     <input asp-for="PasswordHash" type="password" class="form-control" placeholder="Nhập mật khẩu" required />
-                    <small class="text-muted">Theo tài liệu Buổi 4, mật khẩu đang lưu dạng chữ thô để dễ kiểm tra.</small>
+                    <small class="text-muted">Mật khẩu sẽ được mã hóa BCrypt trước khi lưu vào database.</small>
                 </div>
             </div>
 

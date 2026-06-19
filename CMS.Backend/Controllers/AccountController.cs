@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using CMS.Data;
+using CMS.Backend.Helpers;
 
 namespace CMS.Backend.Controllers
 {
@@ -43,12 +44,12 @@ namespace CMS.Backend.Controllers
         [HttpPost]
         public async Task<IActionResult> Login(string username, string password)
         {
-            // Bước 1: Tìm người dùng trong Database theo Username và PasswordHash.
-            // Lưu ý: Bài này dùng Plain Text để dễ học. Thực tế cần hash mật khẩu.
+            // Bước 1: Tìm người dùng trong Database theo Username.
             var user = _context.Users
-                .FirstOrDefault(u => u.Username == username && u.PasswordHash == password);
+                .FirstOrDefault(u => u.Username == username);
 
-            if (user != null)
+            // Bước 2: Xác thực mật khẩu bằng BCrypt — so sánh plain text với hash đã lưu.
+            if (user != null && PasswordHelper.VerifyPassword(password, user.PasswordHash))
             {
                 // Kiểm tra phân quyền: Chỉ cho phép tài khoản Admin hoặc Staff truy cập hệ thống MVC quản trị.
                 if (user.Role != "Admin" && user.Role != "Staff")

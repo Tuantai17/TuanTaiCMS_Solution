@@ -1,11 +1,37 @@
 @model CMS.Data.Entities.Order
+@using System.Text.RegularExpressions
 
 @{
     ViewData["Title"] = "Chi tiết đơn hàng";
     Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
-    var badgeClass = Model.Status switch { 0 => "bg-warning text-dark", 1 => "bg-primary", 2 => "bg-success", _ => "bg-secondary" };
-    var statusText = Model.Status switch { 0 => "Chờ duyệt", 1 => "Đang giao", 2 => "Đã xong", _ => "Không xác định" };
+    var badgeClass = Model.Status switch { 0 => "bg-warning text-dark", 1 => "bg-primary", 2 => "bg-success", 3 => "bg-danger", _ => "bg-secondary" };
+    var statusText = Model.Status switch { 0 => "Chờ duyệt", 1 => "Đang giao", 2 => "Hoàn thành", 3 => "Đã hủy", _ => "Không xác định" };
+    var statusIcon = Model.Status switch { 0 => "bi-hourglass-split", 1 => "bi-truck", 2 => "bi-check-circle-fill", 3 => "bi-x-circle-fill", _ => "bi-question-circle" };
     var total = Model.OrderDetails?.Sum(x => x.Quantity * x.UnitPrice) ?? 0;
+    var shippingFee = 35000m;
+    var grandTotal = total + shippingFee;
+
+    // Phân tích ghi chú lấy thông tin nhận hàng thực tế
+    string recipientName = "";
+    string recipientPhone = "";
+    string recipientEmail = "";
+    string deliveryAddress = "";
+    string customerNotes = "";
+    bool isParsed = false;
+
+    if (!string.IsNullOrEmpty(Model.Notes))
+    {
+        var match = Regex.Match(Model.Notes, @"^\[Giao tới:\s*(.*?)\s*-\s*SĐT:\s*(.*?)\s*-\s*Email:\s*(.*?)\s*-\s*Đ/C:\s*(.*?)\](?:\.\s*Ghi chú khách hàng:\s*(.*))?$", RegexOptions.Singleline);
+        if (match.Success)
+        {
+            recipientName = match.Groups[1].Value.Trim();
+            recipientPhone = match.Groups[2].Value.Trim();
+            recipientEmail = match.Groups[3].Value.Trim();
+            deliveryAddress = match.Groups[4].Value.Trim();
+            customerNotes = match.Groups[5].Value.Trim();
+            isParsed = true;
+        }
+    }
 }
 
 <section class="admin-card">
@@ -15,61 +41,239 @@
             <h2 class="h4 fw-bold mb-0"><i class="bi bi-receipt"></i> Chi tiết đơn hàng #@Model.Id</h2>
         </div>
         <div class="d-flex gap-2">
-            <a asp-controller="OrderDetail" asp-action="Create" asp-route-orderId="@Model.Id" class="btn btn-success"><i class="bi bi-plus-circle"></i> Thêm dòng hàng</a>
-            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning"><i class="bi bi-pencil"></i> Chỉnh sửa</a>
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning"><i class="bi bi-pencil-square"></i> Cập nhật trạng thái</a>
             <a asp-action="Index" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Quay lại</a>
         </div>
     </div>
 
     <div class="admin-card__body">
+        <!-- Thông tin đơn hàng & Khách hàng -->
         <div class="row g-4 mb-4">
-            <div class="col-lg-5">
-                <table class="table table-bordered">
-                    <tr><th class="bg-light" style="width:150px;">Khách hàng</th><td>@(Model.Customer?.FullName ?? "-")</td></tr>
-                    <tr><th class="bg-light">Email</th><td>@(Model.Customer?.Email ?? "-")</td></tr>
-                    <tr><th class="bg-light">Ngày đặt</th><td>@Model.OrderDate.ToString("dd/MM/yyyy HH:mm")</td></tr>
-                    <tr><th class="bg-light">Trạng thái</th><td><span class="badge @badgeClass">@statusText</span></td></tr>
-                    <tr><th class="bg-light">Ghi chú</th><td>@(string.IsNullOrWhiteSpace(Model.Notes) ? "Không có" : Model.Notes)</td></tr>
-                </table>
-            </div>
-            <div class="col-lg-7">
-                <div class="p-4 bg-light border rounded-3 h-100 d-flex flex-column justify-content-center">
-                    <span class="text-muted small">Tổng giá trị đơn hàng</span>
-                    <strong class="display-6 text-success">@total.ToString("N0") ₫</strong>
-                    <span class="text-muted">Tổng cộng @(Model.OrderDetails?.Count ?? 0) dòng hàng</span>
+            @if (isParsed)
+            {
+                <!-- Cột 1: Thông tin tài khoản đặt hàng -->
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-light fw-bold">
+                            <i class="bi bi-person-circle me-2"></i> Tài khoản đặt hàng
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-borderless mb-0">
+                                <tr>
+                                    <th class="text-muted" style="width:110px;"><i class="bi bi-person me-1"></i> Họ tên</th>
+                                    <td class="fw-bold">@(Model.Customer?.FullName ?? "-")</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted"><i class="bi bi-telephone me-1"></i> SĐT</th>
+                                    <td>@(Model.Customer?.Phone ?? "-")</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted"><i class="bi bi-envelope me-1"></i> Email</th>
+                                    <td>@(Model.Customer?.Email ?? "-")</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
                 </div>
-            </div>
+
+                <!-- Cột 2: Thông tin giao nhận thực tế -->
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm h-100 border-start border-4 border-warning">
+                        <div class="card-header bg-warning bg-opacity-10 fw-bold text-dark">
+                            <i class="bi bi-truck me-2 text-warning"></i> Địa chỉ nhận hàng thực tế
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-borderless mb-0">
+                                <tr>
+                                    <th class="text-muted" style="width:110px;"><i class="bi bi-person-fill me-1"></i> Người nhận</th>
+                                    <td class="fw-bold text-primary">@recipientName</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted"><i class="bi bi-telephone-fill me-1"></i> Số điện thoại</th>
+                                    <td class="fw-bold text-dark">@recipientPhone</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted"><i class="bi bi-envelope-fill me-1"></i> Email</th>
+                                    <td>@recipientEmail</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted"><i class="bi bi-geo-alt-fill me-1"></i> Địa chỉ</th>
+                                    <td class="small text-muted">@deliveryAddress</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cột 3: Thông tin đơn hàng -->
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-light fw-bold">
+                            <i class="bi bi-bag-check me-2"></i> Thông tin đơn hàng
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-borderless mb-0">
+                                <tr>
+                                    <th class="text-muted" style="width:110px;"><i class="bi bi-hash me-1"></i> Mã đơn</th>
+                                    <td class="fw-bold">#@Model.Id</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted"><i class="bi bi-calendar3 me-1"></i> Ngày đặt</th>
+                                    <td>@Model.OrderDate.ToString("HH:mm - dd/MM/yyyy")</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted"><i class="bi bi-flag me-1"></i> Trạng thái</th>
+                                    <td>
+                                        <span class="badge @badgeClass fs-6">
+                                            <i class="bi @statusIcon me-1"></i> @statusText
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted"><i class="bi bi-chat-left-text me-1"></i> Ghi chú KH</th>
+                                    <td class="text-danger fw-bold">@(string.IsNullOrWhiteSpace(customerNotes) ? "Không có ghi chú" : customerNotes)</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- Cột trái: Thông tin khách hàng -->
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-light fw-bold">
+                            <i class="bi bi-person-circle me-2"></i> Thông tin khách hàng
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-borderless mb-0">
+                                <tr>
+                                    <th class="text-muted" style="width:140px;"><i class="bi bi-person me-1"></i> Họ tên</th>
+                                    <td class="fw-bold">@(Model.Customer?.FullName ?? "-")</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted"><i class="bi bi-telephone me-1"></i> SĐT</th>
+                                    <td>@(Model.Customer?.Phone ?? "-")</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted"><i class="bi bi-envelope me-1"></i> Email</th>
+                                    <td>@(Model.Customer?.Email ?? "-")</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted"><i class="bi bi-geo-alt me-1"></i> Địa chỉ</th>
+                                    <td>@(string.IsNullOrWhiteSpace(Model.Customer?.Address) ? "Chưa cập nhật" : Model.Customer.Address)</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cột phải: Thông tin đơn hàng -->
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-light fw-bold">
+                            <i class="bi bi-bag-check me-2"></i> Thông tin đơn hàng
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-borderless mb-0">
+                                <tr>
+                                    <th class="text-muted" style="width:140px;"><i class="bi bi-hash me-1"></i> Mã đơn</th>
+                                    <td class="fw-bold">#@Model.Id</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted"><i class="bi bi-calendar3 me-1"></i> Ngày đặt</th>
+                                    <td>@Model.OrderDate.ToString("HH:mm - dd/MM/yyyy")</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted"><i class="bi bi-flag me-1"></i> Trạng thái</th>
+                                    <td>
+                                        <span class="badge @badgeClass fs-6">
+                                            <i class="bi @statusIcon me-1"></i> @statusText
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted"><i class="bi bi-chat-left-text me-1"></i> Ghi chú</th>
+                                    <td>@(string.IsNullOrWhiteSpace(Model.Notes) ? "Không có ghi chú" : Model.Notes)</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
         </div>
 
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead>
-                    <tr>
-                        <th>Sản phẩm</th>
-                        <th>Số lượng</th>
-                        <th>Đơn giá</th>
-                        <th>Thành tiền</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model.OrderDetails != null && Model.OrderDetails.Any())
-                    {
-                        @foreach (var detail in Model.OrderDetails)
-                        {
+        <!-- Bảng chi tiết sản phẩm -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-light fw-bold">
+                <i class="bi bi-box-seam me-2"></i> Danh sách sản phẩm đặt mua (@(Model.OrderDetails?.Count ?? 0) sản phẩm)
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
                             <tr>
-                                <td><strong>@(detail.Product?.Name ?? "Sản phẩm đã xóa")</strong></td>
-                                <td>@detail.Quantity</td>
-                                <td>@detail.UnitPrice.ToString("N0") ₫</td>
-                                <td><strong>@((detail.Quantity * detail.UnitPrice).ToString("N0")) ₫</strong></td>
+                                <th style="width:50px;">STT</th>
+                                <th>Hình ảnh</th>
+                                <th>Tên sản phẩm</th>
+                                <th class="text-center">Số lượng</th>
+                                <th class="text-end">Đơn giá</th>
+                                <th class="text-end">Thành tiền</th>
                             </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.OrderDetails != null && Model.OrderDetails.Any())
+                            {
+                                int stt = 1;
+                                @foreach (var detail in Model.OrderDetails)
+                                {
+                                    <tr>
+                                        <td class="text-muted">@(stt++)</td>
+                                        <td>
+                                            @if (!string.IsNullOrWhiteSpace(detail.Product?.ImageUrl))
+                                            {
+                                                <img src="@detail.Product.ImageUrl" alt="@detail.Product?.Name" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 1px solid #eee;" />
+                                            }
+                                            else
+                                            {
+                                                <div style="width:50px; height:50px; background:#f0f0f0; border-radius:6px; display:flex; align-items:center; justify-content:center;">
+                                                    <i class="bi bi-image text-muted"></i>
+                                                </div>
+                                            }
+                                        </td>
+                                        <td><strong>@(detail.Product?.Name ?? "Sản phẩm đã xóa")</strong></td>
+                                        <td class="text-center">x@(detail.Quantity)</td>
+                                        <td class="text-end">@detail.UnitPrice.ToString("N0") ₫</td>
+                                        <td class="text-end fw-bold">@((detail.Quantity * detail.UnitPrice).ToString("N0")) ₫</td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr><td colspan="6" class="text-center py-4 text-muted">Đơn hàng chưa có chi tiết sản phẩm.</td></tr>
+                            }
+                        </tbody>
+                        @if (Model.OrderDetails != null && Model.OrderDetails.Any())
+                        {
+                            <tfoot class="table-light">
+                                <tr>
+                                    <td colspan="5" class="text-end text-muted">Tạm tính:</td>
+                                    <td class="text-end fw-bold">@total.ToString("N0") ₫</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="5" class="text-end text-muted">Phí vận chuyển:</td>
+                                    <td class="text-end">@shippingFee.ToString("N0") ₫</td>
+                                </tr>
+                                <tr class="table-success">
+                                    <td colspan="5" class="text-end fw-bold fs-5">Tổng thanh toán:</td>
+                                    <td class="text-end fw-bold fs-5 text-success">@grandTotal.ToString("N0") ₫</td>
+                                </tr>
+                            </tfoot>
                         }
-                    }
-                    else
-                    {
-                        <tr><td colspan="4" class="text-center py-4 text-muted">Đơn hàng chưa có chi tiết sản phẩm.</td></tr>
-                    }
-                </tbody>
-            </table>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </section>

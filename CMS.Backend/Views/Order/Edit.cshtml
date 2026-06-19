@@ -1,62 +1,263 @@
 @model CMS.Data.Entities.Order
+@using System.Text.RegularExpressions
 
 @{
-    ViewData["Title"] = "Chỉnh sửa đơn hàng";
+    ViewData["Title"] = "Cập nhật trạng thái đơn hàng";
     Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    var currentStatusText = Model.Status switch { 0 => "Chờ duyệt", 1 => "Đang giao", 2 => "Hoàn thành", 3 => "Đã hủy", _ => "Không xác định" };
+    var currentBadgeClass = Model.Status switch { 0 => "bg-warning text-dark", 1 => "bg-primary", 2 => "bg-success", 3 => "bg-danger", _ => "bg-secondary" };
+
+    // Phân tích ghi chú lấy thông tin nhận hàng thực tế
+    string recipientName = "";
+    string recipientPhone = "";
+    string recipientEmail = "";
+    string deliveryAddress = "";
+    string customerNotes = "";
+    bool isParsed = false;
+
+    if (!string.IsNullOrEmpty(Model.Notes))
+    {
+        var match = Regex.Match(Model.Notes, @"^\[Giao tới:\s*(.*?)\s*-\s*SĐT:\s*(.*?)\s*-\s*Email:\s*(.*?)\s*-\s*Đ/C:\s*(.*?)\](?:\.\s*Ghi chú khách hàng:\s*(.*))?$", RegexOptions.Singleline);
+        if (match.Success)
+        {
+            recipientName = match.Groups[1].Value.Trim();
+            recipientPhone = match.Groups[2].Value.Trim();
+            recipientEmail = match.Groups[3].Value.Trim();
+            deliveryAddress = match.Groups[4].Value.Trim();
+            customerNotes = match.Groups[5].Value.Trim();
+            isParsed = true;
+        }
+    }
 }
 
 <section class="admin-card">
     <div class="admin-card__header">
         <div>
-            <p class="admin-eyebrow mb-1">Edit Order</p>
-            <h2 class="h4 fw-bold mb-0"><i class="bi bi-pencil-square"></i> Chỉnh sửa đơn hàng</h2>
+            <p class="admin-eyebrow mb-1">Update Order Status</p>
+            <h2 class="h4 fw-bold mb-0"><i class="bi bi-pencil-square"></i> Cập nhật đơn hàng #@Model.Id</h2>
         </div>
     </div>
 
     <div class="admin-card__body">
         <form id="order-edit-form" asp-action="Edit" method="post">
             <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="CustomerId" />
+            <input type="hidden" asp-for="OrderDate" />
+            <input type="hidden" asp-for="Notes" />
+
             @if (!ViewData.ModelState.IsValid)
             {
                 <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
             }
 
             <div class="row g-4">
-                <div class="col-lg-8">
-                    <div class="mb-3">
-                        <label asp-for="CustomerId" class="form-label fw-bold">Khách hàng: <span class="text-danger">*</span></label>
-                        <select asp-for="CustomerId" class="form-select" asp-items="ViewBag.CustomerList" required>
-                            <option value="">-- Chọn khách hàng --</option>
-                        </select>
-                    </div>
-
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label asp-for="OrderDate" class="form-label fw-bold">Ngày đặt:</label>
-                                <input asp-for="OrderDate" type="datetime-local" class="form-control" />
+                <!-- Cột trái: Thông tin đơn hàng / giao nhận (chỉ đọc) -->
+                <div class="col-lg-6">
+                    @if (isParsed)
+                    {
+                        <!-- Địa chỉ nhận hàng thực tế -->
+                        <div class="card border-0 shadow-sm mb-4 border-start border-4 border-warning">
+                            <div class="card-header bg-warning bg-opacity-10 fw-bold text-dark">
+                                <i class="bi bi-truck me-2 text-warning"></i> Địa chỉ nhận hàng thực tế
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-borderless mb-0">
+                                    <tr>
+                                        <th class="text-muted" style="width:130px;"><i class="bi bi-person-fill me-1"></i> Người nhận</th>
+                                        <td class="fw-bold text-primary">@recipientName</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="text-muted"><i class="bi bi-telephone-fill me-1"></i> Số điện thoại</th>
+                                        <td class="fw-bold text-dark">@recipientPhone</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="text-muted"><i class="bi bi-envelope-fill me-1"></i> Email</th>
+                                        <td>@recipientEmail</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="text-muted"><i class="bi bi-geo-alt-fill me-1"></i> Địa chỉ</th>
+                                        <td class="small text-muted">@deliveryAddress</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="text-muted"><i class="bi bi-chat-left-text-fill me-1"></i> Ghi chú KH</th>
+                                        <td class="text-danger fw-bold">@(string.IsNullOrWhiteSpace(customerNotes) ? "Không có ghi chú" : customerNotes)</td>
+                                    </tr>
+                                </table>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label asp-for="Status" class="form-label fw-bold">Trạng thái:</label>
-                                <select asp-for="Status" class="form-select">
-                                    <option value="0">Chờ duyệt</option>
-                                    <option value="1">Đang giao</option>
-                                    <option value="2">Đã xong</option>
+
+                        <!-- Tài khoản đặt mua -->
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-light fw-bold">
+                                <i class="bi bi-person-circle me-2"></i> Tài khoản khách hàng
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-borderless mb-0">
+                                    <tr>
+                                        <th class="text-muted" style="width:130px;">Họ tên</th>
+                                        <td>@(ViewBag.CustomerName ?? "Không xác định")</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="text-muted">SĐT tài khoản</th>
+                                        <td>@(ViewBag.CustomerPhone ?? "-")</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="text-muted">Ngày đặt đơn</th>
+                                        <td>@Model.OrderDate.ToString("HH:mm - dd/MM/yyyy")</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-light fw-bold">
+                                <i class="bi bi-info-circle me-2"></i> Thông tin đơn hàng (Chỉ đọc)
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-borderless mb-0">
+                                    <tr>
+                                        <th class="text-muted" style="width:130px;">Mã đơn hàng</th>
+                                        <td class="fw-bold">#@Model.Id</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="text-muted">Khách hàng</th>
+                                        <td>@(ViewBag.CustomerName ?? "Không xác định")</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="text-muted">SĐT</th>
+                                        <td>@(ViewBag.CustomerPhone ?? "-")</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="text-muted">Email</th>
+                                        <td>@(ViewBag.CustomerEmail ?? "-")</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="text-muted">Ngày đặt</th>
+                                        <td>@Model.OrderDate.ToString("HH:mm - dd/MM/yyyy")</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="text-muted">Trạng thái hiện tại</th>
+                                        <td><span class="badge @currentBadgeClass">@currentStatusText</span></td>
+                                    </tr>
+                                    <tr>
+                                        <th class="text-muted">Ghi chú</th>
+                                        <td>@(string.IsNullOrWhiteSpace(Model.Notes) ? "Không có ghi chú" : Model.Notes)</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Cột phải: Cập nhật trạng thái -->
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-light fw-bold">
+                            <i class="bi bi-gear me-2"></i> Thao tác cập nhật
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-4">
+                                <label asp-for="Status" class="form-label fw-bold">Cập nhật trạng thái đơn hàng: <span class="text-danger">*</span></label>
+                                <select asp-for="Status" class="form-select form-select-lg" id="status-select">
+                                    <option value="0">⏳ Chờ duyệt (Pending)</option>
+                                    <option value="1">🚚 Đang giao hàng (Shipping)</option>
+                                    <option value="2">✅ Hoàn thành (Completed)</option>
+                                    <option value="3">❌ Đã hủy (Cancelled)</option>
                                 </select>
+                                <div class="form-text text-muted mt-2">
+                                    <i class="bi bi-info-circle me-1"></i> Chọn trạng thái mới rồi nhấn "Cập nhật" để lưu thay đổi.
+                                </div>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label asp-for="Notes" class="form-label fw-bold">Ghi chú:</label>
-                        <textarea asp-for="Notes" class="form-control" rows="4"></textarea>
                     </div>
 
                     <div class="d-flex gap-2 mt-4">
-                        <button type="submit" class="btn btn-warning" id="order-update-button"><i class="bi bi-check-circle"></i> Cập nhật</button>
-                        <a asp-action="Index" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Quay lại</a>
+                        <button type="submit" class="btn btn-warning btn-lg" id="order-update-button">
+                            <i class="bi bi-check-circle"></i> Cập nhật trạng thái
+                        </button>
+                        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-primary btn-lg">
+                            <i class="bi bi-eye"></i> Xem chi tiết
+                        </a>
+                        <a asp-action="Index" class="btn btn-secondary btn-lg">
+                            <i class="bi bi-arrow-left"></i> Quay lại
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bảng chi tiết sản phẩm đặt mua (Chỉ đọc) -->
+            <div class="card border-0 shadow-sm mt-4 mb-4">
+                <div class="card-header bg-light fw-bold">
+                    <i class="bi bi-box-seam me-2"></i> Danh sách sản phẩm đặt mua (@(Model.OrderDetails?.Count ?? 0) sản phẩm)
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width:50px;">STT</th>
+                                    <th>Hình ảnh</th>
+                                    <th>Tên sản phẩm</th>
+                                    <th class="text-center">Số lượng</th>
+                                    <th class="text-end">Đơn giá</th>
+                                    <th class="text-end">Thành tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.OrderDetails != null && Model.OrderDetails.Any())
+                                {
+                                    int stt = 1;
+                                    @foreach (var detail in Model.OrderDetails)
+                                    {
+                                        <tr>
+                                            <td class="text-muted">@(stt++)</td>
+                                            <td>
+                                                @if (!string.IsNullOrWhiteSpace(detail.Product?.ImageUrl))
+                                                {
+                                                    <img src="@detail.Product.ImageUrl" alt="@detail.Product?.Name" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 1px solid #eee;" />
+                                                }
+                                                else
+                                                {
+                                                    <div style="width:50px; height:50px; background:#f0f0f0; border-radius:6px; display:flex; align-items:center; justify-content:center;">
+                                                        <i class="bi bi-image text-muted"></i>
+                                                    </div>
+                                                }
+                                            </td>
+                                            <td><strong>@(detail.Product?.Name ?? "Sản phẩm đã xóa")</strong></td>
+                                            <td class="text-center">x@(detail.Quantity)</td>
+                                            <td class="text-end">@detail.UnitPrice.ToString("N0") ₫</td>
+                                            <td class="text-end fw-bold">@((detail.Quantity * detail.UnitPrice).ToString("N0")) ₫</td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr><td colspan="6" class="text-center py-4 text-muted">Đơn hàng chưa có chi tiết sản phẩm.</td></tr>
+                                }
+                            </tbody>
+                            @if (Model.OrderDetails != null && Model.OrderDetails.Any())
+                            {
+                                var total = Model.OrderDetails?.Sum(x => x.Quantity * x.UnitPrice) ?? 0;
+                                var shippingFee = 35000m;
+                                var grandTotal = total + shippingFee;
+                                <tfoot class="table-light">
+                                    <tr>
+                                        <td colspan="5" class="text-end text-muted">Tạm tính:</td>
+                                        <td class="text-end fw-bold">@total.ToString("N0") ₫</td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="5" class="text-end text-muted">Phí vận chuyển:</td>
+                                        <td class="text-end">@shippingFee.ToString("N0") ₫</td>
+                                    </tr>
+                                    <tr class="table-success">
+                                        <td colspan="5" class="text-end fw-bold fs-5">Tổng thanh toán:</td>
+                                        <td class="text-end fw-bold fs-5 text-success">@grandTotal.ToString("N0") ₫</td>
+                                    </tr>
+                                </tfoot>
+                            }
+                        </table>
                     </div>
                 </div>
             </div>
@@ -67,7 +268,11 @@
 @section Scripts {
 <script>
   document.getElementById('order-edit-form').addEventListener('submit', function (e) {
-    if (!confirm('Bạn có chắc muốn cập nhật đơn hàng này không?')) e.preventDefault();
+    var statusSelect = document.getElementById('status-select');
+    var statusText = statusSelect.options[statusSelect.selectedIndex].text;
+    if (!confirm('Bạn có chắc muốn cập nhật trạng thái đơn hàng sang "' + statusText.trim() + '" không?')) {
+      e.preventDefault();
+    }
   });
 </script>
 }

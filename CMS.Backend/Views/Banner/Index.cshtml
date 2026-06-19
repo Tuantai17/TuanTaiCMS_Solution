@@ -1,0 +1,142 @@
+@model IEnumerable<CMS.Data.Entities.Banner>
+
+@{
+    ViewData["Title"] = "Quản lý Banner";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<section class="admin-card">
+    <div class="admin-card__header">
+        <div>
+            <p class="admin-eyebrow mb-1">Banner Slider Management</p>
+            <h2 class="h4 fw-bold mb-0"><i class="bi bi-images"></i> Danh sách Banner quảng cáo</h2>
+        </div>
+        <a asp-action="Create" class="btn btn-success" id="banner-create-button">
+            <i class="bi bi-plus-circle"></i> Thêm Banner mới
+        </a>
+    </div>
+
+    <div class="admin-card__body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">Mã</th>
+                        <th style="width: 150px;">Hình ảnh</th>
+                        <th>Tiêu đề / Mô tả</th>
+                        <th>Liên kết trỏ tới</th>
+                        <th>Loại ảnh</th>
+                        <th style="width: 150px;" class="text-center">Thứ tự hiển thị</th>
+                        <th style="width: 150px;" class="text-center">Trạng thái (Ẩn/Hiện)</th>
+                        <th class="text-end" style="width: 180px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        var isUpload = item.ImageUrl.StartsWith("/uploads/");
+                        <tr>
+                            <td><span class="text-muted small">#@item.Id</span></td>
+                            <td>
+                                <div class="position-relative overflow-hidden rounded border bg-light d-flex align-items-center justify-content-center" style="width: 120px; height: 60px;">
+                                    @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                    {
+                                        <img src="@item.ImageUrl" alt="@item.Title" style="width: 100%; height: 100%; object-fit: cover;" />
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-image text-muted fs-4"></i>
+                                    }
+                                </div>
+                            </td>
+                            <td>
+                                <strong>@(string.IsNullOrWhiteSpace(item.Title) ? "Không có tiêu đề" : item.Title)</strong>
+                            </td>
+                            <td>
+                                @if (string.IsNullOrWhiteSpace(item.TargetUrl))
+                                {
+                                    <span class="text-muted small">Không có</span>
+                                }
+                                else
+                                {
+                                    <code class="text-secondary">@item.TargetUrl</code>
+                                }
+                            </td>
+                            <td>
+                                @if (isUpload)
+                                {
+                                    <span class="badge bg-primary"><i class="bi bi-cloud-arrow-up-fill"></i> Upload</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary"><i class="bi bi-link-45deg"></i> External URL</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-info text-dark">@item.DisplayOrder</span>
+                            </td>
+                            <td class="text-center">
+                                <div class="form-check form-switch d-inline-block mb-0">
+                                    <input class="form-check-input toggle-visible-switch"
+                                           type="checkbox"
+                                           data-id="@item.Id"
+                                           @(item.IsVisible ? "checked" : "")
+                                           style="cursor: pointer; width: 2.4em; height: 1.2em;" />
+                                </div>
+                            </td>
+                            <td class="text-end">
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">
+                                    <i class="bi bi-pencil"></i> Sửa
+                                </a>
+                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger"
+                                   onclick="return confirm('Bạn có chắc chắn muốn xóa banner này không?')">
+                                    <i class="bi bi-trash"></i> Xóa
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="bi bi-images fs-2 d-block mb-2 text-secondary"></i>
+                                Chưa có banner quảng cáo nào được định nghĩa. <a asp-action="Create">Thêm ngay</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // Xử lý AJAX bật/tắt trạng thái hiển thị của Banner
+    document.querySelectorAll('.toggle-visible-switch').forEach(function (toggleEl) {
+        toggleEl.addEventListener('change', function () {
+            const bannerId = this.getAttribute('data-id');
+            const switchEl = this;
+
+            fetch('@Url.Action("ToggleVisible", "Banner")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'id=' + bannerId
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    alert(data.message || 'Có lỗi xảy ra.');
+                    switchEl.checked = !switchEl.checked; // revert
+                }
+            })
+            .catch(err => {
+                alert('Lỗi kết nối server.');
+                switchEl.checked = !switchEl.checked; // revert
+            });
+        });
+    });
+});
+</script>
+}

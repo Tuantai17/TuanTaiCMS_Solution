@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { getMediaUrl } from '../utils/mediaUrl';
 
 const ProductCard = ({ item }) => {
   const [isFavorite, setIsFavorite] = useState(false);
@@ -9,44 +10,54 @@ const ProductCard = ({ item }) => {
     return new Intl.NumberFormat('vi-VN').format(value) + " VND";
   };
 
-  // Giả lập mức giảm giá dựa trên ID sản phẩm nếu dữ liệu thật chưa hỗ trợ
-  const discountPercent = item.discountPercent || (item.id % 3 === 0 ? 50 : (item.id % 2 === 0 ? 25 : 80));
-  const originalPrice = item.originalPrice || Math.round(item.price / (1 - discountPercent / 100));
+  // Sử dụng dữ liệu thực từ API: discountPercent, salePrice, isNew, isSale
+  const isSale = item.isSale === true && item.salePrice > 0;
+  const isNew = item.isNew === true;
+  const discountPercent = item.discountPercent || 0;
+  const displayPrice = isSale ? item.salePrice : item.price;
+  const originalPrice = item.price;
+  const imageUrl = getMediaUrl(item.imageUrl, "https://placehold.co/200x200/e9ecef/6c757d?text=No+Image");
+
+  // Xác định nhãn tag bên trái
+  const tagLabel = isNew ? 'NEW' : (item.isBestSelling ? 'HOT' : (item.tagLabel || (item.price > 500000 ? 'LEGO' : 'SẢN PHẨM')));
+  const tagColor = isNew ? '#28a745' : (item.isBestSelling ? '#e0a800' : '#002664');
 
   return (
     <div className="card h-100 shadow-sm border border-light product-card-hover rounded-lg overflow-hidden d-flex flex-column" style={{ transition: 'all 0.3s', borderRadius: '16px' }}>
       {/* Khối chứa ảnh & các nhãn Tag */}
       <div className="position-relative p-3 text-center d-flex align-items-center justify-content-center bg-white" style={{ height: '200px' }}>
-        {/* Nhãn Tag bên trái (OUTLET / LEGO / NEW) */}
+        {/* Nhãn Tag bên trái (NEW / OUTLET / LEGO) */}
         <span className="position-absolute badge text-white px-2 py-1" style={{ 
           top: '12px', 
           left: '12px', 
           fontSize: '0.75rem', 
           fontWeight: 'bold',
-          backgroundColor: '#002664',
+          backgroundColor: tagColor,
           borderRadius: '4px',
           textTransform: 'uppercase',
           zIndex: 2
         }}>
-          {item.tagLabel || (item.id % 2 === 0 ? 'OUTLET' : 'LEGO')}
+          {tagLabel}
         </span>
 
-        {/* Nhãn phần trăm giảm giá bên phải */}
-        <span className="position-absolute badge text-white px-2 py-1" style={{ 
-          top: '12px', 
-          right: '12px', 
-          fontSize: '0.75rem', 
-          fontWeight: 'bold',
-          backgroundColor: '#CF102D',
-          borderRadius: '4px',
-          zIndex: 2
-        }}>
-          -{discountPercent}%
-        </span>
+        {/* Nhãn phần trăm giảm giá bên phải - chỉ hiển thị khi có Sale */}
+        {isSale && discountPercent > 0 && (
+          <span className="position-absolute badge text-white px-2 py-1" style={{ 
+            top: '12px', 
+            right: '12px', 
+            fontSize: '0.75rem', 
+            fontWeight: 'bold',
+            backgroundColor: '#CF102D',
+            borderRadius: '4px',
+            zIndex: 2
+          }}>
+            -{discountPercent}%
+          </span>
+        )}
 
         <Link to={`/products/${item.id}`} className="d-block w-100 h-100 d-flex align-items-center justify-content-center">
           <img 
-            src={item.imageUrl || "https://placehold.co/200x200/e9ecef/6c757d?text=No+Image"} 
+            src={imageUrl} 
             className="img-fluid" 
             alt={item.name} 
             style={{ maxHeight: '160px', maxWidth: '100%', objectFit: 'contain', transition: 'transform 0.4s ease' }} 
@@ -85,11 +96,13 @@ const ProductCard = ({ item }) => {
         <div className="mt-2">
           <div className="d-flex align-items-baseline flex-wrap">
             <span className="text-danger font-weight-bold mr-2" style={{ fontSize: '1rem', color: '#CF102D' }}>
-              {formatCurrency(item.price)}
+              {formatCurrency(displayPrice)}
             </span>
-            <span className="text-muted text-decoration-line-through small" style={{ fontSize: '0.75rem', textDecoration: 'line-through', opacity: 0.6 }}>
-              {formatCurrency(originalPrice)}
-            </span>
+            {isSale && (
+              <span className="text-muted text-decoration-line-through small" style={{ fontSize: '0.75rem', textDecoration: 'line-through', opacity: 0.6 }}>
+                {formatCurrency(originalPrice)}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -108,9 +121,9 @@ const ProductCard = ({ item }) => {
                 cart.push({
                   id: item.id,
                   name: item.name,
-                  price: item.price,
+                  price: displayPrice,
                   quantity: 1,
-                  imageUrl: item.imageUrl,
+                  imageUrl,
                   sku: item.sku || `SKU${120000 + item.id}`
                 });
               }

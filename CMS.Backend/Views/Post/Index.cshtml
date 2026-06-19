@@ -9,12 +9,16 @@ Chú thích chi tiết:
 - View này hiển thị danh sách bài viết dạng bảng quản trị.
 - Model là danh sách Post, mỗi phần tử được render bằng vòng lặp foreach.
 - Các nút Xem, Sửa và Xóa truyền Id qua route để controller xử lý đúng bản ghi.
+- Hỗ trợ phân trang và toggle on/off hiển thị trang chủ.
 *@
 
 @model IEnumerable<CMS.Data.Entities.Post>
 
 @{
     ViewData["Title"] = "Quản lý bài viết";
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    int totalPosts = ViewBag.TotalPosts ?? 0;
 }
 
 <section class="admin-card">
@@ -29,14 +33,35 @@ Chú thích chi tiết:
     </div>
 
     <div class="admin-card__body">
+        <!-- Bảng điều khiển xóa hàng loạt -->
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <button type="button" class="btn btn-danger" id="btnDeleteSelected" disabled>
+                <i class="bi bi-trash"></i> Xóa đã chọn
+            </button>
+            <button type="button" class="btn btn-secondary" id="btnDeselectAll" disabled>
+                Bỏ chọn
+            </button>
+            <span class="text-muted ms-2" id="selectedCountText">Đã chọn 0 bài viết</span>
+            <span class="text-muted ms-auto">Tổng: <strong>@totalPosts</strong> bài viết</span>
+        </div>
+
+        <!-- Form ẩn để submit POST xóa nhiều -->
+        <form id="deleteSelectedForm" asp-action="DeleteSelected" method="post" style="display:none;">
+            @Html.AntiForgeryToken()
+        </form>
+
         <div class="table-responsive">
             <table class="table table-hover align-middle">
                 <thead>
                     <tr>
+                        <th style="width: 40px;">
+                            <input type="checkbox" class="form-check-input" id="selectAll" />
+                        </th>
                         <th>Ảnh</th>
                         <th>Tiêu đề</th>
                         <th>Danh mục</th>
                         <th>Ngày đăng</th>
+                        <th class="text-center" style="width: 120px;">Hiển thị Home</th>
                         <th class="text-end" style="width: 220px;">Thao tác</th>
                     </tr>
                 </thead>
@@ -44,6 +69,9 @@ Chú thích chi tiết:
                     @foreach (var item in Model)
                     {
                         <tr>
+                            <td>
+                                <input type="checkbox" class="form-check-input post-checkbox" value="@item.Id" />
+                            </td>
                             <td>
                                 <img src="@(string.IsNullOrWhiteSpace(item.ImageUrl) ? "/images/no-image.png" : item.ImageUrl)"
                                      class="post-thumb"
@@ -57,6 +85,16 @@ Chú thích chi tiết:
                                 <span class="post-category-badge">@(item.Category?.Name ?? "Chưa có danh mục")</span>
                             </td>
                             <td>@item.CreatedDate.ToString("dd/MM/yyyy")</td>
+                            <td class="text-center">
+                                <div class="form-check form-switch d-flex justify-content-center">
+                                    <input class="form-check-input toggle-featured" 
+                                           type="checkbox" 
+                                           role="switch" 
+                                           data-id="@item.Id" 
+                                           @(item.IsFeatured ? "checked" : "")
+                                           style="width: 3em; height: 1.5em; cursor: pointer;" />
+                                </div>
+                            </td>
                             <td class="text-end">
                                 <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Xem</a>
                                 <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">Sửa</a>
@@ -69,5 +107,149 @@ Chú thích chi tiết:
                 </tbody>
             </table>
         </div>
+
+        <!-- Phân trang -->
+        @if (totalPages > 1)
+        {
+            <nav aria-label="Post pagination" class="mt-3">
+                <ul class="pagination justify-content-center mb-0">
+                    <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@(currentPage - 1)">
+                            <i class="bi bi-chevron-left"></i> Trước
+                        </a>
+                    </li>
+                    @for (int i = 1; i <= totalPages; i++)
+                    {
+                        <li class="page-item @(currentPage == i ? "active" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-page="@i">@i</a>
+                        </li>
+                    }
+                    <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@(currentPage + 1)">
+                            Sau <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        }
     </div>
 </section>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const selectAllCheckbox = document.getElementById("selectAll");
+            const postCheckboxes = document.querySelectorAll(".post-checkbox");
+            const btnDeleteSelected = document.getElementById("btnDeleteSelected");
+            const btnDeselectAll = document.getElementById("btnDeselectAll");
+            const selectedCountText = document.getElementById("selectedCountText");
+            const deleteSelectedForm = document.getElementById("deleteSelectedForm");
+
+            function updateUIState() {
+                const checkedCheckboxes = document.querySelectorAll(".post-checkbox:checked");
+                const count = checkedCheckboxes.length;
+
+                // Cập nhật số lượng bài viết đã chọn
+                selectedCountText.textContent = `Đã chọn ${count} bài viết`;
+
+                // Bật/tắt trạng thái các nút bấm
+                if (count > 0) {
+                    btnDeleteSelected.removeAttribute("disabled");
+                    btnDeselectAll.removeAttribute("disabled");
+                } else {
+                    btnDeleteSelected.setAttribute("disabled", "true");
+                    btnDeselectAll.setAttribute("disabled", "true");
+                }
+
+                // Cập nhật trạng thái checkbox "selectAll" ở header
+                selectAllCheckbox.checked = (count === postCheckboxes.length && postCheckboxes.length > 0);
+            }
+
+            // Xử lý sự kiện checkbox "Chọn tất cả"
+            selectAllCheckbox.addEventListener("change", function () {
+                postCheckboxes.forEach(cb => {
+                    cb.checked = selectAllCheckbox.checked;
+                });
+                updateUIState();
+            });
+
+            // Xử lý sự kiện cho từng checkbox bài viết
+            postCheckboxes.forEach(cb => {
+                cb.addEventListener("change", function () {
+                    updateUIState();
+                });
+            });
+
+            // Nút "Bỏ chọn"
+            btnDeselectAll.addEventListener("click", function () {
+                postCheckboxes.forEach(cb => {
+                    cb.checked = false;
+                });
+                selectAllCheckbox.checked = false;
+                updateUIState();
+            });
+
+            // Nút "Xóa đã chọn"
+            btnDeleteSelected.addEventListener("click", function () {
+                const checkedCheckboxes = document.querySelectorAll(".post-checkbox:checked");
+                if (checkedCheckboxes.length === 0) {
+                    alert("Vui lòng chọn ít nhất một bài viết.");
+                    return;
+                }
+
+                if (confirm("Bạn có chắc muốn xóa các bài viết đã chọn không?")) {
+                    // Xóa các input cũ đã append (nếu có)
+                    const oldInputs = deleteSelectedForm.querySelectorAll("input[name='ids']");
+                    oldInputs.forEach(input => input.remove());
+
+                    // Append danh sách ID đã chọn vào form
+                    checkedCheckboxes.forEach(cb => {
+                        const input = document.createElement("input");
+                        input.type = "hidden";
+                        input.name = "ids";
+                        input.value = cb.value;
+                        deleteSelectedForm.appendChild(input);
+                    });
+
+                    // Submit form
+                    deleteSelectedForm.submit();
+                }
+            });
+
+            // Toggle Featured (AJAX) — Bật/tắt hiển thị trên trang chủ
+            document.querySelectorAll(".toggle-featured").forEach(toggle => {
+                toggle.addEventListener("change", function () {
+                    const postId = this.dataset.id;
+                    const checkbox = this;
+
+                    fetch(`/Post/ToggleFeatured?id=${postId}`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Hiển thị toast thông báo nhỏ
+                            const toast = document.createElement("div");
+                            toast.className = "alert alert-success alert-dismissible fade show position-fixed";
+                            toast.style.cssText = "top: 20px; right: 20px; z-index: 9999; min-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);";
+                            toast.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i>${data.message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+                            document.body.appendChild(toast);
+                            setTimeout(() => toast.remove(), 3000);
+                        } else {
+                            checkbox.checked = !checkbox.checked;
+                            alert("Lỗi: " + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        checkbox.checked = !checkbox.checked;
+                        alert("Lỗi kết nối: " + error.message);
+                    });
+                });
+            });
+
+            // Khởi tạo trạng thái ban đầu
+            updateUIState();
+        });
+    </script>
+}

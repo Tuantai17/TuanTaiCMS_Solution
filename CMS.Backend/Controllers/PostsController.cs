@@ -42,6 +42,8 @@ namespace CMS.Backend.Controllers
             p.Title, // Tiêu đề bài viết
             p.ImageUrl, // Ảnh đại diện bài viết
             p.CreatedDate, // Ngày giờ tạo bài viết
+            p.CategoryId, // Mã danh mục bài viết
+            p.IsFeatured, // Trạng thái hiển thị trên trang chủ
             ShortDescription = string.IsNullOrWhiteSpace(p.Content)
               ? "Đang cập nhật nội dung tóm tắt cho bài viết..."
               : (p.Content.Length > 180 ? p.Content.Substring(0, 180) + "..." : p.Content),
@@ -67,6 +69,7 @@ namespace CMS.Backend.Controllers
       {
         // Lọc danh sách các bài viết có CategoryId khớp với tham số truyền vào từ URL
         var posts = await _context.Posts
+          .Include(p => p.Category)
           .Where(p => p.CategoryId == categoryId) // Thực hiện câu lệnh lọc Where trong cơ sở dữ liệu
           .OrderByDescending(p => p.Id) // Sắp xếp bài viết theo ID giảm dần (mới nhất lên đầu)
           .Select(p => new // Kỹ thuật gọt tỉa dữ liệu giúp giảm dung lượng gói tin truyền tải qua mạng
@@ -74,7 +77,13 @@ namespace CMS.Backend.Controllers
             p.Id, // Mã định danh bài viết
             p.Title, // Tiêu đề bài viết
             p.ImageUrl, // Ảnh đại diện bài viết
-            p.CreatedDate // Ngày tạo bài viết
+            p.CreatedDate, // Ngày tạo bài viết
+            p.CategoryId,
+            p.IsFeatured,
+            ShortDescription = string.IsNullOrWhiteSpace(p.Content)
+              ? "Đang cập nhật nội dung tóm tắt cho bài viết..."
+              : (p.Content.Length > 180 ? p.Content.Substring(0, 180) + "..." : p.Content),
+            CategoryName = p.Category != null ? p.Category.Name : "Không xác định"
           })
           .ToListAsync(); // Chuyển kết quả bất đồng bộ sang dạng mảng
 
@@ -87,7 +96,40 @@ namespace CMS.Backend.Controllers
       }
     }
 
-    // 3. Chỉ định phương thức GET lấy chi tiết 100% dữ liệu của duy nhất một bài viết theo ID
+    // 3. API lấy danh sách bài viết nổi bật (IsFeatured = true) cho trang chủ
+    // Đường dẫn truy cập: GET https://localhost:xxxx/api/posts/featured
+    [HttpGet("featured")]
+    public async Task<IActionResult> GetFeatured()
+    {
+      try
+      {
+        var posts = await _context.Posts
+          .Include(p => p.Category)
+          .Where(p => p.IsFeatured) // Chỉ lấy bài viết được đánh dấu hiển thị trang chủ
+          .OrderByDescending(p => p.Id)
+          .Select(p => new
+          {
+            p.Id,
+            p.Title,
+            p.ImageUrl,
+            p.CreatedDate,
+            p.IsFeatured,
+            ShortDescription = string.IsNullOrWhiteSpace(p.Content)
+              ? "Đang cập nhật nội dung tóm tắt cho bài viết..."
+              : (p.Content.Length > 180 ? p.Content.Substring(0, 180) + "..." : p.Content),
+            CategoryName = p.Category != null ? p.Category.Name : "Không xác định"
+          })
+          .ToListAsync();
+
+        return Ok(posts);
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, new { message = "Lỗi hệ thống khi lấy bài viết nổi bật", detail = ex.Message });
+      }
+    }
+
+    // 4. Chỉ định phương thức GET lấy chi tiết 100% dữ liệu của duy nhất một bài viết theo ID
     // Đường dẫn truy cập: GET https://localhost:xxxx/api/posts/{id}
     [HttpGet("{id}")]
     public async Task<IActionResult> GetDetail(int id)

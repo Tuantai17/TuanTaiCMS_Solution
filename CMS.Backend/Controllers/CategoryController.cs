@@ -6,6 +6,9 @@ Ngày Tạo: 15/5/2026
 Mô tả: Controller quản lý danh mục bài viết, dùng để thêm, sửa, xóa và hiển thị danh mục trong hệ thống.
 */
 
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization; // Buổi 5: Namespace cần thiết để dùng [Authorize]
 using Microsoft.AspNetCore.Mvc;
 using CMS.Data;
@@ -31,11 +34,12 @@ namespace CMS.Backend.Controllers
         }
 
         // Action Index dùng để hiển thị danh sách tất cả danh mục.
+        // Include(c => c.Posts) để nạp trước danh sách bài viết nhằm hiển thị số lượng bài viết của từng danh mục.
         // ToList() thực thi truy vấn và lấy dữ liệu từ bảng Categories về bộ nhớ.
         // return View(data) truyền danh sách danh mục sang Views/Category/Index.cshtml.
         public IActionResult Index()
         {
-            var data = _context.Categories.ToList();
+            var data = _context.Categories.Include(c => c.Posts).ToList();
             return View(data);
         }
 
@@ -63,14 +67,69 @@ namespace CMS.Backend.Controllers
         // Action Delete nhận id danh mục cần xóa từ route.
         // Find(id) tìm danh mục theo khóa chính trong database.
         // Kiểm tra null để tránh lỗi khi id không tồn tại.
+        // Kiểm tra bài viết liên quan trước khi xóa để tránh lỗi khóa ngoại và giữ toàn vẹn dữ liệu.
         public IActionResult Delete(int id)
         {
             var category = _context.Categories.Find(id);
 
             if (category != null)
             {
+                bool hasPosts = _context.Posts.Any(p => p.CategoryId == id);
+                if (hasPosts)
+                {
+                    TempData["ErrorMessage"] = $"Không thể xóa danh mục \"{category.Name}\" đang có bài viết.";
+                    return RedirectToAction("Index");
+                }
+
                 _context.Categories.Remove(category);
                 _context.SaveChanges();
+                TempData["SuccessMessage"] = "Danh mục đã được xóa thành công!";
+            }
+
+            return RedirectToAction("Index");
+        }
+
+        // Action POST DeleteSelected nhận danh sách các id danh mục cần xóa.
+        // ValidateAntiForgeryToken để chống tấn công giả mạo request giả mạo chéo trang (CSRF).
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult DeleteSelected(List<int> ids)
+        {
+            if (ids == null || !ids.Any())
+            {
+                TempData["ErrorMessage"] = "Vui lòng chọn ít nhất một danh mục.";
+                return RedirectToAction("Index");
+            }
+
+            // Lấy danh sách tên các danh mục bị chặn xóa do chứa bài viết
+            var restrictedCategories = _context.Categories
+                .Where(c => ids.Contains(c.Id) && _context.Posts.Any(p => p.CategoryId == c.Id))
+                .Select(c => c.Name)
+                .ToList();
+
+            if (restrictedCategories.Any())
+            {
+                var categoryNames = string.Join(", ", restrictedCategories.Select(name => $"\"{name}\""));
+                TempData["ErrorMessage"] = $"Không thể xóa danh mục đang có bài viết: {categoryNames}.";
+                return RedirectToAction("Index");
+            }
+
+            // Thực hiện xóa khi tất cả danh mục hợp lệ
+            int deletedCount = 0;
+            foreach (var id in ids)
+            {
+                var category = _context.Categories.Find(id);
+                if (category != null)
+                {
+                    _context.Categories.Remove(category);
+                    deletedCount++;
+                }
+            }
+
+            if (deletedCount > 0)
+            {
+                _context.SaveChanges();
+                TempData["SuccessMessage"] = "Đã xóa thành công các danh mục đã chọn.";
             }
 
             return RedirectToAction("Index");

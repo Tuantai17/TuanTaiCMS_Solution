@@ -57,22 +57,70 @@ Mô tả: Form chỉnh sửa sản phẩm.
                     </div>
 
                     <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input asp-for="IsSale" class="form-check-input" type="checkbox" id="IsSaleCheckbox" style="cursor: pointer; width: 2.2em; height: 1.1em;" />
+                            <label class="form-check-label fw-bold ms-1" for="IsSaleCheckbox">Sản phẩm khuyến mãi (SALE)</label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3" id="SalePriceWrapper" style="display: none;">
+                        <label asp-for="SalePrice" class="form-label fw-bold text-danger">Giá khuyến mãi (₫):</label>
+                        <input asp-for="SalePrice" class="form-control border-danger" type="number" min="0" step="1000" />
+                        <span asp-validation-for="SalePrice" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
                         <label asp-for="StockQuantity" class="form-label fw-bold">Số lượng tồn kho:</label>
                         <input asp-for="StockQuantity" class="form-control" type="number" min="0" />
+                    </div>
+
+                    <div class="mb-3 d-flex gap-4 border p-2 rounded bg-light">
+                        <div class="form-check">
+                            <input asp-for="IsNew" class="form-check-input" type="checkbox" id="IsNewCheckbox" style="cursor: pointer;" />
+                            <label class="form-check-label fw-bold text-success" for="IsNewCheckbox" style="cursor: pointer;">MỚI (NEW)</label>
+                        </div>
+                        <div class="form-check">
+                            <input asp-for="IsBestSelling" class="form-check-input" type="checkbox" id="IsBestSellingCheckbox" style="cursor: pointer;" />
+                            <label class="form-check-label fw-bold text-warning" for="IsBestSellingCheckbox" style="cursor: pointer;">BÁN CHẠY (BEST)</label>
+                        </div>
                     </div>
 
                     @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
                     {
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Ảnh hiện tại:</label>
-                            <img src="@Model.ImageUrl" class="img-fluid rounded-4 border" alt="Ảnh sản phẩm @Model.Name" />
+                            <label class="form-label fw-bold">Ảnh đại diện hiện tại:</label>
+                            <img src="@Model.ImageUrl" class="img-fluid rounded-4 border d-block mx-auto" style="max-height: 150px; object-fit: contain;" alt="Ảnh sản phẩm @Model.Name" />
                         </div>
                     }
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Ảnh mới:</label>
+                        <label class="form-label fw-bold">Thay ảnh đại diện mới:</label>
                         <input type="file" name="uploadImage" class="form-control" accept="image/*" />
-                        <small class="text-muted">Để trống nếu muốn giữ ảnh cũ.</small>
+                        <small class="text-muted">Để trống nếu muốn giữ ảnh đại diện cũ.</small>
+                    </div>
+
+                    @if (Model.ProductImages != null && Model.ProductImages.Any())
+                    {
+                        <div class="mb-3 border p-2 rounded">
+                            <label class="form-label fw-bold text-danger d-block mb-2"><i class="bi bi-trash"></i> Ảnh chi tiết hiện tại (Tích chọn để XÓA):</label>
+                            <div class="row g-2">
+                                @foreach (var img in Model.ProductImages)
+                                {
+                                    <div class="col-4 position-relative text-center">
+                                        <img src="@img.ImageUrl" class="img-thumbnail rounded" style="height: 70px; width: 70px; object-fit: cover;" />
+                                        <div class="position-absolute" style="top: -5px; right: 5px;">
+                                            <input type="checkbox" name="deleteGalleryImages" value="@img.Id" class="form-check-input border-danger" style="cursor: pointer; width: 1.2em; height: 1.2em; background-color: #fff;" title="Tích chọn để xóa ảnh này" />
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tải thêm ảnh chi tiết khác:</label>
+                        <input type="file" name="galleryImages" class="form-control" accept="image/*" multiple />
+                        <small class="text-muted">Chọn thêm các góc chụp mới cho sản phẩm.</small>
                     </div>
 
                     <div class="d-grid gap-2 mt-4">
@@ -89,10 +137,30 @@ Mô tả: Form chỉnh sửa sản phẩm.
 
 @section Scripts {
 <script>
-  document.getElementById('product-edit-form').addEventListener('submit', function (e) {
-    if (!confirm('Bạn có chắc muốn cập nhật sản phẩm này không?')) {
-      e.preventDefault();
+  document.addEventListener("DOMContentLoaded", function () {
+    // Xử lý xác nhận submit form
+    document.getElementById('product-edit-form').addEventListener('submit', function (e) {
+      if (!confirm('Bạn có chắc muốn cập nhật sản phẩm này không?')) {
+        e.preventDefault();
+      }
+    });
+
+    // Ẩn/hiện trường nhập giá Sale
+    const isSaleCheckbox = document.getElementById("IsSaleCheckbox");
+    const salePriceWrapper = document.getElementById("SalePriceWrapper");
+    const salePriceInput = document.querySelector("#SalePriceWrapper input");
+
+    function toggleSalePrice() {
+      if (isSaleCheckbox.checked) {
+        salePriceWrapper.style.display = "block";
+      } else {
+        salePriceWrapper.style.display = "none";
+        // Giữ lại 0 hoặc rỗng khi tắt
+      }
     }
+
+    isSaleCheckbox.addEventListener("change", toggleSalePrice);
+    toggleSalePrice(); // Chạy lúc khởi tạo
   });
 </script>
 }

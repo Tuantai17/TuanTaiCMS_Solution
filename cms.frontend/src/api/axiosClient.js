@@ -2,9 +2,11 @@ import axios from 'axios';
 
 // Khởi tạo thực thể axios với cấu hình kết nối API của Backend
 const axiosClient = axios.create({
-  baseURL: 'https://localhost:7238/api', // Khớp chính xác cổng Port của ASP.NET Core Backend
+  baseURL: process.env.REACT_APP_API_URL || 'https://localhost:7238/api', // Lấy từ biến môi trường hoặc dự phòng mặc định
   headers: {
     'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache',
+    Pragma: 'no-cache',
   },
   timeout: 10000, // Thời gian chờ tối đa 10 giây
 });

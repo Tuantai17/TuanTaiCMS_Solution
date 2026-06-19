@@ -1,5 +1,6 @@
 using CMS.Data;
 using CMS.Data.Entities;
+using CMS.Backend.Helpers;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 
@@ -25,6 +26,9 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.AccessDeniedPath = "/Account/AccessDenied";
     });
 
+// Đăng ký dịch vụ gửi email
+builder.Services.AddTransient<EmailHelper>();
+
 // 1. Đăng ký các dịch vụ bổ trợ khám phá Endpoint phục vụ Web API
 builder.Services.AddEndpointsApiExplorer();
 // 2. Kích hoạt bộ sinh tài liệu API tự động Swagger UI
@@ -40,6 +44,60 @@ builder.Services.AddCors(options => {
 });
 
 var app = builder.Build();
+
+// ===== TỰ ĐỘNG MÃ HÓA MẬT KHẨU PLAIN TEXT TRONG DATABASE =====
+// Chạy một lần khi ứng dụng khởi động.
+// Kiểm tra mật khẩu chưa hash (không bắt đầu bằng "$2") và hash bằng BCrypt.
+// An toàn khi chạy nhiều lần vì chỉ xử lý mật khẩu chưa hash.
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+    // Tự động seed dữ liệu mẫu nếu database trống
+    DbInitializer.Initialize(context);
+
+    // --- Xóa các tài khoản Users có Role không phải Admin/Staff ---
+    // Hệ thống quản trị chỉ cần Admin và Staff, các Role khác (User, Editor) là dữ liệu dư thừa.
+    var invalidUsers = context.Users
+        .Where(u => u.Role != "Admin" && u.Role != "Staff")
+        .ToList();
+
+    if (invalidUsers.Any())
+    {
+        context.Users.RemoveRange(invalidUsers);
+        Console.WriteLine($"==> Đã xóa {invalidUsers.Count} tài khoản không hợp lệ (Role khác Admin/Staff).");
+    }
+
+    // Hash mật khẩu bảng Users (Admin/Staff)
+    var users = context.Users.ToList();
+    bool hasChanges = invalidUsers.Any();
+    foreach (var user in users)
+    {
+        if (!string.IsNullOrEmpty(user.PasswordHash) && !user.PasswordHash.StartsWith("$2"))
+        {
+            user.PasswordHash = PasswordHelper.HashPassword(user.PasswordHash);
+            hasChanges = true;
+        }
+    }
+
+    // Hash mật khẩu bảng Customers (Khách hàng)
+    var customers = context.Customers.ToList();
+    foreach (var customer in customers)
+    {
+        if (!string.IsNullOrEmpty(customer.Password) && !customer.Password.StartsWith("$2"))
+        {
+            customer.Password = PasswordHelper.HashPassword(customer.Password);
+            hasChanges = true;
+        }
+    }
+
+    if (hasChanges)
+    {
+        context.SaveChanges();
+        Console.WriteLine("==> Đã mã hóa BCrypt toàn bộ mật khẩu plain text trong database.");
+    }
+}
+// ================================================================
 
 // Kích hoạt bộ sinh giao diện thử nghiệm API Swagger UI
 app.UseSwagger();
@@ -60,7 +118,15 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+
+// Cấu hình StaticFiles hỗ trợ thêm các MIME type cho ảnh hiện đại (.avif, .webp)
+var provider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
+provider.Mappings[".avif"] = "image/avif";
+provider.Mappings[".webp"] = "image/webp";
+app.UseStaticFiles(new StaticFileOptions
+{
+    ContentTypeProvider = provider
+});
 
 app.UseRouting();
 
@@ -82,3 +148,4 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
+
