@@ -9,50 +9,92 @@
     <div class="admin-card__header">
         <div>
             <p class="admin-eyebrow mb-1">Order Management</p>
-            <h2 class="h4 fw-bold mb-0">Danh sách đơn hàng</h2>
+            <h2 class="h4 fw-bold mb-0"><i class="bi bi-bag-check"></i> Quản lý đơn hàng</h2>
         </div>
-        <a asp-action="Create" class="btn btn-success" id="order-create-button">
-            <i class="bi bi-cart-plus"></i> Thêm đơn hàng
-        </a>
+        <div>
+            <span class="badge bg-secondary fs-6"><i class="bi bi-box-seam"></i> Tổng: @Model.Count() đơn</span>
+        </div>
     </div>
 
     <div class="admin-card__body">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
         <div class="table-responsive">
             <table class="table table-hover align-middle">
                 <thead>
                     <tr>
                         <th>Mã ĐH</th>
                         <th>Khách hàng</th>
+                        <th>SĐT</th>
                         <th>Ngày đặt</th>
                         <th>Trạng thái</th>
-                        <th>Số dòng hàng</th>
+                        <th class="text-end">Tổng tiền</th>
+                        <th>Số SP</th>
                         <th>Ghi chú</th>
-                        <th class="text-end" style="width: 230px;">Thao tác</th>
+                        <th class="text-end" style="width: 180px;">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var item in Model)
                     {
-                        var badgeClass = item.Status switch { 0 => "bg-warning text-dark", 1 => "bg-primary", 2 => "bg-success", _ => "bg-secondary" };
-                        var statusText = item.Status switch { 0 => "Chờ duyệt", 1 => "Đang giao", 2 => "Đã xong", _ => "Không xác định" };
+                        var badgeClass = item.Status switch { 0 => "bg-warning text-dark", 1 => "bg-primary", 2 => "bg-success", 3 => "bg-danger", _ => "bg-secondary" };
+                        var statusText = item.Status switch { 0 => "Chờ duyệt", 1 => "Đang giao", 2 => "Hoàn thành", 3 => "Đã hủy", _ => "Không xác định" };
+                        var statusIcon = item.Status switch { 0 => "bi-hourglass-split", 1 => "bi-truck", 2 => "bi-check-circle-fill", 3 => "bi-x-circle-fill", _ => "bi-question-circle" };
+                        var totalAmount = item.OrderDetails?.Sum(x => x.Quantity * x.UnitPrice) ?? 0;
                         <tr>
                             <td><strong>#@item.Id</strong></td>
-                            <td>@(item.Customer?.FullName ?? "Chưa có khách hàng")</td>
+                            <td>
+                                <div class="fw-bold">@(item.Customer?.FullName ?? "Chưa có")</div>
+                                <small class="text-muted">@(item.Customer?.Email ?? "")</small>
+                            </td>
+                            <td><small>@(item.Customer?.Phone ?? "-")</small></td>
                             <td>@item.OrderDate.ToString("dd/MM/yyyy HH:mm")</td>
-                            <td><span class="badge @badgeClass">@statusText</span></td>
+                            <td>
+                                <span class="badge @badgeClass">
+                                    <i class="bi @statusIcon me-1"></i>@statusText
+                                </span>
+                            </td>
+                            <td class="text-end fw-bold text-success">@totalAmount.ToString("N0") ₫</td>
                             <td><span class="badge bg-info">@(item.OrderDetails?.Count ?? 0)</span></td>
-                            <td><span class="text-muted small">@(string.IsNullOrWhiteSpace(item.Notes) ? "-" : item.Notes)</span></td>
+                            <td>
+                                <span class="text-muted small" style="max-width: 200px; display: inline-block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="@(item.Notes ?? "")">
+                                    @(string.IsNullOrWhiteSpace(item.Notes) ? "-" : item.Notes)
+                                </span>
+                            </td>
                             <td class="text-end">
-                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
-                                <a asp-controller="OrderDetail" asp-action="Index" asp-route-orderId="@item.Id" class="btn btn-sm btn-outline-info">Chi tiết</a>
-                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">Sửa</a>
-                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger" onclick="return confirm('Bạn có chắc muốn xóa đơn hàng này không?')">Xóa</a>
+                                <div class="btn-group" role="group">
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary" title="Xem chi tiết đơn hàng">
+                                        <i class="bi bi-eye"></i> Chi tiết
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning" title="Cập nhật trạng thái">
+                                        <i class="bi bi-pencil-square"></i> Cập nhật
+                                    </a>
+                                    @if (item.Status == 0 || item.Status == 1)
+                                    {
+                                        <a asp-action="Cancel" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger" title="Hủy đơn hàng" onclick="return confirm('Bạn có chắc muốn HỦY đơn hàng #@item.Id không?\nSản phẩm sẽ được hoàn trả lại kho.')">
+                                            <i class="bi bi-x-circle"></i> Hủy đơn
+                                        </a>
+                                    }
+                                </div>
                             </td>
                         </tr>
                     }
                     @if (!Model.Any())
                     {
-                        <tr><td colspan="7" class="text-center py-4 text-muted">Chưa có đơn hàng nào. <a asp-action="Create">Thêm ngay</a></td></tr>
+                        <tr><td colspan="9" class="text-center py-4 text-muted"><i class="bi bi-inbox fs-4 d-block mb-2"></i> Chưa có đơn hàng nào trong hệ thống.</td></tr>
                     }
                 </tbody>
             </table>

@@ -1,0 +1,136 @@
+@model IEnumerable<CMS.Data.Entities.Menu>
+
+@{
+    ViewData["Title"] = "Quản lý Menu";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<section class="admin-card">
+    <div class="admin-card__header">
+        <div>
+            <p class="admin-eyebrow mb-1">Navigation Menu Management</p>
+            <h2 class="h4 fw-bold mb-0">Danh sách Menu điều hướng</h2>
+        </div>
+        <a asp-action="Create" class="btn btn-success" id="menu-create-button">
+            <i class="bi bi-plus-circle"></i> Thêm Menu mới
+        </a>
+    </div>
+
+    <div class="admin-card__body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">Mã</th>
+                        <th>Tên Menu</th>
+                        <th>Đường dẫn (Link)</th>
+                        <th>Menu cha</th>
+                        <th style="width: 120px;" class="text-center">Thứ tự hiển thị</th>
+                        <th style="width: 120px;" class="text-center">Trạng thái (On/Off)</th>
+                        <th class="text-end" style="width: 180px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        var indent = item.Depth * 24;
+                        var isChild = item.Depth > 0;
+                        <tr class="@(isChild ? "table-light" : "")">
+                            <td><span class="text-muted small">#@item.Id</span></td>
+                            <td>
+                                <div style="padding-left: @(indent)px;" class="d-flex align-items-center gap-2">
+                                    @if (isChild)
+                                    {
+                                        <i class="bi bi-arrow-return-right text-muted small"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-compass-fill text-primary"></i>
+                                    }
+                                    <strong class="@(isChild ? "fw-normal text-secondary" : "")">@item.Title</strong>
+                                </div>
+                            </td>
+                            <td>
+                                <code class="text-dark bg-light px-2 py-1 rounded small">@item.Url</code>
+                            </td>
+                            <td>
+                                @{
+                                    var parent = Model.FirstOrDefault(m => m.Id == item.ParentId);
+                                    if (parent != null)
+                                    {
+                                        <span class="badge bg-secondary">@parent.Title</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-light text-dark border">Menu gốc</span>
+                                    }
+                                }
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-info text-dark">@item.Order</span>
+                            </td>
+                            <td class="text-center">
+                                <div class="form-check form-switch d-inline-block mb-0">
+                                    <input class="form-check-input toggle-active-switch"
+                                           type="checkbox"
+                                           data-id="@item.Id"
+                                           @(item.IsActive ? "checked" : "")
+                                           style="cursor: pointer; width: 2.4em; height: 1.2em;" />
+                                </div>
+                            </td>
+                            <td class="text-end">
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">
+                                    <i class="bi bi-pencil"></i> Sửa
+                                </a>
+                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger"
+                                   onclick="return confirm('Bạn có chắc chắn muốn xóa menu này không? Các menu con trực thuộc sẽ được chuyển về cha của menu bị xóa.')">
+                                    <i class="bi bi-trash"></i> Xóa
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <i class="bi bi-compass fs-3 d-block mb-2"></i>
+                                Chưa có menu nào được định nghĩa. <a asp-action="Create">Thêm ngay</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // Xử lý AJAX bật/tắt trạng thái Active của Menu
+    document.querySelectorAll('.toggle-active-switch').forEach(function (toggleEl) {
+        toggleEl.addEventListener('change', function () {
+            const menuId = this.getAttribute('data-id');
+            const switchEl = this;
+
+            fetch('@Url.Action("ToggleActive", "Menu")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'id=' + menuId
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    alert(data.message || 'Có lỗi xảy ra.');
+                    switchEl.checked = !switchEl.checked; // revert
+                }
+            })
+            .catch(err => {
+                alert('Lỗi kết nối server.');
+                switchEl.checked = !switchEl.checked; // revert
+            });
+        });
+    });
+});
+</script>
+}

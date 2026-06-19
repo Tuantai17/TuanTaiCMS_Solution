@@ -56,6 +56,23 @@ Chú thích chi tiết:
         font-weight: 500;
         animation: toast-in 0.3s ease, toast-out 0.4s ease 3.1s forwards;
       }
+      .toast-danger {
+        position: fixed;
+        top: 20px;
+        right: 24px;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 20px;
+        background: #dc3545;
+        color: #fff;
+        border-radius: 6px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+        font-size: 14px;
+        font-weight: 500;
+        animation: toast-in 0.3s ease, toast-out 0.4s ease 3.1s forwards;
+      }
       @@keyframes toast-in {
         from { opacity: 0; transform: translateY(-16px); }
         to   { opacity: 1; transform: translateY(0); }
@@ -81,6 +98,20 @@ Chú thích chi tiết:
       }, 3500);
     </script>
 }
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="toast-danger" id="toast-danger">
+        <i class="bi bi-exclamation-circle-fill"></i>
+        <span>@TempData["ErrorMessage"]</span>
+    </div>
+    <script>
+      setTimeout(function () {
+        var t = document.getElementById('toast-danger');
+        if (t) t.remove();
+      }, 3500);
+    </script>
+}
     <aside class="admin-sidebar">
         <a class="admin-brand" asp-controller="Home" asp-action="Index" aria-label="TuanTaiCMS Admin Dashboard">
             <strong>TuanTaiCMS Admin</strong>
@@ -101,7 +132,15 @@ Chú thích chi tiết:
             </a>
             <a id="nav-user" class="admin-nav__link @IsActive("User")" asp-controller="User" asp-action="Index">
                 <i class="bi bi-people-fill"></i>
-                <span>Quản lý Thành viên</span>
+                <span>Quản lý Admin / Staff</span>
+            </a>
+            <a id="nav-menu" class="admin-nav__link @IsActive("Menu")" asp-controller="Menu" asp-action="Index">
+                <i class="bi bi-compass-fill"></i>
+                <span>Quản lý Menu</span>
+            </a>
+            <a id="nav-banner" class="admin-nav__link @IsActive("Banner")" asp-controller="Banner" asp-action="Index">
+                <i class="bi bi-image-fill"></i>
+                <span>Quản lý Banner</span>
             </a>
             <a id="nav-category-product" class="admin-nav__link @IsActive("CategoryProduct")" asp-controller="CategoryProduct" asp-action="Index">
                 <i class="bi bi-tags-fill"></i>

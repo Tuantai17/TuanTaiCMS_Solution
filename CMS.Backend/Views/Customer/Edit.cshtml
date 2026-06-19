@@ -57,9 +57,9 @@ Mô tả: Form chỉnh sửa thông tin khách hàng.
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="Password" class="form-label fw-bold">Mật khẩu: <span class="text-danger">*</span></label>
-                        <input asp-for="Password" class="form-control" type="password" required />
-                        <small class="text-muted">Nhập mật khẩu mới hoặc giữ nguyên mật khẩu cũ.</small>
+                        <label class="form-label fw-bold">Mật khẩu mới:</label>
+                        <input type="password" name="NewPassword" class="form-control" placeholder="Để trống nếu không muốn đổi mật khẩu" />
+                        <small class="text-muted">Chỉ nhập khi muốn đổi mật khẩu. Mật khẩu sẽ được mã hóa BCrypt trước khi lưu.</small>
                     </div>
 
                     <div class="d-flex gap-2 mt-4">

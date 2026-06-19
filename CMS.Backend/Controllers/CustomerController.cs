@@ -8,6 +8,7 @@ Mô tả: Controller quản lý khách hàng, gồm hiển thị danh sách, th�
 
 using CMS.Data;
 using CMS.Data.Entities;
+using CMS.Backend.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,7 +16,7 @@ using Microsoft.EntityFrameworkCore;
 namespace CMS.Backend.Controllers
 {
     // CustomerController xử lý các request bắt đầu bằng /Customer.
-    [Authorize]
+    [Authorize(Roles = "Admin,Staff")]
     public class CustomerController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -66,6 +67,9 @@ namespace CMS.Backend.Controllers
                 return View(model);
             }
 
+            // Mã hóa mật khẩu bằng BCrypt trước khi lưu vào database
+            model.Password = PasswordHelper.HashPassword(model.Password);
+
             _context.Customers.Add(model);
             _context.SaveChanges();
 
@@ -89,7 +93,7 @@ namespace CMS.Backend.Controllers
 
         // Action POST Edit cập nhật thông tin khách hàng vào database.
         [HttpPost]
-        public IActionResult Edit(Customer model)
+        public IActionResult Edit(Customer model, string? NewPassword)
         {
             var existingCustomer = _context.Customers.AsNoTracking().FirstOrDefault(c => c.Id == model.Id);
 
@@ -99,10 +103,21 @@ namespace CMS.Backend.Controllers
             }
 
             ModelState.Remove(nameof(Customer.Orders));
+            ModelState.Remove(nameof(Customer.Password));
 
             if (!ModelState.IsValid)
             {
                 return View(model);
+            }
+
+            // Xử lý mật khẩu: nếu có nhập mới thì hash, nếu không thì giữ nguyên cũ
+            if (!string.IsNullOrWhiteSpace(NewPassword))
+            {
+                model.Password = PasswordHelper.HashPassword(NewPassword);
+            }
+            else
+            {
+                model.Password = existingCustomer.Password;
             }
 
             _context.Customers.Update(model);

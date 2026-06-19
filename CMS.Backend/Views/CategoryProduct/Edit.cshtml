@@ -3,7 +3,7 @@ Sinh Viên: Nguyễn Tuấn Tài
 Mã Sinh Viên: 2123110166
 Lớp: CCQ2311E
 Ngày Tạo: 22/5/2026
-Mô tả: Form chỉnh sửa thông tin loại sản phẩm.
+Mô tả: Form chỉnh sửa thông tin loại sản phẩm, hỗ trợ upload/thay đổi ảnh đại diện.
 *@
 
 @model CMS.Data.Entities.CategoryProduct
@@ -21,8 +21,9 @@ Mô tả: Form chỉnh sửa thông tin loại sản phẩm.
     </div>
 
     <div class="admin-card__body">
-        <form id="category-product-edit-form" asp-action="Edit" method="post">
+        <form id="category-product-edit-form" asp-action="Edit" method="post" enctype="multipart/form-data">
             <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="ImageUrl" />
             @if (!ViewData.ModelState.IsValid)
             {
                 <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
@@ -34,6 +35,30 @@ Mô tả: Form chỉnh sửa thông tin loại sản phẩm.
                         <label asp-for="Name" class="form-label fw-bold">Tên loại sản phẩm: <span class="text-danger">*</span></label>
                         <input asp-for="Name" class="form-control" placeholder="Nhập tên loại sản phẩm..." required />
                         <span asp-validation-for="Name" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="ParentId" class="form-label fw-bold">Danh mục cha (Nếu thuộc về danh mục con):</label>
+                        <select asp-for="ParentId" class="form-select" asp-items="ViewBag.ParentId">
+                            <option value="">-- Chọn danh mục cha (Hoặc để trống nếu là danh mục gốc) --</option>
+                        </select>
+                        <span asp-validation-for="ParentId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Ảnh đại diện:</label>
+                        @if (!string.IsNullOrEmpty(Model.ImageUrl))
+                        {
+                            <div class="mb-2">
+                                <img src="@Model.ImageUrl" alt="Ảnh hiện tại" class="rounded border" style="max-width: 200px; max-height: 200px; object-fit: cover;" />
+                                <p class="text-muted small mt-1">Ảnh hiện tại. Chọn ảnh mới để thay thế.</p>
+                            </div>
+                        }
+                        <input type="file" name="uploadImage" class="form-control" accept="image/*" id="imageInput" />
+                        <div class="mt-2" id="imagePreviewContainer" style="display: none;">
+                            <p class="text-muted small mb-1">Ảnh mới sẽ thay thế:</p>
+                            <img id="imagePreview" src="#" alt="Xem trước ảnh mới" class="rounded border" style="max-width: 200px; max-height: 200px; object-fit: cover;" />
+                        </div>
                     </div>
 
                     <div class="mb-3">
@@ -58,6 +83,23 @@ Mô tả: Form chỉnh sửa thông tin loại sản phẩm.
 
 @section Scripts {
 <script>
+  // Xem trước ảnh khi chọn file mới
+  document.getElementById('imageInput').addEventListener('change', function (e) {
+    var file = e.target.files[0];
+    var container = document.getElementById('imagePreviewContainer');
+    var preview = document.getElementById('imagePreview');
+    if (file) {
+      var reader = new FileReader();
+      reader.onload = function (ev) {
+        preview.src = ev.target.result;
+        container.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    } else {
+      container.style.display = 'none';
+    }
+  });
+
   document.getElementById('category-product-edit-form').addEventListener('submit', function (e) {
     if (!confirm('Bạn có chắc muốn cập nhật loại sản phẩm này không?')) {
       e.preventDefault();

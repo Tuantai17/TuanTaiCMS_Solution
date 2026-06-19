@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import ScrollToTop from './components/ScrollToTop';
 
 // Import các trang nghiệp vụ từ thư mục pages/ theo đúng cấu trúc template chuẩn
 import Home from './pages/Home';
@@ -11,6 +12,10 @@ import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import PostList from './pages/PostList';
 import PostDetail from './pages/PostDetail';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import OrderHistory from './pages/OrderHistory';
+import ForgotPassword from './pages/ForgotPassword';
 
 // Import CSS từ assets/css/ theo đúng sơ đồ module hóa
 import './assets/css/App.css';
@@ -18,6 +23,7 @@ import './assets/css/App.css';
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <div className="App d-flex flex-column min-vh-100" style={{ fontFamily: "'Outfit', sans-serif" }}>
         {/* Header chung trên cùng */}
         <Header />
@@ -31,7 +37,12 @@ function App() {
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/blog" element={<PostList />} />
+            <Route path="/blog/category/:categoryId" element={<PostList />} />
             <Route path="/blog/:id" element={<PostDetail />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/order-history" element={<OrderHistory />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
           </Routes>
         </main>
         

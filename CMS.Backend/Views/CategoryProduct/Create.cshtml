@@ -3,7 +3,7 @@ Sinh Viên: Nguyễn Tuấn Tài
 Mã Sinh Viên: 2123110166
 Lớp: CCQ2311E
 Ngày Tạo: 22/5/2026
-Mô tả: Form thêm loại sản phẩm mới.
+Mô tả: Form thêm loại sản phẩm mới, hỗ trợ upload ảnh đại diện.
 *@
 
 @model CMS.Data.Entities.CategoryProduct
@@ -21,7 +21,7 @@ Mô tả: Form thêm loại sản phẩm mới.
     </div>
 
     <div class="admin-card__body">
-        <form id="category-product-create-form" asp-action="Create" method="post">
+        <form id="category-product-create-form" asp-action="Create" method="post" enctype="multipart/form-data">
             @if (!ViewData.ModelState.IsValid)
             {
                 <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
@@ -35,6 +35,22 @@ Mô tả: Form thêm loại sản phẩm mới.
                         </label>
                         <input asp-for="Name" class="form-control" placeholder="Ví dụ: Điện thoại, Laptop, Phụ kiện..." required />
                         <span asp-validation-for="Name" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="ParentId" class="form-label fw-bold">Danh mục cha (Nếu thuộc về danh mục con):</label>
+                        <select asp-for="ParentId" class="form-select" asp-items="ViewBag.ParentId">
+                            <option value="">-- Chọn danh mục cha (Hoặc để trống nếu là danh mục gốc) --</option>
+                        </select>
+                        <span asp-validation-for="ParentId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Ảnh đại diện:</label>
+                        <input type="file" name="uploadImage" class="form-control" accept="image/*" id="imageInput" />
+                        <div class="mt-2" id="imagePreviewContainer" style="display: none;">
+                            <img id="imagePreview" src="#" alt="Xem trước ảnh" class="rounded border" style="max-width: 200px; max-height: 200px; object-fit: cover;" />
+                        </div>
                     </div>
 
                     <div class="mb-3">
@@ -59,6 +75,23 @@ Mô tả: Form thêm loại sản phẩm mới.
 
 @section Scripts {
 <script>
+  // Xem trước ảnh khi chọn file
+  document.getElementById('imageInput').addEventListener('change', function (e) {
+    var file = e.target.files[0];
+    var container = document.getElementById('imagePreviewContainer');
+    var preview = document.getElementById('imagePreview');
+    if (file) {
+      var reader = new FileReader();
+      reader.onload = function (ev) {
+        preview.src = ev.target.result;
+        container.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    } else {
+      container.style.display = 'none';
+    }
+  });
+
   document.getElementById('category-product-create-form').addEventListener('submit', function (e) {
     if (!confirm('Bạn có chắc muốn thêm loại sản phẩm này không?')) {
       e.preventDefault();

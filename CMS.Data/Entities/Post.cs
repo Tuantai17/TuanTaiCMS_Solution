@@ -22,6 +22,9 @@ namespace CMS.Data.Entities
         public string? ImageUrl { get; set; } // Hình ảnh đại diện
         public DateTime CreatedDate { get; set; } = DateTime.Now;
 
+        // Đánh dấu bài viết hiển thị trên trang chủ (on/off)
+        public bool IsFeatured { get; set; } = false;
+
         // Khóa ngoại liên kết tới Category
         public int CategoryId { get; set; }
         public virtual Category Category { get; set; }

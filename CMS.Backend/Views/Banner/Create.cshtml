@@ -1,0 +1,162 @@
+@model CMS.Data.Entities.Banner
+
+@{
+    ViewData["Title"] = "Thêm Banner mới";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<section class="admin-card">
+    <div class="admin-card__header">
+        <div>
+            <p class="admin-eyebrow mb-1">Create Banner</p>
+            <h2 class="h4 fw-bold mb-0"><i class="bi bi-image-fill"></i> Thêm Banner mới</h2>
+        </div>
+    </div>
+
+    <div class="admin-card__body">
+        <form id="banner-create-form" asp-action="Create" method="post" enctype="multipart/form-data">
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+            }
+
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="mb-4">
+                        <label asp-for="Title" class="form-label fw-bold">Tiêu đề / Mô tả ngắn:</label>
+                        <input asp-for="Title" class="form-control" placeholder="Nhập tiêu đề hoặc mô tả cho banner..." />
+                        <small class="text-muted">Dùng để hiển thị làm thẻ Alt hoặc chú thích ảnh khi cần thiết.</small>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="TargetUrl" class="form-label fw-bold">Liên kết trỏ tới (Target URL):</label>
+                        <input asp-for="TargetUrl" class="form-control" placeholder="Nhập liên kết (ví dụ: /products hoặc đường dẫn cụ thể)..." />
+                        <small class="text-muted">Đường dẫn khi click vào banner (mặc định: /products).</small>
+                    </div>
+
+                    <!-- Chọn phương thức nhập ảnh: Tải lên hoặc Link ảnh -->
+                    <div class="card border mb-4 shadow-sm">
+                        <div class="card-header bg-light fw-bold py-2">
+                            <i class="bi bi-file-image"></i> Cấu hình hình ảnh Banner
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Hình thức ảnh:</label>
+                                <div class="d-flex gap-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="imageSource" id="sourceUpload" value="upload" checked>
+                                        <label class="form-check-label" style="cursor: pointer;" for="sourceUpload">
+                                            <i class="bi bi-cloud-arrow-up"></i> Tải ảnh lên (Upload)
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="imageSource" id="sourceUrl" value="url">
+                                        <label class="form-check-label" style="cursor: pointer;" for="sourceUrl">
+                                            <i class="bi bi-link-45deg"></i> Đường dẫn liên kết (URL ngoài)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Nhóm Tải ảnh -->
+                            <div class="mb-2" id="uploadGroup">
+                                <label class="form-label fw-bold">Chọn file ảnh từ máy tính:</label>
+                                <input type="file" name="uploadImage" class="form-control" accept="image/*" />
+                                <small class="text-muted d-block mt-1">
+                                    Hệ thống khuyên dùng ảnh định dạng rộng tỉ lệ lớn (ví dụ: `.webp`, `.png`, `.jpg` kích thước khoảng `1920x600px`).
+                                </small>
+                            </div>
+
+                            <!-- Nhóm URL liên kết -->
+                            <div class="mb-2 d-none" id="urlGroup">
+                                <label class="form-label fw-bold">Nhập liên kết hình ảnh (URL):</label>
+                                <input asp-for="ImageUrl" class="form-control" placeholder="Nhập đường dẫn hình ảnh (https://example.com/image.jpg)..." />
+                                <small class="text-muted d-block mt-1">Đường dẫn đầy đủ bắt đầu bằng `http://` hoặc `https://`</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card border mb-4">
+                        <div class="card-header bg-light fw-bold py-2">
+                            <i class="bi bi-sliders"></i> Cài đặt hiển thị
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label asp-for="DisplayOrder" class="form-label fw-bold">Thứ tự hiển thị:</label>
+                                <input asp-for="DisplayOrder" type="number" class="form-control" value="0" min="0" required />
+                                <small class="text-muted">Số nhỏ hơn sẽ hiển thị trước.</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check form-switch mt-2">
+                                    <input asp-for="IsVisible" class="form-check-input" type="checkbox" role="switch" id="IsVisible" checked />
+                                    <label class="form-check-label fw-bold" for="IsVisible">
+                                        Hiển thị Banner
+                                    </label>
+                                </div>
+                                <small class="text-muted">Bật để kích hoạt hiển thị banner này trên trang chủ.</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success" id="banner-save-button">
+                            <i class="bi bi-cloud-arrow-up"></i> Lưu Banner
+                        </button>
+                        <a asp-action="Index" class="btn btn-secondary">Quay lại danh sách</a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
+
+@section Scripts {
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const sourceUpload = document.getElementById('sourceUpload');
+    const sourceUrl = document.getElementById('sourceUrl');
+    const uploadGroup = document.getElementById('uploadGroup');
+    const urlGroup = document.getElementById('urlGroup');
+    const imageUrlInput = document.getElementById('ImageUrl');
+    const uploadImageInput = document.querySelector('input[name="uploadImage"]');
+
+    sourceUpload.addEventListener('change', function () {
+        if (this.checked) {
+            uploadGroup.classList.remove('d-none');
+            urlGroup.classList.add('d-none');
+            imageUrlInput.value = ''; // Xóa URL cũ để tránh nhầm lẫn
+            imageUrlInput.removeAttribute('required');
+        }
+    });
+
+    sourceUrl.addEventListener('change', function () {
+        if (this.checked) {
+            urlGroup.classList.remove('d-none');
+            uploadGroup.classList.add('d-none');
+            uploadImageInput.value = ''; // Xóa file upload đã chọn
+            imageUrlInput.setAttribute('required', 'required');
+        }
+    });
+
+    document.getElementById('banner-create-form').addEventListener('submit', function (e) {
+        if (sourceUrl.checked && !imageUrlInput.value.trim()) {
+            alert('Vui lòng nhập đường dẫn liên kết hình ảnh!');
+            e.preventDefault();
+            return;
+        }
+        if (sourceUpload.checked && !uploadImageInput.value) {
+            alert('Vui lòng chọn file hình ảnh tải lên!');
+            e.preventDefault();
+            return;
+        }
+        
+        if (!confirm('Bạn có chắc chắn muốn thêm banner này không?')) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+}

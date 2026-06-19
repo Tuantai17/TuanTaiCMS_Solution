@@ -56,6 +56,16 @@
                         <small class="text-muted">Để trống nếu muốn giữ ảnh cũ.</small>
                     </div>
 
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input asp-for="IsFeatured" class="form-check-input" type="checkbox" role="switch" id="IsFeatured" />
+                            <label class="form-check-label fw-bold" for="IsFeatured">
+                                <i class="bi bi-house-heart"></i> Hiển thị trên trang chủ
+                            </label>
+                        </div>
+                        <small class="text-muted">Bật để bài viết xuất hiện ở mục Blog trên trang chủ.</small>
+                    </div>
+
                     <div class="mb-4">
                         <label asp-for="CreatedDate" class="form-label fw-bold">Ngày đăng:</label>
                         <input asp-for="CreatedDate" type="date" class="form-control" />
@@ -74,7 +84,22 @@
 </section>
 
 @section Scripts {
+<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
 <script>
+  ClassicEditor
+    .create(document.querySelector('#Content'), {
+      placeholder: 'Nhập nội dung chi tiết bài viết tại đây...',
+      ckfinder: {
+        uploadUrl: '/Post/UploadImage'
+      }
+    })
+    .then(editor => {
+      console.log('CKEditor 5 đã được tải thành công cho form Edit');
+    })
+    .catch(error => {
+      console.error('Lỗi khi tải CKEditor 5:', error);
+    });
+
   document.getElementById('post-edit-form').addEventListener('submit', function (e) {
     if (!confirm('Bạn có chắc muốn cập nhật bài viết này không?')) {
       e.preventDefault();

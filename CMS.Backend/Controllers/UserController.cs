@@ -9,6 +9,7 @@ Mô tả: Controller quản lý thành viên, gồm hiển thị danh sách, th�
 // Nhóm thư viện dùng cho MVC và truy vấn database.
 using CMS.Data;
 using CMS.Data.Entities;
+using CMS.Backend.Helpers;
 using Microsoft.AspNetCore.Authorization; // Buổi 5: Namespace cần thiết để dùng [Authorize]
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -34,7 +35,10 @@ namespace CMS.Backend.Controllers
         // ToList() thực thi truy vấn và trả dữ liệu về View/User/Index.cshtml.
         public IActionResult Index()
         {
-            var users = _context.Users.ToList();
+            var users = _context.Users
+                .Where(u => u.Role == "Admin" || u.Role == "Administrator" || u.Role == "Staff")
+                .ToList();
+
             return View(users);
         }
 
@@ -56,6 +60,9 @@ namespace CMS.Backend.Controllers
                 ModelState.AddModelError("Username", "Tên đăng nhập này đã có người dùng!");
                 return View(model);
             }
+
+            // Mã hóa mật khẩu bằng BCrypt trước khi lưu vào database
+            model.PasswordHash = PasswordHelper.HashPassword(model.PasswordHash);
 
             _context.Users.Add(model);
             _context.SaveChanges();
@@ -91,7 +98,8 @@ namespace CMS.Backend.Controllers
 
             if (!string.IsNullOrWhiteSpace(NewPassword))
             {
-                model.PasswordHash = NewPassword;
+                // Mã hóa mật khẩu mới bằng BCrypt trước khi cập nhật
+                model.PasswordHash = PasswordHelper.HashPassword(NewPassword);
             }
             else
             {

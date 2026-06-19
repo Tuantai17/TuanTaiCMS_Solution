@@ -3,7 +3,7 @@ Sinh Viên: Nguyễn Tuấn Tài
 Mã Sinh Viên: 2123110166
 Lớp: CCQ2311E
 Ngày Tạo: 22/5/2026
-Mô tả: Trang danh sách sản phẩm trong khu vực quản trị.
+Mô tả: Trang danh sách sản phẩm trong khu vực quản trị (có phân trang, toggle New/Sale, xóa nhiều).
 *@
 
 @model IEnumerable<CMS.Data.Entities.Product>
@@ -11,6 +11,16 @@ Mô tả: Trang danh sách sản phẩm trong khu vực quản trị.
 @{
     ViewData["Title"] = "Quản lý sản phẩm";
     Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+
+    // Lấy thông tin phân trang từ ViewBag
+    int currentPage = ViewBag.CurrentPage;
+    int pageSize = ViewBag.PageSize;
+    int totalItems = ViewBag.TotalItems;
+    int totalPages = ViewBag.TotalPages;
+
+    // Tính vị trí hiển thị: "Hiển thị 1-10 trên tổng 50"
+    int startItem = totalItems == 0 ? 0 : (currentPage - 1) * pageSize + 1;
+    int endItem = Math.Min(currentPage * pageSize, totalItems);
 }
 
 <section class="admin-card">
@@ -25,23 +35,84 @@ Mô tả: Trang danh sách sản phẩm trong khu vực quản trị.
     </div>
 
     <div class="admin-card__body">
+        @* --- Bảng điều khiển xóa hàng loạt --- *@
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <button type="button" class="btn btn-danger" id="btnDeleteSelected" disabled>
+                <i class="bi bi-trash"></i> Xóa đã chọn
+            </button>
+            <button type="button" class="btn btn-secondary" id="btnDeselectAll" disabled>
+                Bỏ chọn
+            </button>
+            <span class="text-muted ms-2" id="selectedCountText">Đã chọn 0 sản phẩm</span>
+        </div>
+
+        @* --- Form ẩn để submit POST xóa nhiều --- *@
+        <form id="deleteSelectedForm" asp-action="DeleteSelected" method="post" style="display:none;">
+            @Html.AntiForgeryToken()
+        </form>
+
+        @* --- Thanh điều khiển phân trang trên --- *@
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <div class="d-flex align-items-center gap-2">
+                    <label class="form-label mb-0 text-muted small">Hiển thị</label>
+                    <select id="pageSizeSelector" class="form-select form-select-sm" style="width: auto;">
+                        @foreach (var size in new[] { 5, 10, 20, 50 })
+                        {
+                            <option value="@size" selected="@(pageSize == size)">@size</option>
+                        }
+                    </select>
+                    <span class="text-muted small">sản phẩm / trang</span>
+                </div>
+
+                <div class="vr text-muted opacity-25 d-none d-sm-block"></div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <label class="form-label mb-0 text-muted small">Danh mục</label>
+                    <select id="categoryFilter" class="form-select form-select-sm" style="min-width: 180px; width: auto;">
+                        <option value="">-- Tất cả danh mục --</option>
+                        @if (ViewBag.CategoryProductList != null)
+                        {
+                            foreach (var item in (SelectList)ViewBag.CategoryProductList)
+                            {
+                                <option value="@item.Value" selected="@(ViewBag.SelectedCategoryId?.ToString() == item.Value)">@item.Text</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="text-muted small">
+                Hiển thị <strong>@startItem–@endItem</strong> trên tổng <strong>@totalItems</strong> sản phẩm
+            </div>
+        </div>
+
         <div class="table-responsive">
             <table class="table table-hover align-middle">
                 <thead>
                     <tr>
-                        <th style="width: 80px;">Mã SP</th>
+                        <th style="width: 40px;">
+                            <input type="checkbox" class="form-check-input" id="selectAll" />
+                        </th>
+                        <th style="width: 60px;">Mã SP</th>
                         <th style="width: 80px;">Ảnh</th>
                         <th>Tên sản phẩm</th>
                         <th>Loại SP</th>
                         <th style="width: 120px;">Giá</th>
-                        <th style="width: 90px;">Tồn kho</th>
+                        <th style="width: 70px;">Tồn kho</th>
+                        <th style="width: 180px;" class="text-center">Trạng thái</th>
                         <th class="text-end" style="width: 200px;">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var item in Model)
                     {
+                        var discountPercent = item.IsSale && item.Price > 0
+                            ? (int)Math.Round((1 - item.SalePrice / item.Price) * 100)
+                            : 0;
                         <tr>
+                            <td>
+                                <input type="checkbox" class="form-check-input product-checkbox" value="@item.Id" />
+                            </td>
                             <td>
                                 <span class="badge bg-light text-dark border">#@item.Id</span>
                             </td>
@@ -54,13 +125,20 @@ Mô tả: Trang danh sách sản phẩm trong khu vực quản trị.
                             </td>
                             <td>
                                 <strong>@item.Name</strong>
-                                <div class="text-muted small text-truncate" style="max-width: 300px;">@item.Description</div>
+                                <div class="text-muted small text-truncate" style="max-width: 250px;">@item.Description</div>
                             </td>
                             <td>
                                 <span class="post-category-badge">@(item.CategoryProduct?.Name ?? "Chưa phân loại")</span>
                             </td>
                             <td>
                                 <strong class="text-success">@item.Price.ToString("N0") ₫</strong>
+                                @if (item.IsSale)
+                                {
+                                    <div class="text-danger small fw-bold">
+                                        Sale: @item.SalePrice.ToString("N0") ₫
+                                        <span class="badge bg-danger ms-1">-@(discountPercent)%</span>
+                                    </div>
+                                }
                             </td>
                             <td>
                                 @if (item.StockQuantity > 0)
@@ -71,6 +149,43 @@ Mô tả: Trang danh sách sản phẩm trong khu vực quản trị.
                                 {
                                     <span class="badge bg-danger">Hết hàng</span>
                                 }
+                            </td>
+                            <td class="text-center">
+                                @* --- Toggle NEW --- *@
+                                <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
+                                    <span class="small text-muted" style="width: 35px;">NEW</span>
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input toggle-new-switch"
+                                               type="checkbox"
+                                               data-id="@item.Id"
+                                               @(item.IsNew ? "checked" : "")
+                                               style="cursor: pointer; width: 2.5em; height: 1.3em;" />
+                                    </div>
+                                </div>
+                                @* --- Toggle SALE --- *@
+                                <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
+                                    <span class="small text-muted" style="width: 35px;">SALE</span>
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input toggle-sale-switch"
+                                               type="checkbox"
+                                               data-id="@item.Id"
+                                               data-price="@item.Price"
+                                               data-sale-price="@item.SalePrice"
+                                               @(item.IsSale ? "checked" : "")
+                                               style="cursor: pointer; width: 2.5em; height: 1.3em;" />
+                                    </div>
+                                </div>
+                                @* --- Toggle BEST --- *@
+                                <div class="d-flex align-items-center justify-content-center gap-2">
+                                    <span class="small text-muted" style="width: 35px;">BEST</span>
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input toggle-best-switch"
+                                               type="checkbox"
+                                               data-id="@item.Id"
+                                               @(item.IsBestSelling ? "checked" : "")
+                                               style="cursor: pointer; width: 2.5em; height: 1.3em;" />
+                                    </div>
+                                </div>
                             </td>
                             <td class="text-end">
                                 <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">
@@ -89,7 +204,7 @@ Mô tả: Trang danh sách sản phẩm trong khu vực quản trị.
                     @if (!Model.Any())
                     {
                         <tr>
-                            <td colspan="7" class="text-center py-4 text-muted">
+                            <td colspan="9" class="text-center py-4 text-muted">
                                 <i class="bi bi-box-seam fs-4 d-block mb-2"></i>
                                 Chưa có sản phẩm nào. <a asp-action="Create">Thêm ngay</a>
                             </td>
@@ -98,5 +213,379 @@ Mô tả: Trang danh sách sản phẩm trong khu vực quản trị.
                 </tbody>
             </table>
         </div>
+
+        @* --- Thanh phân trang dưới --- *@
+        @if (totalPages > 1)
+        {
+            <nav aria-label="Phân trang sản phẩm" class="mt-3">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="text-muted small">
+                        Trang <strong>@currentPage</strong> / <strong>@totalPages</strong>
+                    </div>
+                    <ul class="pagination pagination-sm mb-0">
+                        @* Nút Đầu *@
+                        <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-page="1" asp-route-pageSize="@pageSize" asp-route-categoryId="@ViewBag.SelectedCategoryId"
+                               title="Trang đầu">
+                                <i class="bi bi-chevron-double-left"></i>
+                            </a>
+                        </li>
+
+                        @* Nút Trước *@
+                        <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-page="@(currentPage - 1)" asp-route-pageSize="@pageSize" asp-route-categoryId="@ViewBag.SelectedCategoryId"
+                               title="Trang trước">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+
+                        @* Các nút số trang — hiển thị tối đa 5 trang lân cận *@
+                        @{
+                            int startPage = Math.Max(1, currentPage - 2);
+                            int endPage = Math.Min(totalPages, startPage + 4);
+                            if (endPage - startPage < 4) startPage = Math.Max(1, endPage - 4);
+                        }
+
+                        @for (int i = startPage; i <= endPage; i++)
+                        {
+                            <li class="page-item @(i == currentPage ? "active" : "")">
+                                <a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-pageSize="@pageSize" asp-route-categoryId="@ViewBag.SelectedCategoryId">@i</a>
+                            </li>
+                        }
+
+                        @* Nút Sau *@
+                        <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-page="@(currentPage + 1)" asp-route-pageSize="@pageSize" asp-route-categoryId="@ViewBag.SelectedCategoryId"
+                               title="Trang sau">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+
+                        @* Nút Cuối *@
+                        <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-page="@totalPages" asp-route-pageSize="@pageSize" asp-route-categoryId="@ViewBag.SelectedCategoryId"
+                               title="Trang cuối">
+                                <i class="bi bi-chevron-double-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        }
     </div>
 </section>
+
+@* --- Modal nhập giá Sale --- *@
+<div class="modal fade" id="salePriceModal" tabindex="-1" aria-labelledby="salePriceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="salePriceModalLabel">
+                    <i class="bi bi-tag"></i> Nhập giá Sale
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="saleProductId" />
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Giá gốc sản phẩm</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="saleOriginalPrice" readonly />
+                        <span class="input-group-text">₫</span>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Giá sale <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" id="salePriceInput" min="1" placeholder="Nhập giá sale..." />
+                        <span class="input-group-text">₫</span>
+                    </div>
+                    <div class="form-text text-danger" id="salePriceError" style="display: none;">
+                        Giá sale phải lớn hơn 0 và nhỏ hơn giá gốc.
+                    </div>
+                </div>
+                <div class="alert alert-info py-2 mb-0" id="saleDiscountPreview" style="display: none;">
+                    <i class="bi bi-info-circle"></i> Giảm giá dự kiến: <strong id="saleDiscountPercent">0</strong>%
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-danger" id="btnApplySalePrice">
+                    <i class="bi bi-check-circle"></i> Áp dụng Sale
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    // ========================
+    // PHẦN 1: PHÂN TRANG & LỌC
+    // ========================
+    document.getElementById('pageSizeSelector').addEventListener('change', function () {
+        const pageSize = this.value;
+        const categoryId = '@ViewBag.SelectedCategoryId' || '';
+        window.location.href = '@Url.Action("Index")' + '?page=1&pageSize=' + pageSize + (categoryId ? '&categoryId=' + categoryId : '');
+    });
+
+    document.getElementById('categoryFilter').addEventListener('change', function () {
+        const categoryId = this.value;
+        const pageSize = '@ViewBag.PageSize';
+        window.location.href = '@Url.Action("Index")' + '?page=1&pageSize=' + pageSize + (categoryId ? '&categoryId=' + categoryId : '');
+    });
+
+    // ========================
+    // PHẦN 2: CHECKBOX CHỌN NHIỀU & XÓA
+    // ========================
+    const selectAllCheckbox = document.getElementById("selectAll");
+    const productCheckboxes = document.querySelectorAll(".product-checkbox");
+    const btnDeleteSelected = document.getElementById("btnDeleteSelected");
+    const btnDeselectAll = document.getElementById("btnDeselectAll");
+    const selectedCountText = document.getElementById("selectedCountText");
+    const deleteSelectedForm = document.getElementById("deleteSelectedForm");
+
+    function updateCheckboxUI() {
+        const checkedCheckboxes = document.querySelectorAll(".product-checkbox:checked");
+        const count = checkedCheckboxes.length;
+
+        selectedCountText.textContent = `Đã chọn ${count} sản phẩm`;
+
+        if (count > 0) {
+            btnDeleteSelected.removeAttribute("disabled");
+            btnDeselectAll.removeAttribute("disabled");
+        } else {
+            btnDeleteSelected.setAttribute("disabled", "true");
+            btnDeselectAll.setAttribute("disabled", "true");
+        }
+
+        selectAllCheckbox.checked = (count === productCheckboxes.length && productCheckboxes.length > 0);
+    }
+
+    selectAllCheckbox.addEventListener("change", function () {
+        productCheckboxes.forEach(cb => { cb.checked = selectAllCheckbox.checked; });
+        updateCheckboxUI();
+    });
+
+    productCheckboxes.forEach(cb => {
+        cb.addEventListener("change", function () { updateCheckboxUI(); });
+    });
+
+    btnDeselectAll.addEventListener("click", function () {
+        productCheckboxes.forEach(cb => { cb.checked = false; });
+        selectAllCheckbox.checked = false;
+        updateCheckboxUI();
+    });
+
+    btnDeleteSelected.addEventListener("click", function () {
+        const checkedCheckboxes = document.querySelectorAll(".product-checkbox:checked");
+        if (checkedCheckboxes.length === 0) {
+            alert("Vui lòng chọn ít nhất một sản phẩm.");
+            return;
+        }
+
+        if (confirm(`Bạn có chắc muốn xóa ${checkedCheckboxes.length} sản phẩm đã chọn không?`)) {
+            // Xóa input cũ
+            const oldInputs = deleteSelectedForm.querySelectorAll("input[name='ids']");
+            oldInputs.forEach(input => input.remove());
+
+            // Append danh sách ID đã chọn
+            checkedCheckboxes.forEach(cb => {
+                const input = document.createElement("input");
+                input.type = "hidden";
+                input.name = "ids";
+                input.value = cb.value;
+                deleteSelectedForm.appendChild(input);
+            });
+
+            deleteSelectedForm.submit();
+        }
+    });
+
+    updateCheckboxUI();
+
+    // ========================
+    // PHẦN 3: TOGGLE NEW (AJAX)
+    // ========================
+    document.querySelectorAll('.toggle-new-switch').forEach(function (toggleEl) {
+        toggleEl.addEventListener('change', function () {
+            const productId = this.getAttribute('data-id');
+            const switchEl = this;
+
+            fetch('@Url.Action("ToggleNew", "Product")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'id=' + productId
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    alert(data.message || 'Có lỗi xảy ra.');
+                    switchEl.checked = !switchEl.checked; // revert
+                }
+            })
+            .catch(err => {
+                alert('Lỗi kết nối server.');
+                switchEl.checked = !switchEl.checked; // revert
+            });
+        });
+    });
+
+    // ========================
+    // PHẦN 3.5: TOGGLE BEST SELLING (AJAX)
+    // ========================
+    document.querySelectorAll('.toggle-best-switch').forEach(function (toggleEl) {
+        toggleEl.addEventListener('change', function () {
+            const productId = this.getAttribute('data-id');
+            const switchEl = this;
+
+            fetch('@Url.Action("ToggleBestSelling", "Product")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'id=' + productId
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    alert(data.message || 'Có lỗi xảy ra.');
+                    switchEl.checked = !switchEl.checked; // revert
+                }
+            })
+            .catch(err => {
+                alert('Lỗi kết nối server.');
+                switchEl.checked = !switchEl.checked; // revert
+            });
+        });
+    });
+
+    // ========================
+    // PHẦN 4: TOGGLE SALE (AJAX + MODAL)
+    // ========================
+    const salePriceModal = new bootstrap.Modal(document.getElementById('salePriceModal'));
+    const saleProductIdInput = document.getElementById('saleProductId');
+    const saleOriginalPriceInput = document.getElementById('saleOriginalPrice');
+    const salePriceInput = document.getElementById('salePriceInput');
+    const salePriceError = document.getElementById('salePriceError');
+    const saleDiscountPreview = document.getElementById('saleDiscountPreview');
+    const saleDiscountPercent = document.getElementById('saleDiscountPercent');
+    let currentSaleSwitch = null;
+
+    // Khi user nhập giá sale, tính % giảm giá realtime
+    salePriceInput.addEventListener('input', function () {
+        const originalPrice = parseFloat(saleOriginalPriceInput.value.replace(/[,.]/g, ''));
+        const salePrice = parseFloat(this.value);
+
+        if (salePrice > 0 && salePrice < originalPrice) {
+            const discount = Math.round((1 - salePrice / originalPrice) * 100);
+            saleDiscountPercent.textContent = discount;
+            saleDiscountPreview.style.display = 'block';
+            salePriceError.style.display = 'none';
+        } else {
+            saleDiscountPreview.style.display = 'none';
+            if (salePrice >= originalPrice || salePrice <= 0) {
+                salePriceError.style.display = 'block';
+            }
+        }
+    });
+
+    document.querySelectorAll('.toggle-sale-switch').forEach(function (toggleEl) {
+        toggleEl.addEventListener('change', function (e) {
+            const productId = this.getAttribute('data-id');
+            const productPrice = parseFloat(this.getAttribute('data-price'));
+            currentSaleSwitch = this;
+
+            if (this.checked) {
+                // Bật Sale → mở modal nhập giá
+                e.preventDefault();
+                saleProductIdInput.value = productId;
+                saleOriginalPriceInput.value = productPrice.toLocaleString('vi-VN');
+                salePriceInput.value = '';
+                salePriceError.style.display = 'none';
+                saleDiscountPreview.style.display = 'none';
+
+                // Nếu đã có giá sale cũ, pre-fill
+                const oldSalePrice = parseFloat(this.getAttribute('data-sale-price'));
+                if (oldSalePrice > 0) {
+                    salePriceInput.value = oldSalePrice;
+                    const discount = Math.round((1 - oldSalePrice / productPrice) * 100);
+                    saleDiscountPercent.textContent = discount;
+                    saleDiscountPreview.style.display = 'block';
+                }
+
+                salePriceModal.show();
+            } else {
+                // Tắt Sale → gọi AJAX với salePrice = 0
+                fetch('@Url.Action("ToggleSale", "Product")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'id=' + productId + '&salePrice=0'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Cập nhật UI: xóa hiển thị giá sale ở cột Giá
+                        location.reload();
+                    } else {
+                        alert(data.message || 'Có lỗi xảy ra.');
+                        this.checked = true; // revert
+                    }
+                })
+                .catch(err => {
+                    alert('Lỗi kết nối server.');
+                    this.checked = true; // revert
+                });
+            }
+        });
+    });
+
+    // Khi modal bị đóng mà chưa apply, revert switch
+    document.getElementById('salePriceModal').addEventListener('hidden.bs.modal', function () {
+        if (currentSaleSwitch && !currentSaleSwitch.classList.contains('sale-applied')) {
+            // Nếu chưa apply thành công, revert checkbox
+            const productId = currentSaleSwitch.getAttribute('data-id');
+            const oldSalePrice = parseFloat(currentSaleSwitch.getAttribute('data-sale-price'));
+            if (oldSalePrice <= 0) {
+                currentSaleSwitch.checked = false;
+            }
+        }
+        currentSaleSwitch?.classList.remove('sale-applied');
+    });
+
+    // Nút "Áp dụng Sale" trong modal
+    document.getElementById('btnApplySalePrice').addEventListener('click', function () {
+        const productId = saleProductIdInput.value;
+        const salePrice = parseFloat(salePriceInput.value);
+        const originalPrice = parseFloat(saleOriginalPriceInput.value.replace(/[,.]/g, ''));
+
+        if (!salePrice || salePrice <= 0 || salePrice >= originalPrice) {
+            salePriceError.style.display = 'block';
+            return;
+        }
+
+        fetch('@Url.Action("ToggleSale", "Product")', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'id=' + productId + '&salePrice=' + salePrice
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (currentSaleSwitch) {
+                    currentSaleSwitch.classList.add('sale-applied');
+                    currentSaleSwitch.setAttribute('data-sale-price', salePrice);
+                }
+                salePriceModal.hide();
+                location.reload();
+            } else {
+                alert(data.message || 'Có lỗi xảy ra khi áp dụng giá sale.');
+            }
+        })
+        .catch(err => {
+            alert('Lỗi kết nối server.');
+        });
+    });
+});
+</script>
+}

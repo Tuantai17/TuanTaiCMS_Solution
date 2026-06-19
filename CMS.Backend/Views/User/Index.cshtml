@@ -14,7 +14,7 @@ Chú thích chi tiết:
 @model List<CMS.Data.Entities.User>
 
 @{
-    ViewData["Title"] = "Quản lý thành viên";
+    ViewData["Title"] = "Quản lý Admin / Staff";
 }
 
 <section class="admin-card">
@@ -23,7 +23,7 @@ Chú thích chi tiết:
             <h2 class="h4 fw-bold mb-0 d-none">Danh sách thành viên</h2>
         </div>
         <a asp-action="Create" class="btn btn-success" id="user-create-button">
-            <i class="bi bi-plus-circle"></i> Thêm thành viên mới
+            <i class="bi bi-plus-circle"></i> Thêm Admin / Staff
         </a>
     </div>
 
@@ -49,11 +49,15 @@ Chú thích chi tiết:
                             <td>
                                 @if (user.Role == "Admin" || user.Role == "Administrator")
                                 {
-                                    <span class="badge bg-danger">Administrator</span>
+                                    <span class="badge bg-danger">Admin</span>
+                                }
+                                else if (user.Role == "Staff")
+                                {
+                                    <span class="badge bg-warning text-dark">Staff</span>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-info">Editor</span>
+                                    <span class="badge bg-info">Customer</span>
                                 }
                             </td>
                             <td>

@@ -1,13 +1,14 @@
 using System.ComponentModel.DataAnnotations;
 /*
-Sinh Viên: Nguy?n Tu?n Tài 
-Mã Sinh Viên: 2123110166
-L?p: CCQ2311E
-Ngày T?o: 15/5/2026
-Mô t?: ??nh ngh?a th?c th? s?n ph?m, l?u tr? thông tin tên, mô t?, giá, s? l??ng t?n kho và danh m?c s?n ph?m.
+Sinh Vien: Nguyen Tuan Tai
+Ma Sinh Vien: 2123110166
+Lop: CCQ2311E
+Ngay Tao: 15/5/2026
+Mo ta: Dinh nghia thuc the san pham, luu tru thong tin ten, mo ta, gia, so luong ton kho va danh muc san pham.
 */
 
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Collections.Generic;
 
 namespace CMS.Data.Entities
 {
@@ -16,7 +17,7 @@ namespace CMS.Data.Entities
         [Key]
         public int Id { get; set; }
 
-        [Required(ErrorMessage = "Tên s?n ph?m không ???c ?? tr?ng")]
+        [Required(ErrorMessage = "Ten san pham khong duoc de trong")]
         public string Name { get; set; }
 
         public string? Description { get; set; }
@@ -29,10 +30,27 @@ namespace CMS.Data.Entities
 
         public string? ImageUrl { get; set; }
 
-        // Khóa ngo?i n?i t?i CategoryProduct
+        // Trang thai san pham moi (bat on se hien thi o section New tren trang chu)
+        public bool IsNew { get; set; } = false;
+
+        // Trang thai sale (bat on se hien thi gia khuyen mai)
+        public bool IsSale { get; set; } = false;
+
+        // Gia sale (chi co y nghia khi IsSale = true)
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal SalePrice { get; set; } = 0;
+
+        // Trang thai san pham ban chay (bat on se uu tien hien thi o section Ban chay tren trang chu)
+        public bool IsBestSelling { get; set; } = false;
+
+        // Khoa ngoai noi toi CategoryProduct
         public int CategoryProductId { get; set; }
 
         [ForeignKey("CategoryProductId")]
         public virtual CategoryProduct? CategoryProduct { get; set; }
+
+        // Bo suu tap anh chi tiet san pham
+        public virtual ICollection<ProductImage> ProductImages { get; set; } = new List<ProductImage>();
     }
 }
+

@@ -1,0 +1,171 @@
+@model CMS.Data.Entities.Banner
+
+@{
+    ViewData["Title"] = "Chỉnh sửa Banner";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    var isLocalUpload = Model.ImageUrl != null && Model.ImageUrl.StartsWith("/uploads/");
+}
+
+<section class="admin-card">
+    <div class="admin-card__header">
+        <div>
+            <p class="admin-eyebrow mb-1">Edit Banner</p>
+            <h2 class="h4 fw-bold mb-0"><i class="bi bi-pencil-square"></i> Chỉnh sửa thông tin Banner</h2>
+        </div>
+    </div>
+
+    <div class="admin-card__body">
+        <form id="banner-edit-form" asp-action="Edit" method="post" enctype="multipart/form-data">
+            <input type="hidden" asp-for="Id" />
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+            }
+
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="mb-4">
+                        <label asp-for="Title" class="form-label fw-bold">Tiêu đề / Mô tả ngắn:</label>
+                        <input asp-for="Title" class="form-control" placeholder="Nhập tiêu đề hoặc mô tả..." />
+                        <small class="text-muted">Mô tả hiển thị thay thế của banner.</small>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="TargetUrl" class="form-label fw-bold">Liên kết trỏ tới (Target URL):</label>
+                        <input asp-for="TargetUrl" class="form-control" placeholder="Nhập liên kết (ví dụ: /products hoặc đường dẫn cụ thể)..." />
+                        <small class="text-muted">Đường dẫn khi click vào banner (mặc định: /products).</small>
+                    </div>
+
+                    <!-- Xem trước ảnh hiện tại -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold d-block">Hình ảnh hiện tại:</label>
+                        <div class="position-relative overflow-hidden border rounded bg-light p-2 d-inline-block shadow-sm" style="max-width: 100%;">
+                            <img src="@Model.ImageUrl" alt="@Model.Title" style="max-height: 180px; max-width: 100%; object-fit: contain; border-radius: 4px;" />
+                        </div>
+                    </div>
+
+                    <!-- Cấu hình ảnh mới -->
+                    <div class="card border mb-4 shadow-sm">
+                        <div class="card-header bg-light fw-bold py-2">
+                            <i class="bi bi-arrow-left-right"></i> Thay đổi ảnh Banner
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Chọn hình thức ảnh:</label>
+                                <div class="d-flex gap-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="imageSource" id="sourceUpload" value="upload" @(isLocalUpload ? "checked" : "")>
+                                        <label class="form-check-label" style="cursor: pointer;" for="sourceUpload">
+                                            <i class="bi bi-cloud-arrow-up"></i> Tải ảnh lên mới (Upload)
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="imageSource" id="sourceUrl" value="url" @(!isLocalUpload ? "checked" : "")>
+                                        <label class="form-check-label" style="cursor: pointer;" for="sourceUrl">
+                                            <i class="bi bi-link-45deg"></i> Đường dẫn liên kết mới (URL)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Nhóm Tải ảnh -->
+                            <div class="mb-2 @(isLocalUpload ? "" : "d-none")" id="uploadGroup">
+                                <label class="form-label fw-bold">Chọn file ảnh mới:</label>
+                                <input type="file" name="uploadImage" class="form-control" accept="image/*" />
+                                <small class="text-muted">Chọn file để ghi đè lên ảnh cũ, hoặc giữ trống nếu muốn giữ nguyên ảnh hiện tại.</small>
+                            </div>
+
+                            <!-- Nhóm URL liên kết -->
+                            <div class="mb-2 @(!isLocalUpload ? "" : "d-none")" id="urlGroup">
+                                <label class="form-label fw-bold">Đường dẫn ảnh mới (URL):</label>
+                                <input asp-for="ImageUrl" class="form-control" placeholder="Nhập đường dẫn hình ảnh (https://...)..." />
+                                <small class="text-muted">Nhập URL hình ảnh mới hoặc giữ nguyên liên kết cũ.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card border mb-4">
+                        <div class="card-header bg-light fw-bold py-2">
+                            <i class="bi bi-sliders"></i> Cài đặt hiển thị
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label asp-for="DisplayOrder" class="form-label fw-bold">Thứ tự hiển thị:</label>
+                                <input asp-for="DisplayOrder" type="number" class="form-control" min="0" required />
+                                <small class="text-muted">Số nhỏ hơn sẽ hiển thị trước.</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check form-switch mt-2">
+                                    <input asp-for="IsVisible" class="form-check-input" type="checkbox" role="switch" id="IsVisible" />
+                                    <label class="form-check-label fw-bold" for="IsVisible">
+                                        Hiển thị Banner
+                                    </label>
+                                </div>
+                                <small class="text-muted">Bật để tiếp tục hiển thị banner này ngoài trang chủ.</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-warning" id="banner-save-button">
+                            <i class="bi bi-check-circle"></i> Cập nhật Banner
+                        </button>
+                        <a asp-action="Index" class="btn btn-secondary">Quay lại danh sách</a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
+
+@section Scripts {
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const sourceUpload = document.getElementById('sourceUpload');
+    const sourceUrl = document.getElementById('sourceUrl');
+    const uploadGroup = document.getElementById('uploadGroup');
+    const urlGroup = document.getElementById('urlGroup');
+    const imageUrlInput = document.getElementById('ImageUrl');
+    const uploadImageInput = document.querySelector('input[name="uploadImage"]');
+    
+    // Lưu lại URL ảnh cũ
+    const originalImageUrl = imageUrlInput.value;
+
+    sourceUpload.addEventListener('change', function () {
+        if (this.checked) {
+            uploadGroup.classList.remove('d-none');
+            urlGroup.classList.add('d-none');
+            imageUrlInput.value = ''; // Xóa URL cũ để tránh nhầm lẫn
+            imageUrlInput.removeAttribute('required');
+        }
+    });
+
+    sourceUrl.addEventListener('change', function () {
+        if (this.checked) {
+            urlGroup.classList.remove('d-none');
+            uploadGroup.classList.add('d-none');
+            uploadImageInput.value = ''; // Xóa file upload đã chọn
+            
+            // Khôi phục lại URL ban đầu nếu ảnh cũ là URL, hoặc để trống
+            imageUrlInput.value = originalImageUrl.startsWith('/uploads/') ? '' : originalImageUrl;
+            imageUrlInput.setAttribute('required', 'required');
+        }
+    });
+
+    document.getElementById('banner-edit-form').addEventListener('submit', function (e) {
+        if (sourceUrl.checked && !imageUrlInput.value.trim()) {
+            alert('Vui lòng nhập đường dẫn liên kết hình ảnh!');
+            e.preventDefault();
+            return;
+        }
+        
+        if (!confirm('Bạn có chắc chắn muốn lưu các thay đổi này không?')) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+}

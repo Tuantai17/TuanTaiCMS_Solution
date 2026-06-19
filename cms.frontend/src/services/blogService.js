@@ -13,6 +13,12 @@ const blogService = {
     return axiosClient.get(url);
   },
 
+  // Lấy bài viết nổi bật (IsFeatured = true) cho trang chủ
+  getFeaturedPosts: () => {
+    const url = '/Posts/featured';
+    return axiosClient.get(url);
+  },
+
   // Lọc bài viết theo danh mục bài viết
   getPostsByCategory: (categoryId) => {
     const url = `/Posts/category/${categoryId}`;

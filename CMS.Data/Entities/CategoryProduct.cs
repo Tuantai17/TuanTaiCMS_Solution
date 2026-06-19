@@ -1,11 +1,6 @@
 using System.ComponentModel.DataAnnotations;
-/*
-Sinh Vi�n: Nguy?n Tu?n T�i 
-M� Sinh Vi�n: 2123110166
-L?p: CCQ2311E
-Ng�y T?o: 15/5/2026
-M� t?: ??nh ngh?a th?c th? danh m?c s?n ph?m, d�ng ?? ph�n lo?i v� qu?n l� c�c s?n ph?m trong h? th?ng.
-*/
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Collections.Generic;
 
 namespace CMS.Data.Entities
 {
@@ -14,13 +9,24 @@ namespace CMS.Data.Entities
         [Key]
         public int Id { get; set; }
 
-        [Required(ErrorMessage = "T�n danh m?c kh�ng ???c ?? tr?ng")]
+        [Required(ErrorMessage = "Tên danh mục không được để trống")]
         [StringLength(100)]
         public string Name { get; set; }
 
         public string? Description { get; set; }
 
-        // Quan h?: M?t danh m?c c� nhi?u s?n ph?m
+        public string? ImageUrl { get; set; } // Đường dẫn ảnh đại diện loại sản phẩm
+
+        public int? ParentId { get; set; }
+
+        [ForeignKey("ParentId")]
+        public virtual CategoryProduct? Parent { get; set; }
+        public virtual ICollection<CategoryProduct>? Children { get; set; }
+
         public virtual ICollection<Product>? Products { get; set; }
+
+        [NotMapped]
+        public int Depth { get; set; } // Độ sâu cấp danh mục (dùng cho hiển thị cây)
     }
 }
+

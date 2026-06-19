@@ -1,14 +1,14 @@
 @model CMS.Data.Entities.User
 
 @{
-    ViewData["Title"] = "Cập nhật thành viên";
+    ViewData["Title"] = "Cập nhật Admin / Staff";
 }
 
 <section class="admin-card">
     <div class="admin-card__header">
         <div>
-            <p class="admin-eyebrow mb-1">Edit User</p>
-            <h2 class="h4 fw-bold mb-0">Cập nhật thông tin thành viên</h2>
+            <p class="admin-eyebrow mb-1">Edit Admin / Staff Account</p>
+            <h2 class="h4 fw-bold mb-0">Cập nhật Admin / Staff</h2>
         </div>
     </div>
 
@@ -40,8 +40,9 @@
                     <label asp-for="Role" class="form-label fw-bold">Vai trò:</label>
                     <select asp-for="Role" class="form-select">
                         <option value="Admin">Admin</option>
-                        <option value="Editor">Editor</option>
+                        <option value="Staff">Staff</option>
                     </select>
+                    <small class="text-muted">Customer được quản lý riêng tại mục Quản lý Khách hàng.</small>
                 </div>
             </div>
 

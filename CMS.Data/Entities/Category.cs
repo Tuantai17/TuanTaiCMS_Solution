@@ -1,4 +1,4 @@
-﻿/* 
+/* 
 /*
 Sinh Viên: Nguyễn Tuấn Tài 
 Mã Sinh Viên: 2123110166
@@ -19,7 +19,7 @@ namespace CMS.Data.Entities
     {
         public int Id { get; set; }
         public string Name { get; set; } // Tên danh mục (vd: Tin Giáo Dục)
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         // Quan hệ: Một danh mục có nhiều bài viết
         public virtual ICollection<Post> Posts { get; set; }
