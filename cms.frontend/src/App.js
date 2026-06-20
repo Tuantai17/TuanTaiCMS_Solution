@@ -15,7 +15,11 @@ import PostDetail from './pages/PostDetail';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import OrderHistory from './pages/OrderHistory';
+import OrderDetailPage from './pages/OrderDetailPage';
 import ForgotPassword from './pages/ForgotPassword';
+import Profile from './pages/Profile';
+import AddressesPage from './pages/AddressesPage';
+import ChangePassword from './pages/ChangePassword';
 
 // Import CSS từ assets/css/ theo đúng sơ đồ module hóa
 import './assets/css/App.css';
@@ -42,6 +46,12 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/order-history" element={<OrderHistory />} />
+            <Route path="/my-orders" element={<OrderHistory />} />
+            <Route path="/account/orders" element={<OrderHistory />} />
+            <Route path="/account/orders/:id" element={<OrderDetailPage />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/profile/change-password" element={<ChangePassword />} />
+            <Route path="/account/addresses" element={<AddressesPage />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
           </Routes>
         </main>

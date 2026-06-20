@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import orderService from '../services/orderService';
+import addressService from '../services/addressService';
 
 const Checkout = () => {
   const [customer, setCustomer] = useState(null);
@@ -14,6 +15,8 @@ const Checkout = () => {
   const [address, setAddress] = useState('');
   const [province, setProvince] = useState('');
   const [district, setDistrict] = useState('');
+
+  const [savedAddresses, setSavedAddresses] = useState([]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -33,11 +36,24 @@ const Checkout = () => {
       const parsedCustomer = JSON.parse(storedCustomer);
       setCustomer(parsedCustomer);
       
-      // Điền sẵn thông tin từ tài khoản đăng nhập
+      // Điền sẵn thông tin mặc định từ tài khoản đăng nhập
       setFullName(parsedCustomer.fullName || '');
       setEmail(parsedCustomer.email || '');
       setPhone(parsedCustomer.phone || '');
       setAddress(parsedCustomer.address || '');
+
+      // Tải danh sách địa chỉ đã lưu
+      addressService.getAddresses(parsedCustomer.customerId).then(addresses => {
+        setSavedAddresses(addresses || []);
+        const defaultAddr = addresses?.find(a => a.isDefault);
+        if (defaultAddr) {
+          setFullName(defaultAddr.recipientName);
+          setPhone(defaultAddr.phoneNumber);
+          setAddress(defaultAddr.addressLine);
+          setProvince(defaultAddr.provinceName);
+          setDistrict(defaultAddr.districtName);
+        }
+      }).catch(e => console.error("Lỗi lấy danh sách địa chỉ khi checkout:", e));
     } catch (e) {
       localStorage.removeItem('customer');
     }
@@ -86,6 +102,19 @@ const Checkout = () => {
   const shippingFee = 35000;
   const total = subTotal + shippingFee;
 
+  const handleSelectSavedAddress = (e) => {
+    const addrId = parseInt(e.target.value);
+    if (!addrId) return;
+    const addr = savedAddresses.find(a => a.id === addrId);
+    if (addr) {
+      setFullName(addr.recipientName);
+      setPhone(addr.phoneNumber);
+      setAddress(addr.addressLine);
+      setProvince(addr.provinceName);
+      setDistrict(addr.districtName);
+    }
+  };
+
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
     setError('');
@@ -112,7 +141,7 @@ const Checkout = () => {
       window.dispatchEvent(new Event('cartChange'));
       
       alert("Đặt hàng thành công! Cảm ơn bạn đã mua hàng tại MyKingdom.");
-      navigate('/order-history');
+      navigate('/account/orders');
     } catch (err) {
       if (err.response && err.response.data && err.response.data.message) {
         setError(err.response.data.message);
@@ -151,6 +180,26 @@ const Checkout = () => {
           <div className="card shadow-sm border border-light rounded-lg p-4">
             <h5 className="font-weight-bold text-dark mb-4 border-bottom pb-3">Địa chỉ nhận hàng</h5>
             
+            {savedAddresses.length > 0 && (
+              <div className="mb-4 p-3 rounded" style={{ backgroundColor: '#fff8e1', border: '1px solid #ffe082' }}>
+                <label className="small font-weight-bold text-dark">
+                  <i className="fa-solid fa-location-dot text-danger mr-2"></i> Chọn nhanh địa chỉ nhận hàng đã lưu
+                </label>
+                <select 
+                  className="form-control rounded-pill px-3 shadow-none border-secondary-50"
+                  onChange={handleSelectSavedAddress}
+                  defaultValue=""
+                >
+                  <option value="" disabled>-- Chọn địa chỉ đã lưu --</option>
+                  {savedAddresses.map(addr => (
+                    <option key={addr.id} value={addr.id}>
+                      [{addr.addressType}] {addr.recipientName} - {addr.phoneNumber} ({addr.addressLine}, {addr.wardName}, {addr.districtName}, {addr.provinceName}){addr.isDefault ? ' [Mặc định]' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <form onSubmit={handlePlaceOrder}>
               <div className="row">
                 <div className="col-12 col-md-6 mb-3">

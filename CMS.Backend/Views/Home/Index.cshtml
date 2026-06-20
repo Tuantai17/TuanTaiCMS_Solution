@@ -3,124 +3,396 @@ Sinh Viên: Nguyễn Tuấn Tài
 Mã Sinh Viên: 2123110166
 Lớp: CCQ2311E
 Ngày Tạo: 15/5/2026
-Mô tả: Trang bảng điều khiển quản trị của hệ thống CMS.
-
-Chú thích chi tiết:
-- View này là dashboard chính của Admin Panel.
-- Các thẻ chức năng giúp đi nhanh đến quản lý Danh mục, Bài viết và Thành viên.
-- Dashboard hiển thị đầy đủ danh sách bài viết kèm ảnh, danh mục, nội dung và ngày đăng.
+Cập nhật: 19/6/2026
+Mô tả: Trang Dashboard quản trị bán hàng thương mại điện tử hiện đại.
+        Hiển thị dữ liệu thật từ database: thống kê tổng quan, biểu đồ doanh thu,
+        top sản phẩm bán chạy và đơn hàng mới nhất.
 *@
 
-@model IEnumerable<CMS.Data.Entities.Post>
+@model CMS.Backend.Models.DashboardViewModel
 
 @{
     ViewData["Title"] = "Bảng điều khiển";
-    var posts = Model?.ToList() ?? new List<CMS.Data.Entities.Post>();
-    var totalPosts = ViewBag.TotalPosts ?? posts.Count;
-    var totalCategories = ViewBag.TotalCategories ?? 0;
-    var totalUsers = ViewBag.TotalUsers ?? 0;
 }
 
-<section class="admin-stat-grid mb-4" aria-label="Lối tắt chức năng quản trị">
-    <a class="admin-stat-card admin-gradient-blue" asp-controller="Category" asp-action="Index" id="dashboard-category-card">
-        <i class="bi bi-grid-1x2-fill"></i>
-        <h2>Danh mục</h2>
-        <p>@totalCategories danh mục đang có bài viết trong hệ thống.</p>
-    </a>
-
-    <a class="admin-stat-card admin-gradient-purple" asp-controller="Post" asp-action="Index" id="dashboard-post-card">
-        <i class="bi bi-file-earmark-richtext-fill"></i>
-        <h2>Bài viết</h2>
-        <p>@totalPosts bài viết đang được quản lý, có thể xem ảnh và nội dung ngay tại Dashboard.</p>
-    </a>
-
-    <a class="admin-stat-card admin-gradient-green" asp-controller="User" asp-action="Index" id="dashboard-user-card">
-        <i class="bi bi-people-fill"></i>
-        <h2>Thành viên</h2>
-        <p>@totalUsers tài khoản đang có sẵn trong hệ thống.</p>
-    </a>
-</section>
-
-<section class="admin-card dashboard-posts-card">
-    <div class="admin-card__header dashboard-posts-header">
-        <div>
-            <p class="admin-eyebrow mb-1">Quản lý nội dung</p>
-            <h2 class="h4 fw-bold mb-0">Danh sách bài viết đầy đủ</h2>
-            <p class="dashboard-posts-subtitle mb-0">
-                Hiển thị ảnh đại diện, tiêu đề, danh mục, nội dung tóm tắt và ngày đăng của từng bài viết.
-            </p>
+@* ===== ROW 1: 4 STAT CARDS ===== *@
+<section class="db-stat-row" aria-label="Thống kê tổng quan">
+    <div class="db-stat-card db-stat--revenue">
+        <div class="db-stat-card__icon">
+            <i class="bi bi-wallet2"></i>
         </div>
-        <a asp-controller="Post" asp-action="Create" class="btn btn-primary" id="dashboard-create-post">
-            <i class="bi bi-plus-circle"></i> Thêm bài viết
-        </a>
+        <div class="db-stat-card__body">
+            <span class="db-stat-card__label">Tổng doanh thu</span>
+            <h3 class="db-stat-card__value">@Model.TotalRevenue.ToString("N0")₫</h3>
+            <span class="db-stat-card__sub">Đơn hàng hoàn thành</span>
+        </div>
+        <div class="db-stat-card__glow"></div>
     </div>
 
-    <div class="admin-card__body">
-        @if (posts.Any())
-        {
-            <div class="dashboard-post-grid">
-                @foreach (var item in posts)
-                {
-                    var imageUrl = string.IsNullOrWhiteSpace(item.ImageUrl)
-                        ? "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360' viewBox='0 0 640 360'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' x2='1' y1='0' y2='1'%3E%3Cstop stop-color='%236c63ff'/%3E%3Cstop offset='1' stop-color='%2300c6ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='640' height='360' fill='url(%23g)'/%3E%3Ccircle cx='320' cy='150' r='46' fill='white' opacity='.22'/%3E%3Cpath d='M205 245l80-78 56 55 38-37 64 60H205z' fill='white' opacity='.72'/%3E%3Ctext x='320' y='305' text-anchor='middle' font-family='Arial' font-size='28' font-weight='700' fill='white'%3ETuanTaiCMS%3C/text%3E%3C/svg%3E"
-                        : item.ImageUrl;
-                    var fallbackImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360' viewBox='0 0 640 360'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' x2='1' y1='0' y2='1'%3E%3Cstop stop-color='%236c63ff'/%3E%3Cstop offset='1' stop-color='%2300c6ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='640' height='360' fill='url(%23g)'/%3E%3Ctext x='320' y='190' text-anchor='middle' font-family='Arial' font-size='30' font-weight='700' fill='white'%3EChưa có ảnh%3C/text%3E%3C/svg%3E";
-                    var contentPreview = string.IsNullOrWhiteSpace(item.Content)
-                        ? "Bài viết chưa có nội dung mô tả. Vui lòng cập nhật nội dung để hiển thị đầy đủ hơn."
-                        : item.Content;
+    <div class="db-stat-card db-stat--orders">
+        <div class="db-stat-card__icon">
+            <i class="bi bi-receipt-cutoff"></i>
+        </div>
+        <div class="db-stat-card__body">
+            <span class="db-stat-card__label">Đơn hàng</span>
+            <h3 class="db-stat-card__value">@Model.TotalOrders</h3>
+            <span class="db-stat-card__sub">@Model.PendingOrders chờ duyệt</span>
+        </div>
+        <div class="db-stat-card__glow"></div>
+    </div>
 
-                    <article class="dashboard-post-item">
-                        <div class="dashboard-post-thumb-wrap">
-                            <img src="@imageUrl"
-                                 alt="Ảnh đại diện bài viết @item.Title"
-                                 class="dashboard-post-thumb"
-                                 onerror="this.onerror=null;this.src='@fallbackImage';" />
-                            <span class="dashboard-post-date">
-                                <i class="bi bi-calendar-event"></i>
-                                @item.CreatedDate.ToString("dd/MM/yyyy")
-                            </span>
-                        </div>
+    <div class="db-stat-card db-stat--products">
+        <div class="db-stat-card__icon">
+            <i class="bi bi-box-seam-fill"></i>
+        </div>
+        <div class="db-stat-card__body">
+            <span class="db-stat-card__label">Sản phẩm</span>
+            <h3 class="db-stat-card__value">@Model.TotalProducts</h3>
+            <span class="db-stat-card__sub">Trong hệ thống</span>
+        </div>
+        <div class="db-stat-card__glow"></div>
+    </div>
 
-                        <div class="dashboard-post-info">
-                            <div class="dashboard-post-meta">
-                                <span class="badge text-bg-info">
-                                    <i class="bi bi-folder2-open me-1"></i>@(item.Category?.Name ?? "Chưa có danh mục")
-                                </span>
-                                <span class="dashboard-post-id">#@item.Id</span>
-                            </div>
+    <div class="db-stat-card db-stat--customers">
+        <div class="db-stat-card__icon">
+            <i class="bi bi-people-fill"></i>
+        </div>
+        <div class="db-stat-card__body">
+            <span class="db-stat-card__label">Khách hàng</span>
+            <h3 class="db-stat-card__value">@Model.TotalCustomers</h3>
+            <span class="db-stat-card__sub">Đã đăng ký</span>
+        </div>
+        <div class="db-stat-card__glow"></div>
+    </div>
+</section>
 
-                            <h3 class="dashboard-post-title">@item.Title</h3>
-                            <p class="dashboard-post-excerpt">@contentPreview</p>
-
-                            <div class="dashboard-post-actions">
-                                <a asp-controller="Post"
-                                   asp-action="Details"
-                                   asp-route-id="@item.Id"
-                                   class="btn btn-outline-primary btn-sm">
-                                    <i class="bi bi-eye"></i> Xem chi tiết
-                                </a>
-                                <a asp-controller="Post"
-                                   asp-action="Edit"
-                                   asp-route-id="@item.Id"
-                                   class="btn btn-outline-warning btn-sm">
-                                    <i class="bi bi-pencil-square"></i> Sửa
-                                </a>
-                            </div>
-                        </div>
-                    </article>
-                }
+@* ===== ROW 2: BIỂU ĐỒ DOANH THU + TOP SẢN PHẨM ===== *@
+<section class="db-grid-2col">
+    @* --- Biểu đồ doanh thu 7 ngày --- *@
+    <div class="db-panel">
+        <div class="db-panel__header">
+            <div>
+                <h2 class="db-panel__title"><i class="bi bi-graph-up-arrow"></i> Doanh thu 7 ngày gần nhất</h2>
+                <p class="db-panel__subtitle">Thống kê doanh thu từ đơn hàng hoàn thành</p>
             </div>
-        }
-        else
-        {
-            <div class="dashboard-empty-state">
-                <i class="bi bi-file-earmark-plus"></i>
-                <h3>Hiện chưa có bài viết nào</h3>
-                <p>Hãy bắt đầu bằng cách thêm bài viết đầu tiên cho hệ thống CMS.</p>
-                <a asp-controller="Post" asp-action="Create" class="btn btn-primary">
-                    <i class="bi bi-plus-circle"></i> Thêm bài viết mới
+        </div>
+        <div class="db-panel__body">
+            <div class="db-chart-wrap">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    @* --- Top 5 sản phẩm bán chạy --- *@
+    <div class="db-panel">
+        <div class="db-panel__header">
+            <div>
+                <h2 class="db-panel__title"><i class="bi bi-trophy-fill"></i> Top sản phẩm bán chạy</h2>
+                <p class="db-panel__subtitle">Xếp hạng theo số lượng đã bán</p>
+            </div>
+        </div>
+        <div class="db-panel__body db-panel__body--flush">
+            @if (Model.TopProducts.Any())
+            {
+                <div class="db-top-products">
+                    @{ var rank = 0; var maxQty = Model.TopProducts.Max(p => p.TotalQuantitySold); }
+                    @foreach (var product in Model.TopProducts)
+                    {
+                        rank++;
+                        var percent = maxQty > 0 ? (int)Math.Round((double)product.TotalQuantitySold / maxQty * 100) : 0;
+                        var rankClass = rank <= 3 ? $"db-rank--{rank}" : "db-rank--other";
+                        var imgSrc = string.IsNullOrWhiteSpace(product.ImageUrl) ? "" : product.ImageUrl;
+
+                        <div class="db-product-row">
+                            <span class="db-product-rank @rankClass">@rank</span>
+                            @if (!string.IsNullOrWhiteSpace(imgSrc))
+                            {
+                                <img src="@imgSrc" alt="@product.ProductName" class="db-product-thumb" />
+                            }
+                            else
+                            {
+                                <div class="db-product-thumb db-product-thumb--placeholder">
+                                    <i class="bi bi-image"></i>
+                                </div>
+                            }
+                            <div class="db-product-info">
+                                <span class="db-product-name">@product.ProductName</span>
+                                <div class="db-product-bar-wrap">
+                                    <div class="db-product-bar" style="width: @(percent)%"></div>
+                                </div>
+                            </div>
+                            <div class="db-product-stats">
+                                <span class="db-product-qty">@product.TotalQuantitySold đã bán</span>
+                                <span class="db-product-rev">@product.TotalRevenue.ToString("N0")₫</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="db-empty-mini">
+                    <i class="bi bi-emoji-neutral"></i>
+                    <span>Chưa có dữ liệu bán hàng</span>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+@* ===== ROW 3: ĐƠN HÀNG MỚI NHẤT + TRẠNG THÁI ĐƠN HÀNG ===== *@
+<section class="db-grid-2col">
+    @* --- Đơn hàng mới nhất --- *@
+    <div class="db-panel">
+        <div class="db-panel__header">
+            <div>
+                <h2 class="db-panel__title"><i class="bi bi-clock-history"></i> Đơn hàng mới nhất</h2>
+                <p class="db-panel__subtitle">5 đơn hàng gần đây nhất trong hệ thống</p>
+            </div>
+            <a asp-controller="Order" asp-action="Index" class="db-panel__link">
+                Xem tất cả <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+        <div class="db-panel__body db-panel__body--flush">
+            @if (Model.RecentOrders.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table db-table" id="recent-orders-table">
+                        <thead>
+                            <tr>
+                                <th>Mã ĐH</th>
+                                <th>Khách hàng</th>
+                                <th>Ngày đặt</th>
+                                <th>Tổng tiền</th>
+                                <th>Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var order in Model.RecentOrders)
+                            {
+                                var statusText = order.Status switch
+                                {
+                                    0 => "Chờ duyệt",
+                                    1 => "Đang giao",
+                                    2 => "Hoàn thành",
+                                    3 => "Đã hủy",
+                                    _ => "Không rõ"
+                                };
+                                var statusClass = order.Status switch
+                                {
+                                    0 => "db-badge--pending",
+                                    1 => "db-badge--shipping",
+                                    2 => "db-badge--completed",
+                                    3 => "db-badge--cancelled",
+                                    _ => "db-badge--pending"
+                                };
+
+                                <tr>
+                                    <td>
+                                        <a asp-controller="Order" asp-action="Details" asp-route-id="@order.OrderId" class="db-order-id">
+                                            #@order.OrderId
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <div class="db-customer-cell">
+                                            <span class="db-customer-name">@order.CustomerName</span>
+                                            @if (!string.IsNullOrWhiteSpace(order.CustomerEmail))
+                                            {
+                                                <span class="db-customer-email">@order.CustomerEmail</span>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td>@order.OrderDate.ToString("dd/MM/yyyy")</td>
+                                    <td class="db-amount">@order.TotalAmount.ToString("N0")₫</td>
+                                    <td><span class="db-badge @statusClass">@statusText</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="db-empty-mini">
+                    <i class="bi bi-inbox"></i>
+                    <span>Chưa có đơn hàng nào</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    @* --- Tổng quan trạng thái đơn hàng + Thống kê nhanh --- *@
+    <div class="db-panel">
+        <div class="db-panel__header">
+            <div>
+                <h2 class="db-panel__title"><i class="bi bi-pie-chart-fill"></i> Phân bố đơn hàng</h2>
+                <p class="db-panel__subtitle">Theo trạng thái xử lý</p>
+            </div>
+        </div>
+        <div class="db-panel__body">
+            <div class="db-chart-wrap db-chart-wrap--doughnut">
+                <canvas id="orderStatusChart"></canvas>
+            </div>
+
+            <div class="db-status-legend">
+                <div class="db-status-item">
+                    <span class="db-status-dot db-dot--pending"></span>
+                    <span class="db-status-label">Chờ duyệt</span>
+                    <strong class="db-status-count">@Model.PendingOrders</strong>
+                </div>
+                <div class="db-status-item">
+                    <span class="db-status-dot db-dot--shipping"></span>
+                    <span class="db-status-label">Đang giao</span>
+                    <strong class="db-status-count">@Model.ShippingOrders</strong>
+                </div>
+                <div class="db-status-item">
+                    <span class="db-status-dot db-dot--completed"></span>
+                    <span class="db-status-label">Hoàn thành</span>
+                    <strong class="db-status-count">@Model.CompletedOrders</strong>
+                </div>
+                <div class="db-status-item">
+                    <span class="db-status-dot db-dot--cancelled"></span>
+                    <span class="db-status-label">Đã hủy</span>
+                    <strong class="db-status-count">@Model.CancelledOrders</strong>
+                </div>
+            </div>
+
+            @* --- Quick links bổ sung --- *@
+            <div class="db-quicklinks">
+                <a class="db-quicklink" asp-controller="Post" asp-action="Index">
+                    <i class="bi bi-file-earmark-text-fill"></i>
+                    <span>@Model.TotalPosts Bài viết</span>
+                </a>
+                <a class="db-quicklink" asp-controller="Category" asp-action="Index">
+                    <i class="bi bi-grid-1x2-fill"></i>
+                    <span>@Model.TotalCategories Danh mục</span>
+                </a>
+                <a class="db-quicklink" asp-controller="Product" asp-action="Index">
+                    <i class="bi bi-box-seam-fill"></i>
+                    <span>@Model.TotalProducts Sản phẩm</span>
+                </a>
+                <a class="db-quicklink" asp-controller="Customer" asp-action="Index">
+                    <i class="bi bi-person-badge-fill"></i>
+                    <span>@Model.TotalCustomers Khách hàng</span>
                 </a>
             </div>
-        }
+        </div>
     </div>
 </section>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script>
+        // === BIỂU ĐỒ DOANH THU 7 NGÀY ===
+        (function () {
+            var ctx = document.getElementById('revenueChart').getContext('2d');
+            var labels = [@Html.Raw(string.Join(",", Model.DailyRevenues.Select(d => $"'{d.Date}'")))];
+            var data = [@Html.Raw(string.Join(",", Model.DailyRevenues.Select(d => d.Revenue.ToString("F0"))))];
+
+            var gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(59, 130, 246, 0.35)');
+            gradient.addColorStop(1, 'rgba(59, 130, 246, 0.02)');
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Doanh thu (₫)',
+                        data: data,
+                        backgroundColor: gradient,
+                        borderColor: '#3b82f6',
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                        hoverBackgroundColor: 'rgba(59, 130, 246, 0.55)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            titleFont: { size: 13, weight: '600' },
+                            bodyFont: { size: 12 },
+                            padding: 12,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function (context) {
+                                    return new Intl.NumberFormat('vi-VN').format(context.parsed.y) + '₫';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#f1f5f9', drawBorder: false },
+                            ticks: {
+                                font: { size: 11 },
+                                color: '#94a3b8',
+                                callback: function (value) {
+                                    if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+                                    if (value >= 1000) return (value / 1000).toFixed(0) + 'K';
+                                    return value;
+                                }
+                            }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { size: 12, weight: '500' }, color: '#64748b' }
+                        }
+                    }
+                }
+            });
+        })();
+
+        // === BIỂU ĐỒ PHÂN BỐ TRẠNG THÁI ĐƠN HÀNG ===
+        (function () {
+            var ctx = document.getElementById('orderStatusChart').getContext('2d');
+            var statusData = [@Model.PendingOrders, @Model.ShippingOrders, @Model.CompletedOrders, @Model.CancelledOrders];
+            var hasData = statusData.some(function (v) { return v > 0; });
+
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Chờ duyệt', 'Đang giao', 'Hoàn thành', 'Đã hủy'],
+                    datasets: [{
+                        data: hasData ? statusData : [1],
+                        backgroundColor: hasData
+                            ? ['#f59e0b', '#3b82f6', '#10b981', '#ef4444']
+                            : ['#e2e8f0'],
+                        borderColor: '#ffffff',
+                        borderWidth: 3,
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '68%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            enabled: hasData,
+                            backgroundColor: '#1e293b',
+                            titleFont: { size: 13, weight: '600' },
+                            bodyFont: { size: 12 },
+                            padding: 12,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function (context) {
+                                    var total = context.dataset.data.reduce(function (a, b) { return a + b; }, 0);
+                                    var pct = total > 0 ? Math.round(context.parsed / total * 100) : 0;
+                                    return context.label + ': ' + context.parsed + ' (' + pct + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        })();
+    </script>
+}

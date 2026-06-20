@@ -7,10 +7,10 @@ const blogService = {
     return axiosClient.get(url);
   },
 
-  // Lấy toàn bộ các bài viết tin tức và blog từ CSDL
-  getAllPosts: () => {
+  // Lấy toàn bộ các bài viết tin tức và blog từ CSDL (hỗ trợ lọc)
+  getAllPosts: (filters = {}) => {
     const url = '/Posts';
-    return axiosClient.get(url);
+    return axiosClient.get(url, { params: filters });
   },
 
   // Lấy bài viết nổi bật (IsFeatured = true) cho trang chủ

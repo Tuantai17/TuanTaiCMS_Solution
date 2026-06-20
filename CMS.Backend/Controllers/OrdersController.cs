@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore; // Import thư viện hỗ trợ truy vấn
 using CMS.Data; // Import namespace chứa lớp ngữ cảnh dữ liệu ApplicationDbContext
 using CMS.Data.Entities;
 using CMS.Backend.Helpers;
+using System.Globalization;
 
 namespace CMS.Backend.Controllers
 {
@@ -20,12 +21,14 @@ namespace CMS.Backend.Controllers
   {
     private readonly ApplicationDbContext _context; // Khai báo đối tượng trung gian kết nối cơ sở dữ liệu SQL Server
     private readonly EmailHelper _emailHelper; // Khai báo đối tượng helper gửi email
+    private readonly IConfiguration _configuration;
 
     // Hàm khởi tạo (Constructor): "Tiêm" (Inject) ngữ cảnh dữ liệu cơ sở dữ liệu vào Controller thông qua DI
-    public OrdersController(ApplicationDbContext context, EmailHelper emailHelper)
+    public OrdersController(ApplicationDbContext context, EmailHelper emailHelper, IConfiguration configuration)
     {
       _context = context; // Gán context được tiêm vào cho biến nội bộ sử dụng
       _emailHelper = emailHelper;
+      _configuration = configuration;
     }
 
     /// <summary>
@@ -249,6 +252,209 @@ namespace CMS.Backend.Controllers
         return StatusCode(500, new { message = "Lỗi hệ thống khi tải lịch sử đơn hàng", detail = ex.Message });
       }
     }
+
+    [HttpGet("my")]
+    public async Task<IActionResult> GetMyOrders(
+      [FromQuery] int? status,
+      [FromQuery] string? keyword,
+      [FromQuery] DateTime? fromDate,
+      [FromQuery] DateTime? toDate,
+      [FromQuery] int page = 1,
+      [FromQuery] int pageSize = 10)
+    {
+      if (!TryGetAuthenticatedCustomerId(out var customerId, out var authError))
+      {
+        return authError!;
+      }
+
+      if (page <= 0)
+      {
+        page = 1;
+      }
+
+      pageSize = Math.Clamp(pageSize, 1, 20);
+
+      if (fromDate.HasValue && toDate.HasValue && fromDate.Value.Date > toDate.Value.Date)
+      {
+        return BadRequest(new { message = "Ngày bắt đầu không được lớn hơn ngày kết thúc." });
+      }
+
+      try
+      {
+        var query = _context.Orders
+          .AsNoTracking()
+          .Where(o => o.CustomerId == customerId);
+
+        if (status.HasValue)
+        {
+          query = query.Where(o => o.Status == status.Value);
+        }
+
+        if (fromDate.HasValue)
+        {
+          var startDate = fromDate.Value.Date;
+          query = query.Where(o => o.OrderDate >= startDate);
+        }
+
+        if (toDate.HasValue)
+        {
+          var endDateExclusive = toDate.Value.Date.AddDays(1);
+          query = query.Where(o => o.OrderDate < endDateExclusive);
+        }
+
+        var normalizedKeyword = NormalizeOrderKeyword(keyword);
+        if (!string.IsNullOrWhiteSpace(normalizedKeyword))
+        {
+          query = query.Where(o => o.Id.ToString().Contains(normalizedKeyword));
+        }
+
+        var totalItems = await query.CountAsync();
+        var totalPages = totalItems == 0 ? 0 : (int)Math.Ceiling(totalItems / (double)pageSize);
+
+        var items = await query
+          .OrderByDescending(o => o.OrderDate)
+          .Skip((page - 1) * pageSize)
+          .Take(pageSize)
+          .Select(o => new OrderHistoryItemDto
+          {
+            Id = o.Id,
+            OrderDate = o.OrderDate,
+            Status = o.Status,
+            PaymentMethod = null,
+            TotalAmount = o.OrderDetails != null
+              ? o.OrderDetails.Sum(od => od.UnitPrice * od.Quantity)
+              : 0,
+            TotalQuantity = o.OrderDetails != null
+              ? o.OrderDetails.Sum(od => od.Quantity)
+              : 0,
+            ProductCount = o.OrderDetails != null
+              ? o.OrderDetails.Count()
+              : 0,
+            FirstProductName = o.OrderDetails != null
+              ? o.OrderDetails
+                .OrderBy(od => od.Id)
+                .Select(od => od.Product != null ? od.Product.Name : "Sản phẩm không xác định")
+                .FirstOrDefault()
+              : null,
+            FirstProductImageUrl = o.OrderDetails != null
+              ? o.OrderDetails
+                .OrderBy(od => od.Id)
+                .Select(od => od.Product != null ? od.Product.ImageUrl : null)
+                .FirstOrDefault()
+              : null,
+            Notes = o.Notes
+          })
+          .ToListAsync();
+
+        return Ok(new OrderHistoryListResponseDto
+        {
+          Items = items,
+          Page = page,
+          PageSize = pageSize,
+          TotalItems = totalItems,
+          TotalPages = totalPages
+        });
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, new { message = "Không thể tải lịch sử mua hàng. Vui lòng thử lại.", detail = ex.Message });
+      }
+    }
+
+    [HttpGet("my/{id:int}")]
+    public async Task<IActionResult> GetMyOrderDetail(int id)
+    {
+      if (!TryGetAuthenticatedCustomerId(out var customerId, out var authError))
+      {
+        return authError!;
+      }
+
+      try
+      {
+        var order = await _context.Orders
+          .AsNoTracking()
+          .Where(o => o.Id == id && o.CustomerId == customerId)
+          .Select(o => new OrderDetailResponseDto
+          {
+            Id = o.Id,
+            OrderDate = o.OrderDate,
+            Status = o.Status,
+            Notes = o.Notes,
+            PaymentMethod = null,
+            TotalAmount = o.OrderDetails != null
+              ? o.OrderDetails.Sum(od => od.UnitPrice * od.Quantity)
+              : 0,
+            Items = o.OrderDetails != null
+              ? o.OrderDetails
+                .OrderBy(od => od.Id)
+                .Select(od => new OrderDetailItemDto
+                {
+                  Id = od.Id,
+                  ProductId = od.ProductId,
+                  ProductName = od.Product != null ? od.Product.Name : "Sản phẩm không xác định",
+                  ProductImageUrl = od.Product != null ? od.Product.ImageUrl : null,
+                  Quantity = od.Quantity,
+                  UnitPrice = od.UnitPrice,
+                  LineTotal = od.UnitPrice * od.Quantity
+                })
+                .ToList()
+              : new List<OrderDetailItemDto>()
+          })
+          .FirstOrDefaultAsync();
+
+        if (order == null)
+        {
+          return NotFound(new { message = "Không tìm thấy đơn hàng." });
+        }
+
+        return Ok(order);
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, new { message = "Không thể tải chi tiết đơn hàng. Vui lòng thử lại.", detail = ex.Message });
+      }
+    }
+
+    private bool TryGetAuthenticatedCustomerId(out int customerId, out IActionResult? errorResult)
+    {
+      customerId = 0;
+      errorResult = null;
+
+      var authorizationHeader = Request.Headers.Authorization.FirstOrDefault();
+      if (string.IsNullOrWhiteSpace(authorizationHeader) || !authorizationHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+      {
+        errorResult = Unauthorized(new { message = "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại." });
+        return false;
+      }
+
+      var token = authorizationHeader["Bearer ".Length..].Trim();
+      var secret = _configuration["CustomerSession:Secret"] ?? "TuanTaiCMS.CustomerSession.Secret.2026";
+      if (!CustomerSessionTokenHelper.TryValidateToken(token, secret, out customerId))
+      {
+        errorResult = Unauthorized(new { message = "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại." });
+        return false;
+      }
+
+      return true;
+    }
+
+    private static string? NormalizeOrderKeyword(string? keyword)
+    {
+      if (string.IsNullOrWhiteSpace(keyword))
+      {
+        return null;
+      }
+
+      var trimmed = keyword.Trim();
+      var digitsOnly = new string(trimmed.Where(char.IsDigit).ToArray());
+
+      if (trimmed.StartsWith("MKD", true, CultureInfo.InvariantCulture) && digitsOnly.Length > 0)
+      {
+        return digitsOnly.TrimStart('0');
+      }
+
+      return digitsOnly.Length > 0 ? digitsOnly : trimmed;
+    }
   }
 
   // LỚP DTO TRUNG GIAN ĐỂ HỨNG DỮ LIỆU TỪ GIỎ HÀNG FRONTEND TRUYỀN LÊN TRONG THÂN REQUEST
@@ -263,5 +469,50 @@ namespace CMS.Backend.Controllers
   {
     public int ProductId { get; set; }
     public int Quantity { get; set; }
+  }
+
+  public class OrderHistoryListResponseDto
+  {
+    public List<OrderHistoryItemDto> Items { get; set; } = new();
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public int TotalItems { get; set; }
+    public int TotalPages { get; set; }
+  }
+
+  public class OrderHistoryItemDto
+  {
+    public int Id { get; set; }
+    public DateTime OrderDate { get; set; }
+    public int Status { get; set; }
+    public string? PaymentMethod { get; set; }
+    public decimal TotalAmount { get; set; }
+    public int TotalQuantity { get; set; }
+    public int ProductCount { get; set; }
+    public string? FirstProductName { get; set; }
+    public string? FirstProductImageUrl { get; set; }
+    public string? Notes { get; set; }
+  }
+
+  public class OrderDetailResponseDto
+  {
+    public int Id { get; set; }
+    public DateTime OrderDate { get; set; }
+    public int Status { get; set; }
+    public string? Notes { get; set; }
+    public string? PaymentMethod { get; set; }
+    public decimal TotalAmount { get; set; }
+    public List<OrderDetailItemDto> Items { get; set; } = new();
+  }
+
+  public class OrderDetailItemDto
+  {
+    public int Id { get; set; }
+    public int ProductId { get; set; }
+    public string ProductName { get; set; } = string.Empty;
+    public string? ProductImageUrl { get; set; }
+    public int Quantity { get; set; }
+    public decimal UnitPrice { get; set; }
+    public decimal LineTotal { get; set; }
   }
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate, useSearchParams } from 'react-router-dom';
 import './Header.css';
 import categoryProductService from '../services/categoryProductService';
 import menuService from '../services/menuService';
@@ -36,6 +36,9 @@ const Header = () => {
   const [cartCount, setCartCount] = useState(0);
   const [cartItems, setCartItems] = useState([]);
   
+  // Trạng thái kết nối API Backend
+  const [isApiOnline, setIsApiOnline] = useState(true);
+  
   // Trạng thái mở/đóng dropdown tài khoản
   const [dropdownOpen, setDropdownOpen] = useState(false);
   
@@ -65,6 +68,13 @@ const Header = () => {
   const [mobileMenuLevel, setMobileMenuLevel] = useState(0); // 0: Cấp 1, 1: Cấp 2, 2: Cấp 3
   const [mobileActiveCat, setMobileActiveCat] = useState(null);   // Đối tượng danh mục con cấp 2 đang active
   const [searchQuery, setSearchQuery] = useState(''); // State từ khóa tìm kiếm
+  const [searchParams] = useSearchParams();
+  const urlSearch = searchParams.get('search');
+
+  // Đồng bộ ô tìm kiếm với tham số search trên URL khi URL thay đổi hoặc tải trang
+  useEffect(() => {
+    setSearchQuery(urlSearch || '');
+  }, [urlSearch]);
 
   // Cart Drawer State
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
@@ -75,6 +85,9 @@ const Header = () => {
   });
 
   const navigate = useNavigate();
+
+  // Khách hàng hiển thị thực tế (chỉ hiển thị khi API online để bảo vệ thông tin khi sập API/mất kết nối DB)
+  const displayCustomer = isApiOnline ? customer : null;
 
   // Hàm tải dữ liệu trạng thái khách hàng & giỏ hàng từ localStorage
   const loadHeaderState = () => {
@@ -149,9 +162,14 @@ const Header = () => {
       try {
         const res = await categoryProductService.getAllCategoryProducts();
         setApiCategories(res);
+        setIsApiOnline(true);
       } catch (err) {
         console.error("Lỗi khi tải danh mục ở Header:", err.message);
         setApiCategories([]);
+        // Nếu sập API / Mất kết nối mạng / Không kết nối được DB
+        if (!err.response || err.code === 'ERR_NETWORK' || (err.message && err.message.includes('Network Error'))) {
+          setIsApiOnline(false);
+        }
       }
     };
 
@@ -162,8 +180,12 @@ const Header = () => {
         if (res) {
           setMenus(res);
         }
+        setIsApiOnline(true);
       } catch (err) {
         console.error("Lỗi khi tải danh sách menu ở Header:", err.message);
+        if (!err.response || err.code === 'ERR_NETWORK' || (err.message && err.message.includes('Network Error'))) {
+          setIsApiOnline(false);
+        }
       }
     };
 
@@ -339,7 +361,7 @@ const Header = () => {
                 <div className="col-2 col-lg-3 order-2 order-lg-3 header-utilities text-white">
                   {/* Account display - Desktop */}
                   <div className="d-none d-md-block">
-                    {customer ? (
+                    {displayCustomer ? (
                       <div className="dropdown">
                         <button 
                           className="btn btn-link text-white text-decoration-none dropdown-toggle p-0 d-flex align-items-center shadow-none" 
@@ -353,14 +375,14 @@ const Header = () => {
                           aria-expanded={dropdownOpen ? "true" : "false"}
                         >
                           <i className="fa-solid fa-user-check fs-5 mr-1"></i>
-                          <span className="font-weight-bold text-truncate" style={{ maxWidth: '90px' }}>{customer.fullName}</span>
+                          <span className="font-weight-bold text-truncate" style={{ maxWidth: '90px' }}>{displayCustomer.fullName}</span>
                         </button>
                         <div className={`dropdown-menu dropdown-menu-right ${dropdownOpen ? 'show' : ''}`} aria-labelledby="customerDropdown" style={{ fontSize: '0.85rem' }}>
-                          <Link className="dropdown-item font-weight-bold" to="/order-history" onClick={() => setDropdownOpen(false)}>
-                            <i className="fa-solid fa-user-gear mr-2 text-danger"></i> Thông tin tài khoản
+                          <Link className="dropdown-item font-weight-bold" to="/profile" onClick={() => setDropdownOpen(false)}>
+                            <i className="fa-solid fa-id-card mr-2 text-danger"></i> Hồ sơ cá nhân
                           </Link>
-                          <Link className="dropdown-item font-weight-bold" to="/order-history" onClick={() => setDropdownOpen(false)}>
-                            <i className="fa-solid fa-clock-rotate-left mr-2 text-danger"></i> Lịch sử mua hàng
+                          <Link className="dropdown-item font-weight-bold" to="/my-orders" onClick={() => setDropdownOpen(false)}>
+                            <i className="fa-solid fa-box-open mr-2 text-danger"></i> Đơn hàng của tôi
                           </Link>
                           <div className="dropdown-divider"></div>
                           <button className="dropdown-item font-weight-bold text-danger" type="button" onClick={() => { handleLogout(); setDropdownOpen(false); }}>
@@ -379,7 +401,7 @@ const Header = () => {
 
                   {/* Icon Tài khoản thu gọn trên mobile */}
                   <div className="d-block d-md-none">
-                    {customer ? (
+                    {displayCustomer ? (
                       <div className="dropdown">
                         <button 
                           className="btn btn-link text-white text-decoration-none p-0 d-flex align-items-center shadow-none" 
@@ -394,11 +416,11 @@ const Header = () => {
                           <i className="fa-solid fa-user-check fs-4"></i>
                         </button>
                         <div className={`dropdown-menu dropdown-menu-right ${dropdownOpen ? 'show' : ''}`} style={{ fontSize: '0.85rem', position: 'absolute' }}>
-                          <Link className="dropdown-item font-weight-bold" to="/order-history" onClick={() => setDropdownOpen(false)}>
-                            <i className="fa-solid fa-user-gear mr-2 text-danger"></i> Thông tin tài khoản
+                          <Link className="dropdown-item font-weight-bold" to="/profile" onClick={() => setDropdownOpen(false)}>
+                            <i className="fa-solid fa-id-card mr-2 text-danger"></i> Hồ sơ cá nhân
                           </Link>
-                          <Link className="dropdown-item font-weight-bold" to="/order-history" onClick={() => setDropdownOpen(false)}>
-                            <i className="fa-solid fa-clock-rotate-left mr-2 text-danger"></i> Lịch sử mua hàng
+                          <Link className="dropdown-item font-weight-bold" to="/my-orders" onClick={() => setDropdownOpen(false)}>
+                            <i className="fa-solid fa-box-open mr-2 text-danger"></i> Đơn hàng của tôi
                           </Link>
                           <div className="dropdown-divider"></div>
                           <button className="dropdown-item font-weight-bold text-danger" type="button" onClick={() => { handleLogout(); setDropdownOpen(false); }}>

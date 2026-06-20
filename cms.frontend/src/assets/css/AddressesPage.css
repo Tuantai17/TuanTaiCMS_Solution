@@ -1,0 +1,827 @@
+/* ================================================================
+   ADDRESSES PAGE — MYKINGDOM DESIGN SYSTEM
+   Thiết kế trang sổ địa chỉ giao hàng
+   ================================================================ */
+
+.address-page {
+  background-color: #f5f5f8;
+  min-height: 60vh;
+  padding: 24px 0 48px;
+}
+
+.address-layout {
+  display: flex;
+  gap: 24px;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+/* Sidebar styling synced with Profile page */
+.address-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 100px;
+  align-self: flex-start;
+}
+
+.address-sidebar-card {
+  background: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid #eef0f5;
+}
+
+.address-sidebar-header {
+  padding: 28px 20px 22px;
+  text-align: center;
+  border-bottom: 1px solid #f0f0f5;
+}
+
+.address-avatar-wrapper {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  margin: 0 auto 14px;
+}
+
+.address-avatar-img {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #fff;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
+}
+
+.address-sidebar-name {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #222;
+  margin: 0 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.address-sidebar-email {
+  font-size: 0.82rem;
+  color: #888;
+  margin: 0 0 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.address-member-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, #fff8e1, #fff3cd);
+  color: #b8860b;
+  font-size: 0.73rem;
+  font-weight: 700;
+  padding: 4px 14px;
+  border-radius: 20px;
+  border: 1px solid #f0dda0;
+}
+
+.address-sidebar-menu {
+  list-style: none;
+  padding: 8px 0;
+  margin: 0;
+}
+
+.address-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 20px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #555;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+}
+
+.address-menu-item:hover {
+  background-color: #fef5f5;
+  color: #c80f1e;
+  padding-left: 24px;
+  text-decoration: none;
+}
+
+.address-menu-item.active {
+  background: linear-gradient(90deg, #c80f1e, #e8293e);
+  color: #fff;
+  font-weight: 700;
+  border-left: 3px solid #8b0000;
+}
+
+.address-menu-item.active i {
+  color: #fff;
+}
+
+.address-menu-item i {
+  width: 20px;
+  text-align: center;
+  font-size: 0.95rem;
+  color: #999;
+  flex-shrink: 0;
+}
+
+.address-menu-item:hover i {
+  color: #c80f1e;
+}
+
+.address-menu-divider {
+  height: 1px;
+  background: #f0f0f5;
+  margin: 4px 16px;
+}
+
+.address-menu-item.logout-item {
+  color: #999;
+}
+
+.address-menu-item.logout-item:hover {
+  color: #dc3545;
+  background: #fff5f5;
+}
+
+/* Main Content Area */
+.address-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.address-card-container {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid #eef0f5;
+  margin-bottom: 24px;
+}
+
+.address-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.address-title-group h2 {
+  font-weight: 800;
+  font-size: 1.35rem;
+  color: #222;
+  margin: 0 0 4px;
+}
+
+.address-title-group p {
+  font-size: 0.88rem;
+  color: #888;
+  margin: 0;
+}
+
+.btn-add-address {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #c80f1e;
+  color: #ffffff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-add-address:hover {
+  background: #a80d18;
+  box-shadow: 0 4px 12px rgba(200, 15, 30, 0.2);
+}
+
+/* Addresses Grid */
+.address-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.address-item-card {
+  background: #ffffff;
+  border: 1.5px solid #eef0f5;
+  border-radius: 14px;
+  padding: 20px;
+  position: relative;
+  transition: all 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.address-item-card:hover {
+  border-color: #c80f1e;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.address-item-card.is-default {
+  border-color: #ffc107;
+  background-color: #fffdf5;
+}
+
+.address-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.address-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.badge-addr-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: #f0f0f5;
+  color: #555;
+}
+
+.badge-addr-type.nhà-riêng {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.badge-addr-type.văn-phòng {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.badge-addr-default {
+  background: #fff8e1;
+  color: #f57f17;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #ffe082;
+}
+
+/* Card Actions Menu (Dots) */
+.address-card-actions-wrapper {
+  position: relative;
+}
+
+.btn-card-dots {
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 1.1rem;
+}
+
+.btn-card-dots:hover {
+  color: #333;
+}
+
+/* Customer address details */
+.address-details-body {
+  flex-grow: 1;
+}
+
+.address-recipient-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #222;
+  margin: 0 0 6px;
+}
+
+.address-recipient-phone {
+  font-size: 0.82rem;
+  color: #666;
+  margin: 0 0 10px;
+}
+
+.address-recipient-phone i {
+  color: #999;
+  margin-right: 6px;
+}
+
+.address-text-block {
+  font-size: 0.82rem;
+  color: #555;
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
+.address-text-block i {
+  color: #999;
+  margin-right: 6px;
+}
+
+/* Actions in Card footer */
+.address-card-footer {
+  display: flex;
+  gap: 8px;
+  border-top: 1px solid #f0f0f5;
+  padding-top: 14px;
+  margin-top: auto;
+}
+
+.btn-card-action {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: none;
+}
+
+.btn-card-action.btn-edit {
+  border: 1px solid #ddd;
+  color: #666;
+}
+
+.btn-card-action.btn-edit:hover {
+  border-color: #999;
+  color: #333;
+  background-color: #f9f9f9;
+}
+
+.btn-card-action.btn-delete {
+  border: 1px solid #f8d7da;
+  color: #dc3545;
+}
+
+.btn-card-action.btn-delete:hover {
+  background-color: #dc3545;
+  color: #ffffff;
+  border-color: #dc3545;
+}
+
+.btn-card-action.btn-set-default {
+  border: 1px solid #ffe082;
+  color: #ff8f00;
+  background: #fffdeb;
+}
+
+.btn-card-action.btn-set-default:hover {
+  background: #ffe082;
+  color: #5d4037;
+}
+
+/* Bottom Quick Stats Card */
+.address-stats-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px 32px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid #eef0f5;
+}
+
+.address-stats-layout {
+  display: flex;
+  gap: 20px;
+}
+
+.address-stats-user {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 320px;
+  border-right: 1px solid #f0f0f5;
+  padding-right: 20px;
+}
+
+.address-stats-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2.5px solid #eee;
+}
+
+.address-stats-user-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #222;
+  margin: 0 0 2px;
+}
+
+.address-stats-user-email {
+  font-size: 0.78rem;
+  color: #888;
+  margin: 0 0 4px;
+}
+
+.address-stats-grid {
+  display: flex;
+  gap: 20px;
+  flex: 1;
+  justify-content: space-around;
+}
+
+.address-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.address-stat-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+.address-stat-icon.saved {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.address-stat-icon.default {
+  background: #fff8e1;
+  color: #f57f17;
+}
+
+.address-stat-icon.orders {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.address-stat-icon.favs {
+  background: #fce4ec;
+  color: #c62828;
+}
+
+.address-stat-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.address-stat-num {
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: #222;
+  line-height: 1.2;
+}
+
+.address-stat-lbl {
+  font-size: 0.74rem;
+  color: #888;
+}
+
+/* Modal Form Styles */
+.address-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  padding: 15px;
+}
+
+.address-modal-container {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 580px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  animation: modal-fadeIn 0.25s ease-out;
+}
+
+@keyframes modal-fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.address-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px;
+  background: linear-gradient(135deg, #c80f1e, #e8293e);
+  color: #ffffff;
+}
+
+.address-modal-header h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.btn-close-modal {
+  background: none;
+  border: none;
+  color: #ffffff;
+  font-size: 1.3rem;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+  padding: 0;
+  line-height: 1;
+}
+
+.btn-close-modal:hover {
+  opacity: 1;
+}
+
+.address-modal-body {
+  padding: 24px;
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+.address-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #f0f0f5;
+  background-color: #fafafa;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn-modal-cancel {
+  background: #ffffff;
+  border: 1.5px solid #ddd;
+  color: #666;
+  font-weight: 600;
+  padding: 9px 24px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-modal-cancel:hover {
+  background: #f5f5f5;
+  color: #333;
+  border-color: #bbb;
+}
+
+.btn-modal-save {
+  background: linear-gradient(135deg, #c80f1e, #e8293e);
+  border: none;
+  color: #ffffff;
+  font-weight: 700;
+  padding: 9px 28px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-modal-save:hover {
+  background: linear-gradient(135deg, #a80d18, #c80f1e);
+  box-shadow: 0 4px 12px rgba(200, 15, 30, 0.2);
+}
+
+.btn-modal-save:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Type selector buttons */
+.address-type-selector {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-type-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1.5px solid #e0e0ea;
+  background: #ffffff;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-type-option:hover {
+  border-color: #ccc;
+  background-color: #fafafa;
+}
+
+.btn-type-option.selected {
+  border-color: #c80f1e;
+  background-color: #fef5f5;
+  color: #c80f1e;
+}
+
+/* Empty State */
+.address-empty-state {
+  text-align: center;
+  padding: 60px 24px;
+}
+
+.address-empty-icon {
+  font-size: 3.5rem;
+  color: #ddd;
+  margin-bottom: 18px;
+}
+
+.address-empty-title {
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: #666;
+  margin: 0 0 8px;
+}
+
+.address-empty-desc {
+  font-size: 0.88rem;
+  color: #999;
+  margin: 0 0 24px;
+  max-width: 360px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Alert Notification popup / Toast style */
+.address-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1060;
+  background: #323232;
+  color: #ffffff;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: toast-slideIn 0.3s ease-out;
+}
+
+@keyframes toast-slideIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.address-toast.success {
+  background: #2e7d32;
+  border-left: 4px solid #4caf50;
+}
+
+.address-toast.error {
+  background: #c62828;
+  border-left: 4px solid #f44336;
+}
+
+/* Skeleton loader for address cards */
+.address-skeleton-card {
+  height: 220px;
+  background: #fff;
+  border: 1.5px solid #eef0f5;
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeleton-line {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 991px) {
+  .address-layout {
+    flex-direction: column;
+  }
+
+  .address-sidebar {
+    width: 100%;
+    position: static;
+  }
+
+  .address-sidebar-menu {
+    display: flex;
+    overflow-x: auto;
+    padding: 4px 8px;
+    gap: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .address-sidebar-menu li {
+    flex-shrink: 0;
+  }
+
+  .address-menu-item {
+    padding: 10px 16px;
+    white-space: nowrap;
+    font-size: 0.82rem;
+    border-left: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 8px;
+  }
+
+  .address-menu-item.active {
+    border-left: none;
+    border-radius: 8px;
+  }
+
+  .address-menu-item:hover {
+    padding-left: 16px;
+  }
+
+  .address-menu-divider {
+    display: none;
+  }
+
+  .address-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .address-stats-layout {
+    flex-direction: column;
+  }
+
+  .address-stats-user {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #f0f0f5;
+    padding-right: 0;
+    padding-bottom: 16px;
+  }
+
+  .address-stats-grid {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 575px) {
+  .address-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .address-header-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .btn-add-address {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .address-modal-container {
+    max-height: 95vh;
+  }
+
+  .address-type-selector {
+    flex-direction: column;
+  }
+}

@@ -236,6 +236,21 @@ const Shop = () => {
     setCurrentPage(1); // Trở lại trang đầu tiên
   };
 
+  // Lấy đối tượng danh mục được chọn và danh mục cha tương ứng
+  const selectedCategory = categories.find(c => c.id === selectedCategoryId);
+  let parentCategory = null;
+  let childCategory = null;
+
+  if (selectedCategory) {
+    const parentId = selectedCategory.parentId !== undefined ? selectedCategory.parentId : selectedCategory.ParentId;
+    if (parentId !== null && parentId !== undefined) {
+      parentCategory = categories.find(c => c.id === parentId);
+      childCategory = selectedCategory;
+    } else {
+      parentCategory = selectedCategory;
+    }
+  }
+
   // Tính toán phân trang
   const totalPages = Math.ceil(filteredProducts.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
@@ -272,6 +287,56 @@ const Shop = () => {
         <div className="row">
           {/* SIDEBAR BỘ LỌC */}
           <div className="col-12 col-md-3 mb-4">
+            {/* LỌC THEO ACTIVE FILTERS */}
+            {selectedCategory && (
+              <div className="card border-0 mb-4 shadow-sm p-3 rounded-4">
+                <div className="d-flex align-items-center justify-content-between border-bottom pb-2 mb-3">
+                  <h5 className="font-weight-bold text-dark text-uppercase mb-0" style={{ fontSize: '0.85rem', letterSpacing: '0.5px' }}>
+                    Lọc theo
+                  </h5>
+                  <button
+                    onClick={handleResetFilters}
+                    className="btn btn-link p-0 text-danger text-decoration-none font-weight-bold"
+                    style={{ fontSize: '0.8rem', outline: 'none', boxShadow: 'none' }}
+                  >
+                    Xóa tất cả
+                  </button>
+                </div>
+                
+                {parentCategory && (
+                  <div className="d-flex justify-content-between align-items-center mb-2" style={{ fontSize: '0.85rem' }}>
+                    <span className="text-secondary">
+                      Danh mục: <strong className="text-dark ml-1">{parentCategory.name}</strong>
+                    </span>
+                    <button
+                      onClick={() => handleCategoryClick(null)}
+                      className="btn btn-link p-0 text-muted"
+                      style={{ outline: 'none', boxShadow: 'none' }}
+                      title="Xóa lọc danh mục"
+                    >
+                      <i className="fa-solid fa-xmark" style={{ fontSize: '0.9rem' }}></i>
+                    </button>
+                  </div>
+                )}
+                
+                {childCategory && (
+                  <div className="d-flex justify-content-between align-items-center mb-2" style={{ fontSize: '0.85rem' }}>
+                    <span className="text-secondary">
+                      CollectionTag: <strong className="text-dark ml-1">{childCategory.name}</strong>
+                    </span>
+                    <button
+                      onClick={() => handleCategoryClick(parentCategory.id)}
+                      className="btn btn-link p-0 text-muted"
+                      style={{ outline: 'none', boxShadow: 'none' }}
+                      title="Xóa lọc danh mục con"
+                    >
+                      <i className="fa-solid fa-xmark" style={{ fontSize: '0.9rem' }}></i>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* DANH MỤC */}
             <div className="card border-0 mb-4 shadow-sm p-3 rounded-4">
               <div className="d-flex align-items-center justify-content-between border-bottom pb-2 mb-3">
@@ -513,7 +578,7 @@ const Shop = () => {
                     <path d="M37 45L43 51" stroke="#CF102D" strokeWidth="2.5" strokeLinecap="round" />
                     <path d="M18 14H46" stroke="#E5E7EB" strokeWidth="3" strokeLinecap="round" />
                   </svg>
-                  <h6 className="font-weight-bold fs-5" style={{ color: '#002060' }}>Không tìm thấy sản phẩm nào phù hợp với bộ lọc</h6>
+                  <h6 className="font-weight-bold fs-5" style={{ color: '#002060' }}>Không tìm thấy sản phẩm nào phù hợp với tiêu chí của bạn</h6>
                   <p className="small text-muted mb-3">Vui lòng điều chỉnh lại bộ lọc giá, xóa từ khóa tìm kiếm hoặc chọn danh mục khác.</p>
                   <button 
                     onClick={handleResetFilters}

@@ -7,7 +7,19 @@ const orderService = {
     return axiosClient.post(url, data);
   },
 
-  // Tải danh sách đơn hàng đã mua của khách hàng theo CustomerId
+  // API lịch sử mua hàng của khách đang đăng nhập
+  getMyOrders: (params) => {
+    const url = '/Orders/my';
+    return axiosClient.get(url, { params });
+  },
+
+  // API chi tiết đơn hàng của khách đang đăng nhập
+  getMyOrderDetail: (id) => {
+    const url = `/Orders/my/${id}`;
+    return axiosClient.get(url);
+  },
+
+  // Giữ lại API cũ để tránh ảnh hưởng các phần khác nếu đang dùng
   getCustomerOrders: (customerId) => {
     const url = `/Orders/customer/${customerId}`;
     return axiosClient.get(url);

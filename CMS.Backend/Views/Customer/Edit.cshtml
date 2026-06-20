@@ -22,7 +22,7 @@ Mô tả: Form chỉnh sửa thông tin khách hàng.
     </div>
 
     <div class="admin-card__body">
-        <form id="customer-edit-form" asp-action="Edit" method="post">
+        <form id="customer-edit-form" asp-action="Edit" method="post" enctype="multipart/form-data">
             <input type="hidden" asp-for="Id" />
             @if (!ViewData.ModelState.IsValid)
             {
@@ -51,9 +51,43 @@ Mô tả: Form chỉnh sửa thông tin khách hàng.
                         </div>
                     </div>
 
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="DateOfBirth" class="form-label fw-bold">Ngày sinh:</label>
+                                <input asp-for="DateOfBirth" type="date" class="form-control" asp-format="{0:yyyy-MM-dd}" />
+                                <span asp-validation-for="DateOfBirth" class="text-danger small"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="Gender" class="form-label fw-bold">Giới tính:</label>
+                                <select asp-for="Gender" class="form-select">
+                                    <option value="">-- Chọn giới tính --</option>
+                                    <option value="Nam">Nam</option>
+                                    <option value="Nữ">Nữ</option>
+                                    <option value="Khác">Khác</option>
+                                </select>
+                                <span asp-validation-for="Gender" class="text-danger small"></span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="mb-3">
                         <label asp-for="Address" class="form-label fw-bold">Địa chỉ:</label>
                         <input asp-for="Address" class="form-control" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Ảnh đại diện:</label>
+                        @if (!string.IsNullOrEmpty(Model.AvatarUrl))
+                        {
+                            <div class="mb-2">
+                                <img src="@Model.AvatarUrl" class="rounded-circle border" style="width: 80px; height: 80px; object-fit: cover;" alt="Avatar" />
+                            </div>
+                        }
+                        <input type="file" name="uploadImage" class="form-control" accept="image/*" />
+                        <small class="text-muted">Để trống nếu không muốn thay đổi ảnh đại diện hiện tại.</small>
                     </div>
 
                     <div class="mb-3">
