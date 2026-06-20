@@ -22,7 +22,7 @@ Mô tả: Form thêm khách hàng mới.
     </div>
 
     <div class="admin-card__body">
-        <form id="customer-create-form" asp-action="Create" method="post">
+        <form id="customer-create-form" asp-action="Create" method="post" enctype="multipart/form-data">
             @if (!ViewData.ModelState.IsValid)
             {
                 <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
@@ -52,9 +52,37 @@ Mô tả: Form thêm khách hàng mới.
                         </div>
                     </div>
 
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="DateOfBirth" class="form-label fw-bold">Ngày sinh:</label>
+                                <input asp-for="DateOfBirth" type="date" class="form-control" />
+                                <span asp-validation-for="DateOfBirth" class="text-danger small"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="Gender" class="form-label fw-bold">Giới tính:</label>
+                                <select asp-for="Gender" class="form-select">
+                                    <option value="">-- Chọn giới tính --</option>
+                                    <option value="Nam">Nam</option>
+                                    <option value="Nữ">Nữ</option>
+                                    <option value="Khác">Khác</option>
+                                </select>
+                                <span asp-validation-for="Gender" class="text-danger small"></span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="mb-3">
                         <label asp-for="Address" class="form-label fw-bold">Địa chỉ:</label>
                         <input asp-for="Address" class="form-control" placeholder="Số nhà, đường, quận, thành phố..." />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Ảnh đại diện:</label>
+                        <input type="file" name="uploadImage" class="form-control" accept="image/*" />
+                        <small class="text-muted">Chấp nhận các định dạng hình ảnh (.png, .jpg, .jpeg, .gif, .webp).</small>
                     </div>
 
                     <div class="mb-3">

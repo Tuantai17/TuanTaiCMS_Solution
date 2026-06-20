@@ -2,179 +2,164 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
 
-const Register = () => {
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [phone, setPhone] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [loading, setLoading] = useState(false);
+function Register() {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    address: '',
+    password: '',
+  });
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
+  const handleChange = (event) => {
+    setFormData((prev) => ({
+      ...prev,
+      [event.target.name]: event.target.value,
+    }));
+  };
 
-    if (password !== confirmPassword) {
-      setError('Mật khẩu nhập lại không khớp!');
-      return;
+  const validateForm = () => {
+    if (!formData.fullName || !formData.email || !formData.password) {
+      window.alert('⛔ LỖI: Vui lòng không bỏ trống Họ tên, Email và Mật khẩu!');
+      return false;
     }
 
-    if (password.length < 6) {
-      setError('Mật khẩu bảo mật phải có tối thiểu 6 ký tự!');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      window.alert('⛔ LỖI: Định dạng Email không hợp lệ (Ví dụ đúng: NguyenVanA@gmail.com)!');
+      return false;
+    }
+
+    if (formData.password.length < 6) {
+      window.alert('⛔ LỖI: Mật khẩu phải chứa ít nhất 6 ký tự để đảm bảo an toàn!');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!validateForm()) {
       return;
     }
 
     setLoading(true);
-
     try {
-      const response = await authService.customerRegister({
-        fullName,
-        email,
-        password,
-        phone,
-        address: '' // Trống, người dùng sẽ cập nhật sau khi đăng nhập thành công
-      });
-
-      setSuccess('Đăng ký tài khoản thành công! Đang chuyển hướng sang trang đăng nhập để bạn xác minh...');
-
-      // Chờ 1.5 giây để người dùng thấy thông báo thành công rồi chuyển hướng về trang Đăng nhập
-      setTimeout(() => {
-        navigate('/login');
-      }, 1500);
-    } catch (err) {
-      if (err.response && err.response.data && err.response.data.message) {
-        setError(err.response.data.message);
-      } else {
-        setError('Đăng ký thất bại. Vui lòng kiểm tra lại thông tin.');
-      }
+      await authService.register(formData);
+      window.alert('🎉 ĐĂNG KÝ THÀNH CÔNG! Chào mừng bạn đến với hệ thống. Hãy đăng nhập ngay.');
+      navigate('/login');
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        '⛔ ĐĂNG KÝ THẤT BẠI: Email này có thể đã được đăng ký trên hệ thống!';
+      window.alert(message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="container my-5 animate--fade-in">
+    <div className="container py-5">
       <div className="row justify-content-center">
-        <div className="col-12 col-md-8 col-lg-6">
-          <div className="card shadow-lg border-0 rounded-lg overflow-hidden">
-            {/* Header Form mang bản sắc MyKingdom */}
-            <div className="bg-danger text-white text-center py-4 px-3" style={{ background: 'linear-gradient(135deg, #CF102D, #ff3d57)' }}>
-               <h4 className="font-weight-bold text-uppercase mb-1">
-                <i className="fa-solid fa-user-plus mr-2"></i> Đăng Ký Thành Viên
+        <div className="col-md-6">
+          <div className="card auth-card">
+            {/* Header Form MyKingdom */}
+            <div className="text-white text-center py-4 px-3" style={{ background: 'linear-gradient(135deg, #CF102D, #ff3d57)' }}>
+              <h4 className="font-weight-bold text-uppercase mb-1">
+                <i className="fa-solid fa-user-plus mr-2"></i> ĐĂNG KÝ TÀI KHOẢN
               </h4>
-              <p className="small mb-0 opacity-75">Tham gia vương quốc đồ chơi để nhận nhiều ưu đãi đặc biệt</p>
+              <p className="small mb-0 opacity-75">Tham gia thành viên để nhận ngập tràn ưu đãi từ MyKingdom</p>
             </div>
 
             <div className="card-body p-4">
-              {error && (
-                <div className="alert alert-danger rounded-pill px-3 py-2 text-center small" role="alert">
-                  <i className="fa-solid fa-triangle-exclamation mr-2"></i> {error}
-                </div>
-              )}
-
-              {success && (
-                <div className="alert alert-success rounded-pill px-3 py-2 text-center small" role="alert">
-                  <i className="fa-solid fa-circle-check mr-2"></i> {success}
-                </div>
-              )}
-
-              <form onSubmit={handleRegister}>
-                <div className="row">
-                  <div className="col-12 col-md-6 mb-3">
-                    <label className="small font-weight-bold text-secondary">Họ và tên *</label>
-                    <input
-                      type="text"
-                      className="form-control rounded-pill px-3 shadow-none border-secondary-50"
-                      placeholder="Nguyễn Văn A..."
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="col-12 col-md-6 mb-3">
-                    <label className="small font-weight-bold text-secondary">Số điện thoại liên hệ</label>
-                    <input
-                      type="tel"
-                      className="form-control rounded-pill px-3 shadow-none border-secondary-50"
-                      placeholder="0912345678..."
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                    />
-                  </div>
+              <form onSubmit={handleSubmit}>
+                <div className="form-group mb-3">
+                  <label className="small font-weight-bold text-secondary">Họ và Tên *</label>
+                  <input
+                    type="text"
+                    name="fullName"
+                    className="form-control"
+                    value={formData.fullName}
+                    onChange={handleChange}
+                    placeholder="Nhập họ và tên của bạn"
+                  />
                 </div>
 
-                <div className="mb-3">
-                  <label className="small font-weight-bold text-secondary">Địa chỉ Email *</label>
+                <div className="form-group mb-3">
+                  <label className="small font-weight-bold text-secondary">Email (Tài khoản đăng nhập) *</label>
                   <input
                     type="email"
-                    className="form-control rounded-pill px-3 shadow-none border-secondary-50"
-                    placeholder="nguyenvanan@gmail.com..."
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
+                    name="email"
+                    className="form-control"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="example@gmail.com"
                   />
                 </div>
 
-                <div className="mb-3">
-                  <label className="small font-weight-bold text-secondary">Mật khẩu bảo mật *</label>
-                  <input
-                    type="password"
-                    className="form-control rounded-pill px-3 shadow-none border-secondary-50"
-                    placeholder="Tối thiểu 6 ký tự..."
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
+                <div className="row">
+                  <div className="col-md-6 form-group mb-3">
+                    <label className="small font-weight-bold text-secondary">Số Điện Thoại</label>
+                    <input
+                      type="text"
+                      name="phone"
+                      className="form-control"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      placeholder="090xxxxxxx"
+                    />
+                  </div>
+
+                  <div className="col-md-6 form-group mb-3">
+                    <label className="small font-weight-bold text-secondary">Mật Khẩu *</label>
+                    <input
+                      type="password"
+                      name="password"
+                      className="form-control"
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder="Tối thiểu 6 ký tự"
+                    />
+                  </div>
                 </div>
 
-                <div className="mb-4">
-                  <label className="small font-weight-bold text-secondary">Nhập lại mật khẩu *</label>
-                  <input
-                    type="password"
-                    className="form-control rounded-pill px-3 shadow-none border-secondary-50"
-                    placeholder="Nhập lại mật khẩu bảo mật..."
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                  />
+                <div className="form-group mb-4">
+                  <label className="small font-weight-bold text-secondary">Địa Chỉ Nhận Hàng</label>
+                  <textarea
+                    name="address"
+                    className="form-control"
+                    rows="2"
+                    value={formData.address}
+                    onChange={handleChange}
+                    placeholder="Nhập số nhà, tên đường, quận/huyện..."
+                  ></textarea>
                 </div>
 
                 <button
                   type="submit"
-                  className="btn btn-danger btn-block rounded-pill font-weight-bold text-uppercase py-3"
-                  style={{ fontSize: '0.85rem' }}
+                  className="btn btn-danger btn-block w-100 py-2 font-weight-bold shadow-sm"
                   disabled={loading}
                 >
-                  {loading ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span>
-                      Đang xử lý tạo tài khoản...
-                    </>
-                  ) : (
-                    <>
-                      Đăng Ký Tài Khoản <i className="fa-solid fa-user-check ml-2"></i>
-                    </>
-                  )}
+                  {loading ? 'ĐANG XỬ LÝ...' : 'ĐĂNG KÝ NGAY'}
                 </button>
               </form>
 
-              <div className="text-center mt-4 pt-3 border-top">
-                <span className="text-secondary small">Bạn đã có tài khoản thành viên? </span>
-                <Link to="/login" className="font-weight-bold text-danger text-decoration-none small hover-underline">
-                  Đăng nhập tại đây!
+              <p className="text-center mt-3 small m-0 text-muted">
+                Đã có tài khoản thành viên?{' '}
+                <Link to="/login" className="font-weight-bold text-danger">
+                  Đăng nhập tại đây
                 </Link>
-              </div>
+              </p>
             </div>
           </div>
         </div>
       </div>
     </div>
   );
-};
+}
 
 export default Register;

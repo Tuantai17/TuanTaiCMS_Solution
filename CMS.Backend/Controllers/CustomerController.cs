@@ -12,6 +12,8 @@ using CMS.Backend.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.IO;
+using Microsoft.AspNetCore.Http;
 
 namespace CMS.Backend.Controllers
 {
@@ -41,6 +43,7 @@ namespace CMS.Backend.Controllers
         {
             var customer = _context.Customers
                 .Include(c => c.Orders)
+                .Include(c => c.CustomerAddresses)
                 .FirstOrDefault(c => c.Id == id);
 
             if (customer == null)
@@ -60,8 +63,18 @@ namespace CMS.Backend.Controllers
 
         // Action POST Create lưu khách hàng mới vào database.
         [HttpPost]
-        public IActionResult Create(Customer model)
+        public IActionResult Create(Customer model, IFormFile? uploadImage)
         {
+            ModelState.Remove(nameof(Customer.Orders));
+            ModelState.Remove(nameof(Customer.CustomerAddresses));
+
+            // Xử lý ảnh đại diện nếu có tải lên
+            string? savedImagePath = SaveUploadImage(uploadImage);
+            if (!string.IsNullOrEmpty(savedImagePath))
+            {
+                model.AvatarUrl = savedImagePath;
+            }
+
             if (!ModelState.IsValid)
             {
                 return View(model);
@@ -69,6 +82,7 @@ namespace CMS.Backend.Controllers
 
             // Mã hóa mật khẩu bằng BCrypt trước khi lưu vào database
             model.Password = PasswordHelper.HashPassword(model.Password);
+            model.CreatedAt = DateTime.Now;
 
             _context.Customers.Add(model);
             _context.SaveChanges();
@@ -93,7 +107,7 @@ namespace CMS.Backend.Controllers
 
         // Action POST Edit cập nhật thông tin khách hàng vào database.
         [HttpPost]
-        public IActionResult Edit(Customer model, string? NewPassword)
+        public IActionResult Edit(Customer model, string? NewPassword, IFormFile? uploadImage)
         {
             var existingCustomer = _context.Customers.AsNoTracking().FirstOrDefault(c => c.Id == model.Id);
 
@@ -103,7 +117,19 @@ namespace CMS.Backend.Controllers
             }
 
             ModelState.Remove(nameof(Customer.Orders));
+            ModelState.Remove(nameof(Customer.CustomerAddresses));
             ModelState.Remove(nameof(Customer.Password));
+
+            // Xử lý ảnh đại diện
+            string? savedImagePath = SaveUploadImage(uploadImage);
+            if (!string.IsNullOrEmpty(savedImagePath))
+            {
+                model.AvatarUrl = savedImagePath;
+            }
+            else
+            {
+                model.AvatarUrl = existingCustomer.AvatarUrl;
+            }
 
             if (!ModelState.IsValid)
             {
@@ -119,6 +145,8 @@ namespace CMS.Backend.Controllers
             {
                 model.Password = existingCustomer.Password;
             }
+
+            model.CreatedAt = existingCustomer.CreatedAt;
 
             _context.Customers.Update(model);
             _context.SaveChanges();
@@ -141,6 +169,32 @@ namespace CMS.Backend.Controllers
             }
 
             return RedirectToAction("Index");
+        }
+
+        // Helper lưu ảnh upload vào wwwroot/uploads
+        private string? SaveUploadImage(IFormFile? uploadImage)
+        {
+            if (uploadImage == null || uploadImage.Length == 0)
+            {
+                return null;
+            }
+
+            var folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+
+            if (!Directory.Exists(folder))
+            {
+                Directory.CreateDirectory(folder);
+            }
+
+            var fileName = Guid.NewGuid() + Path.GetExtension(uploadImage.FileName);
+            var filePath = Path.Combine(folder, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                uploadImage.CopyTo(stream);
+            }
+
+            return "/uploads/" + fileName;
         }
     }
 }

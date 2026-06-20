@@ -695,5 +695,44 @@
   transform: translateY(-50%) scale(1) !important;
 }
 
+/* ================================================================
+   AUTH PAGES (LOGIN & REGISTER) - UNIFIED MYKINGDOM STYLE
+   ================================================================ */
+.auth-card {
+  border-radius: 16px !important;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08) !important;
+  overflow: hidden;
+  border: none !important;
+}
+
+.auth-card .form-control {
+  border-radius: 8px;
+  padding: 10px 14px;
+  border: 1px solid #dee2e6;
+  transition: all 0.25s ease-in-out;
+}
+
+.auth-card .form-control:focus {
+  border-color: #CF102D !important;
+  box-shadow: 0 0 0 3px rgba(207, 16, 45, 0.15) !important;
+  background-color: #ffffff;
+}
+
+.auth-card .btn-danger {
+  border-radius: 8px !important;
+  padding: 10px 20px;
+}
+
+/* Link transitions on hover */
+.auth-card a.text-danger {
+  transition: color 0.2s ease-in-out;
+}
+
+.auth-card a.text-danger:hover {
+  color: var(--mk-red-dark) !important;
+  text-decoration: underline !important;
+}
+
+
 
 

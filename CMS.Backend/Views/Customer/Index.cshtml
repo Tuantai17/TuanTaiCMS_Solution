@@ -44,11 +44,19 @@ Mô tả: Trang danh sách khách hàng trong khu vực quản trị.
                             <td><span class="text-muted small">@item.Id</span></td>
                             <td>
                                 <div class="d-flex align-items-center gap-2">
-                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
-                                         style="width:34px;height:34px;font-size:14px;font-weight:700;flex-shrink:0;">
-                                        @item.FullName.Substring(0, 1).ToUpper()
-                                    </div>
-                                    <strong>@item.FullName</strong>
+                                    @if (!string.IsNullOrEmpty(item.AvatarUrl))
+                                    {
+                                        <img src="@item.AvatarUrl" class="rounded-circle border"
+                                             style="width:34px;height:34px;object-fit:cover;flex-shrink:0;" alt="@item.FullName" />
+                                    }
+                                    else
+                                    {
+                                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
+                                             style="width:34px;height:34px;font-size:14px;font-weight:700;flex-shrink:0;">
+                                            @(string.IsNullOrWhiteSpace(item.FullName) ? "?" : item.FullName.Substring(0, 1).ToUpper())
+                                        </div>
+                                    }
+                                    <strong>@(item.FullName ?? "Khách hàng")</strong>
                                 </div>
                             </td>
                             <td><a href="mailto:@item.Email" class="text-decoration-none">@item.Email</a></td>

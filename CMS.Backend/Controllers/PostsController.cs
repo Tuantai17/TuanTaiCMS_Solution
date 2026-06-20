@@ -25,33 +25,38 @@ namespace CMS.Backend.Controllers
       _context = context; // Gán context được tiêm vào cho biến nội bộ sử dụng
     }
 
-    // 1. Chỉ định phương thức GET lấy toàn bộ danh sách bài viết thời trang
-    // Đường dẫn truy cập: GET https://localhost:xxxx/api/posts
+    // 1. Chỉ định phương thức GET lấy toàn bộ danh sách bài viết thời trang (hoặc lọc theo chuyên mục)
+    // Đường dẫn truy cập: GET https://localhost:xxxx/api/posts?categoryId=...
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] int? categoryId)
     {
       try
       {
-        // Thực hiện truy vấn cơ sở dữ liệu bất đồng bộ
-        var posts = await _context.Posts
-          .Include(p => p.Category) // Tải kèm thông tin bảng Category liên kết
-          .OrderByDescending(p => p.Id) // Sắp xếp bài viết theo thứ tự ID giảm dần (mới nhất lên đầu)
-          .Select(p => new // Kỹ thuật gọt tỉa (Projection) - chỉ lấy các trường cần thiết phục vụ giao diện trang chủ
+        var query = _context.Posts.AsQueryable();
+        if (categoryId.HasValue)
+        {
+          query = query.Where(p => p.CategoryId == categoryId.Value);
+        }
+
+        var posts = await query
+          .Include(p => p.Category)
+          .OrderByDescending(p => p.Id)
+          .Select(p => new
           {
-            p.Id, // Mã định danh bài viết
-            p.Title, // Tiêu đề bài viết
-            p.ImageUrl, // Ảnh đại diện bài viết
-            p.CreatedDate, // Ngày giờ tạo bài viết
-            p.CategoryId, // Mã danh mục bài viết
-            p.IsFeatured, // Trạng thái hiển thị trên trang chủ
+            p.Id,
+            p.Title,
+            p.ImageUrl,
+            p.CreatedDate,
+            p.CategoryId,
+            p.IsFeatured,
             ShortDescription = string.IsNullOrWhiteSpace(p.Content)
               ? "Đang cập nhật nội dung tóm tắt cho bài viết..."
               : (p.Content.Length > 180 ? p.Content.Substring(0, 180) + "..." : p.Content),
-            CategoryName = p.Category != null ? p.Category.Name : "Không xác định" // Kéo trực tiếp tên chuyên mục bài viết thay vì ID cộc lốc
+            CategoryName = p.Category != null ? p.Category.Name : "Không xác định"
           })
-          .ToListAsync(); // Chuyển đổi kết quả bất đồng bộ thành kiểu danh sách List
+          .ToListAsync();
 
-        return Ok(posts); // Trả về kết quả JSON kèm theo mã trạng thái HTTP 200 OK
+        return Ok(posts);
       }
       catch (Exception ex)
       {

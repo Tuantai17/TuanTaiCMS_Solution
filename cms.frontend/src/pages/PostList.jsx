@@ -131,6 +131,18 @@ const PostList = () => {
               </h6>
 
               <div className="blog-category-list">
+                {/* Tất cả */}
+                <div className="blog-category-item">
+                  <div
+                    className={`blog-category-link ${!categoryId ? 'active' : ''}`}
+                    onClick={() => {
+                      navigate('/blog');
+                    }}
+                  >
+                    <span className="blog-category-name">Tất cả</span>
+                  </div>
+                </div>
+
                 {categories.map((cate) => {
                   const isActive = String(categoryId) === String(cate.id);
                   return (

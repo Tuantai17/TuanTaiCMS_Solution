@@ -32,7 +32,30 @@ Mô tả: Trang chi tiết khách hàng kèm lịch sử đơn hàng.
     <div class="admin-card__body">
         <div class="row g-4">
             <div class="col-lg-5">
-                <table class="table table-bordered">
+                <div class="card border-0 shadow-sm mb-4 text-center p-4 bg-light">
+                    <div class="d-flex justify-content-center mb-3">
+                        @if (!string.IsNullOrEmpty(Model.AvatarUrl))
+                        {
+                            <img src="@Model.AvatarUrl" class="rounded-circle border shadow-sm"
+                                 style="width:120px;height:120px;object-fit:cover;" alt="@Model.FullName" />
+                        }
+                        else
+                        {
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center shadow-sm"
+                                 style="width:120px;height:120px;font-size:48px;font-weight:700;">
+                                @(string.IsNullOrWhiteSpace(Model.FullName) ? "?" : Model.FullName.Substring(0, 1).ToUpper())
+                            </div>
+                        }
+                    </div>
+                    <h4 class="fw-bold mb-1">@(Model.FullName ?? "Khách hàng")</h4>
+                    <p class="text-muted small mb-2"><i class="bi bi-envelope"></i> @Model.Email</p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <span class="badge bg-info text-dark">Thành viên</span>
+                        <span class="badge bg-secondary">Tham gia: @Model.CreatedAt.ToString("dd/MM/yyyy")</span>
+                    </div>
+                </div>
+
+                <table class="table table-bordered bg-white shadow-sm rounded">
                     <tr>
                         <th style="width: 140px;" class="bg-light">Mã KH</th>
                         <td>#@Model.Id</td>
@@ -50,8 +73,20 @@ Mô tả: Trang chi tiết khách hàng kèm lịch sử đơn hàng.
                         <td>@(string.IsNullOrWhiteSpace(Model.Phone) ? "Chưa có" : Model.Phone)</td>
                     </tr>
                     <tr>
-                        <th class="bg-light">Địa chỉ</th>
+                        <th class="bg-light">Giới tính</th>
+                        <td>@(string.IsNullOrWhiteSpace(Model.Gender) ? "Chưa cập nhật" : Model.Gender)</td>
+                    </tr>
+                    <tr>
+                        <th class="bg-light">Ngày sinh</th>
+                        <td>@(Model.DateOfBirth.HasValue ? Model.DateOfBirth.Value.ToString("dd/MM/yyyy") : "Chưa cập nhật")</td>
+                    </tr>
+                    <tr>
+                        <th class="bg-light">Địa chỉ chính</th>
                         <td>@(string.IsNullOrWhiteSpace(Model.Address) ? "Chưa cập nhật" : Model.Address)</td>
+                    </tr>
+                    <tr>
+                        <th class="bg-light">Ngày đăng ký</th>
+                        <td>@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
                     </tr>
                     <tr>
                         <th class="bg-light">Tổng đơn hàng</th>
@@ -61,44 +96,98 @@ Mô tả: Trang chi tiết khách hàng kèm lịch sử đơn hàng.
             </div>
 
             <div class="col-lg-7">
-                <h5 class="fw-bold mb-3"><i class="bi bi-cart"></i> Lịch sử đơn hàng</h5>
-                @if (Model.Orders != null && Model.Orders.Any())
-                {
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead>
-                                <tr>
-                                    <th>Mã ĐH</th>
-                                    <th>Ngày đặt</th>
-                                    <th>Trạng thái</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var order in Model.Orders)
-                                {
+                <div class="mb-5">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-cart"></i> Lịch sử đơn hàng</h5>
+                    @if (Model.Orders != null && Model.Orders.Any())
+                    {
+                        <div class="table-responsive bg-white shadow-sm rounded">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
                                     <tr>
-                                        <td><a asp-controller="Order" asp-action="Details" asp-route-id="@order.Id">#@order.Id</a></td>
-                                        <td>@order.OrderDate.ToString("dd/MM/yyyy HH:mm")</td>
-                                        <td>
-                                            @{
-                                                var badgeClass = order.Status switch { 0 => "bg-warning text-dark", 1 => "bg-primary", 2 => "bg-success", _ => "bg-secondary" };
-                                                var statusText = order.Status switch { 0 => "Chờ duyệt", 1 => "Đang giao", 2 => "Đã xong", _ => "Không xác định" };
-                                            }
-                                            <span class="badge @badgeClass">@statusText</span>
-                                        </td>
+                                        <th>Mã ĐH</th>
+                                        <th>Ngày đặt</th>
+                                        <th>Trạng thái</th>
                                     </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                }
-                else
-                {
-                    <div class="text-center text-muted py-4 border rounded">
-                        <i class="bi bi-cart-x fs-3 d-block mb-2"></i>
-                        Khách hàng chưa có đơn hàng nào.
-                    </div>
-                }
+                                </thead>
+                                <tbody>
+                                    @foreach (var order in Model.Orders)
+                                    {
+                                        <tr>
+                                            <td><a asp-controller="Order" asp-action="Details" asp-route-id="@order.Id">#@order.Id</a></td>
+                                            <td>@order.OrderDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td>
+                                                @{
+                                                    var badgeClass = order.Status switch { 0 => "bg-warning text-dark", 1 => "bg-primary", 2 => "bg-success", _ => "bg-secondary" };
+                                                    var statusText = order.Status switch { 0 => "Chờ duyệt", 1 => "Đang giao", 2 => "Đã xong", _ => "Không xác định" };
+                                                }
+                                                <span class="badge @badgeClass">@statusText</span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-4 border rounded bg-white shadow-sm">
+                            <i class="bi bi-cart-x fs-3 d-block mb-2"></i>
+                            Khách hàng chưa có đơn hàng nào.
+                        </div>
+                    }
+                </div>
+
+                <div>
+                    <h5 class="fw-bold mb-3"><i class="bi bi-geo-alt"></i> Sổ địa chỉ nhận hàng</h5>
+                    @if (Model.CustomerAddresses != null && Model.CustomerAddresses.Any())
+                    {
+                        <div class="table-responsive bg-white shadow-sm rounded">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Người nhận</th>
+                                        <th>Điện thoại</th>
+                                        <th>Địa chỉ chi tiết</th>
+                                        <th>Phân loại</th>
+                                        <th>Trạng thái</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var addr in Model.CustomerAddresses.OrderByDescending(a => a.IsDefault))
+                                    {
+                                        <tr>
+                                            <td><strong>@addr.RecipientName</strong></td>
+                                            <td>@addr.PhoneNumber</td>
+                                            <td>
+                                                @addr.AddressLine, @addr.WardName, @addr.DistrictName, @addr.ProvinceName
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">@addr.AddressType</span>
+                                            </td>
+                                            <td>
+                                                @if (addr.IsDefault)
+                                                {
+                                                    <span class="badge bg-success">Mặc định</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted small">-</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-4 border rounded bg-white shadow-sm">
+                            <i class="bi bi-geo-alt fs-3 d-block mb-2"></i>
+                            Khách hàng chưa có địa chỉ nhận hàng nào được lưu.
+                        </div>
+                    }
+                </div>
             </div>
         </div>
     </div>
