@@ -361,3 +361,10 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Temporary files, documentation and changelogs
+.codex-temp/
+docx_extracted/
+docx_extracted_content.txt
+ORDER_HISTORY_CHANGELOG.md
+cms.frontend/docx_tailieu/
