@@ -1,0 +1,134 @@
+/* ===== SEARCHABLE SELECT COMPONENT ===== */
+.modern-searchable-select {
+  position: relative;
+  width: 100%;
+}
+
+.modern-searchable-select.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.mss-header {
+  border: 1.5px solid #e0e0ea;
+  border-radius: 10px;
+  padding: 12px 16px 12px 42px;
+  font-size: 0.95rem;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  min-height: 48px;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.mss-header:hover {
+  border-color: #ccc;
+}
+
+.mss-header.has-error {
+  border-color: #dc3545;
+}
+
+.mss-icon {
+  position: absolute;
+  left: 16px;
+  color: #999;
+}
+
+.mss-value {
+  color: #333;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 20px;
+}
+
+.mss-value.placeholder {
+  color: #888;
+}
+
+.mss-arrow {
+  position: absolute;
+  right: 16px;
+  color: #999;
+  font-size: 0.8rem;
+  transition: transform 0.2s;
+}
+
+.mss-arrow.open {
+  transform: rotate(180deg);
+}
+
+.mss-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  border: 1px solid #eee;
+  z-index: 1100;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.mss-search-box {
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fafafa;
+}
+
+.mss-search-box i {
+  color: #999;
+}
+
+.mss-search-box input {
+  border: none;
+  background: none;
+  outline: none;
+  width: 100%;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.mss-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.mss-item {
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  color: #333;
+}
+
+.mss-item:hover {
+  background: #f8f9fa;
+}
+
+.mss-item.selected {
+  background: #fef5f5;
+  color: #c80f1e;
+  font-weight: 600;
+}
+
+.mss-empty {
+  padding: 16px;
+  text-align: center;
+  color: #999;
+  font-size: 0.9rem;
+}
