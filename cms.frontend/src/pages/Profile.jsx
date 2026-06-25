@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import authService from '../services/authService';
+import addressService from '../services/addressService';
 import { getMediaUrl } from '../utils/mediaUrl';
 import '../assets/css/Profile.css';
 
@@ -30,6 +31,7 @@ const Profile = () => {
   const [avatarUrl, setAvatarUrl] = useState('');
   const [createdAt, setCreatedAt] = useState('');
   const [totalOrders, setTotalOrders] = useState(0);
+  const [defaultAddressObj, setDefaultAddressObj] = useState(null);
 
   // State dữ liệu gốc để hỗ trợ "Hủy thay đổi"
   const [originalData, setOriginalData] = useState({});
@@ -70,6 +72,14 @@ const Profile = () => {
           setFetching(true);
           const data = await authService.getProfile(parsed.customerId);
           populateFields(data);
+          
+          try {
+            const addressesData = await addressService.getAddresses(parsed.customerId);
+            const defAddr = addressesData?.find(a => a.isDefault);
+            setDefaultAddressObj(defAddr || null);
+          } catch (addrErr) {
+            console.error("Lỗi khi tải danh sách địa chỉ:", addrErr);
+          }
         } catch (err) {
           console.error("Lỗi khi tải thông tin tài khoản:", err);
           // Fallback từ localStorage
@@ -408,7 +418,19 @@ const Profile = () => {
             <span className="profile-bottom-card-title">Địa chỉ mặc định</span>
             <span className="profile-bottom-card-link" onClick={() => handleTabChange('address')}>Quản lý địa chỉ</span>
           </div>
-          {address ? (
+          {defaultAddressObj ? (
+            <div className="profile-address-info">
+              <div className="profile-address-icon"><i className="fa-solid fa-house"></i></div>
+              <div className="profile-address-detail">
+                <div className="profile-address-label">
+                  <span className="profile-address-type">{defaultAddressObj.addressType || 'Nhà riêng'}</span>
+                  <span className="profile-address-badge">Mặc định</span>
+                </div>
+                <p className="profile-address-text">{`${defaultAddressObj.addressLine}, ${defaultAddressObj.wardName}, ${defaultAddressObj.districtName}, ${defaultAddressObj.provinceName}`}</p>
+                <p className="profile-address-text">{defaultAddressObj.recipientName} - {defaultAddressObj.phoneNumber || 'Chưa có SĐT'}</p>
+              </div>
+            </div>
+          ) : address ? (
             <div className="profile-address-info">
               <div className="profile-address-icon"><i className="fa-solid fa-house"></i></div>
               <div className="profile-address-detail">

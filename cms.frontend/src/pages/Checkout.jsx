@@ -2,21 +2,31 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import orderService from '../services/orderService';
 import addressService from '../services/addressService';
+import SearchableSelect from '../components/SearchableSelect';
+import '../assets/css/Checkout.css';
 
 const Checkout = () => {
   const [customer, setCustomer] = useState(null);
   const [cartItems, setCartItems] = useState([]);
   const [notes, setNotes] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('cod');
   
-  // Các trường thông tin giao hàng (lấy từ tài khoản đăng nhập và cho phép sửa)
+  // Các trường thông tin giao hàng
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [province, setProvince] = useState('');
   const [district, setDistrict] = useState('');
+  const [ward, setWard] = useState('');
+
+  // Tỉnh thành API states
+  const [provincesList, setProvincesList] = useState([]);
+  const [availableDistricts, setAvailableDistricts] = useState([]);
+  const [availableWards, setAvailableWards] = useState([]);
 
   const [savedAddresses, setSavedAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -29,29 +39,29 @@ const Checkout = () => {
     const storedCustomer = localStorage.getItem('customer');
     if (!storedCustomer) {
       setAuthChecking(false);
-      return; // Sẽ xử lý chuyển hướng ở phần UI
+      return; 
     }
 
     try {
       const parsedCustomer = JSON.parse(storedCustomer);
       setCustomer(parsedCustomer);
       
-      // Điền sẵn thông tin mặc định từ tài khoản đăng nhập
       setFullName(parsedCustomer.fullName || '');
       setEmail(parsedCustomer.email || '');
       setPhone(parsedCustomer.phone || '');
       setAddress(parsedCustomer.address || '');
 
-      // Tải danh sách địa chỉ đã lưu
       addressService.getAddresses(parsedCustomer.customerId).then(addresses => {
         setSavedAddresses(addresses || []);
         const defaultAddr = addresses?.find(a => a.isDefault);
         if (defaultAddr) {
+          setSelectedAddressId(defaultAddr.id);
           setFullName(defaultAddr.recipientName);
           setPhone(defaultAddr.phoneNumber);
           setAddress(defaultAddr.addressLine);
           setProvince(defaultAddr.provinceName);
           setDistrict(defaultAddr.districtName);
+          setWard(defaultAddr.wardName || '');
         }
       }).catch(e => console.error("Lỗi lấy danh sách địa chỉ khi checkout:", e));
     } catch (e) {
@@ -59,7 +69,7 @@ const Checkout = () => {
     }
     setAuthChecking(false);
 
-    // 2. Lấy giỏ hàng thực tế
+    // 2. Lấy giỏ hàng
     const storedCart = localStorage.getItem('cart');
     if (storedCart) {
       try {
@@ -71,7 +81,44 @@ const Checkout = () => {
     }
   }, []);
 
-  // Xử lý chuyển hướng nếu chưa đăng nhập
+  // Fetch Provinces
+  useEffect(() => {
+    fetch('https://provinces.open-api.vn/api/p/')
+      .then(res => res.json())
+      .then(data => setProvincesList(data))
+      .catch(err => console.error("Error fetching provinces:", err));
+  }, []);
+
+  // Fetch Districts when Province changes
+  useEffect(() => {
+    if (!province || provincesList.length === 0) {
+      setAvailableDistricts([]);
+      return;
+    }
+    const selectedProv = provincesList.find(p => p.name === province);
+    if (selectedProv) {
+      fetch(`https://provinces.open-api.vn/api/p/${selectedProv.code}?depth=2`)
+        .then(res => res.json())
+        .then(data => setAvailableDistricts(data.districts || []))
+        .catch(err => console.error("Error fetching districts:", err));
+    }
+  }, [province, provincesList]);
+
+  // Fetch Wards when District changes
+  useEffect(() => {
+    if (!district || availableDistricts.length === 0) {
+      setAvailableWards([]);
+      return;
+    }
+    const selectedDist = availableDistricts.find(d => d.name === district);
+    if (selectedDist) {
+      fetch(`https://provinces.open-api.vn/api/d/${selectedDist.code}?depth=2`)
+        .then(res => res.json())
+        .then(data => setAvailableWards(data.wards || []))
+        .catch(err => console.error("Error fetching wards:", err));
+    }
+  }, [district, availableDistricts]);
+
   useEffect(() => {
     if (!authChecking && !customer) {
       alert("Bạn cần đăng nhập tài khoản thành viên để thực hiện thanh toán mua hàng!");
@@ -79,7 +126,6 @@ const Checkout = () => {
     }
   }, [authChecking, customer, navigate]);
 
-  // Xử lý chuyển hướng nếu giỏ hàng trống
   useEffect(() => {
     if (!authChecking && customer && cartItems.length === 0) {
       alert("Giỏ hàng của bạn đang trống!");
@@ -103,28 +149,49 @@ const Checkout = () => {
   const total = subTotal + shippingFee;
 
   const handleSelectSavedAddress = (e) => {
-    const addrId = parseInt(e.target.value);
-    if (!addrId) return;
-    const addr = savedAddresses.find(a => a.id === addrId);
+    const addrId = e.target.value;
+    setSelectedAddressId(addrId);
+    if (!addrId) {
+      setFullName(customer?.fullName || '');
+      setPhone(customer?.phone || '');
+      setAddress('');
+      setProvince('');
+      setDistrict('');
+      setWard('');
+      return;
+    }
+    const parsedId = parseInt(addrId);
+    const addr = savedAddresses.find(a => a.id === parsedId);
     if (addr) {
       setFullName(addr.recipientName);
       setPhone(addr.phoneNumber);
       setAddress(addr.addressLine);
       setProvince(addr.provinceName);
       setDistrict(addr.districtName);
+      setWard(addr.wardName || '');
     }
   };
 
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
+    if (!province || !district || !ward) {
+      setError('Vui lòng chọn đầy đủ Tỉnh/Thành, Quận/Huyện và Phường/Xã');
+      window.scrollTo(0, 0);
+      return;
+    }
+
     setError('');
     setLoading(true);
 
-    // Chuẩn bị thông tin giao hàng kết hợp địa chỉ tỉnh/thành
-    const fullDeliveryAddress = `${address}, ${district}, ${province}`;
+    const fullDeliveryAddress = `${address}, ${ward}, ${district}, ${province}`;
+    const paymentStr = paymentMethod === 'cod' ? 'Thanh toán khi nhận hàng (COD)' : 'Chuyển khoản qua QR';
+    const finalNotes = notes 
+      ? `[Giao tới: ${fullName} - SĐT: ${phone} - Email: ${email} - Đ/C: ${fullDeliveryAddress}] [PTTT: ${paymentStr}]. Ghi chú KH: ${notes}` 
+      : `[Giao tới: ${fullName} - SĐT: ${phone} - Email: ${email} - Đ/C: ${fullDeliveryAddress}] [PTTT: ${paymentStr}]`;
+
     const orderData = {
       customerId: customer.customerId,
-      notes: notes ? `[Giao tới: ${fullName} - SĐT: ${phone} - Email: ${email} - Đ/C: ${fullDeliveryAddress}]. Ghi chú khách hàng: ${notes}` : `[Giao tới: ${fullName} - SĐT: ${phone} - Email: ${email} - Đ/C: ${fullDeliveryAddress}]`,
+      notes: finalNotes,
       cartItems: cartItems.map(item => ({
         productId: item.id,
         quantity: item.quantity
@@ -133,13 +200,8 @@ const Checkout = () => {
 
     try {
       await orderService.createOrder(orderData);
-      
-      // Xóa sạch giỏ hàng khi đặt hàng thành công
       localStorage.removeItem('cart');
-      
-      // Kích hoạt sự kiện cập nhật số lượng giỏ hàng ở Header
       window.dispatchEvent(new Event('cartChange'));
-      
       alert("Đặt hàng thành công! Cảm ơn bạn đã mua hàng tại MyKingdom.");
       navigate('/account/orders');
     } catch (err) {
@@ -148,221 +210,263 @@ const Checkout = () => {
       } else {
         setError('Có lỗi xảy ra trong quá trình đặt hàng. Vui lòng thử lại sau.');
       }
+      window.scrollTo(0, 0);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="container mt-4 animate--fade-in">
-      {/* breadcrumb */}
-      <nav aria-label="breadcrumb">
-        <ol className="breadcrumb bg-transparent p-0 mb-4" style={{ fontSize: '0.85rem' }}>
-          <li className="breadcrumb-item"><Link to="/" className="text-secondary text-decoration-none">Trang chủ</Link></li>
-          <li className="breadcrumb-item"><Link to="/cart" className="text-secondary text-decoration-none">Giỏ hàng</Link></li>
-          <li className="breadcrumb-item active text-danger font-weight-bold" aria-current="page">Tiến hành thanh toán</li>
-        </ol>
-      </nav>
+    <div className="checkout-page">
+      <div className="container pt-4 animate--fade-in">
+        {/* Breadcrumb */}
+        <nav aria-label="breadcrumb">
+          <ol className="breadcrumb bg-transparent p-0 mb-4" style={{ fontSize: '0.85rem' }}>
+            <li className="breadcrumb-item"><Link to="/" className="text-secondary text-decoration-none">Trang chủ</Link></li>
+            <li className="breadcrumb-item"><Link to="/cart" className="text-secondary text-decoration-none">Giỏ hàng</Link></li>
+            <li className="breadcrumb-item active text-danger font-weight-bold" aria-current="page">Tiến hành thanh toán</li>
+          </ol>
+        </nav>
 
-      <h2 className="font-weight-bold text-dark text-uppercase mb-4">
-        <i className="fa-solid fa-credit-card text-danger mr-2"></i> Thông Tin Thanh Toán
-      </h2>
+        <h2 className="checkout-header-title">
+          <i className="fa-solid fa-credit-card"></i> THÔNG TIN THANH TOÁN
+        </h2>
 
-      {error && (
-        <div className="alert alert-danger px-4 py-3 rounded-lg mb-4 text-center font-weight-bold small" role="alert">
-          <i className="fa-solid fa-circle-exclamation mr-2"></i> {error}
-        </div>
-      )}
+        {error && (
+          <div className="alert alert-danger px-4 py-3 rounded-lg mb-4 text-center font-weight-bold small" role="alert">
+            <i className="fa-solid fa-circle-exclamation mr-2"></i> {error}
+          </div>
+        )}
 
-      <div className="row">
-        {/* CỘT TRÁI: FORM ĐIỀN THÔNG TIN KHÁCH HÀNG */}
-        <div className="col-12 col-lg-7 mb-4">
-          <div className="card shadow-sm border border-light rounded-lg p-4">
-            <h5 className="font-weight-bold text-dark mb-4 border-bottom pb-3">Địa chỉ nhận hàng</h5>
-            
-            {savedAddresses.length > 0 && (
-              <div className="mb-4 p-3 rounded" style={{ backgroundColor: '#fff8e1', border: '1px solid #ffe082' }}>
-                <label className="small font-weight-bold text-dark">
-                  <i className="fa-solid fa-location-dot text-danger mr-2"></i> Chọn nhanh địa chỉ nhận hàng đã lưu
-                </label>
-                <select 
-                  className="form-control rounded-pill px-3 shadow-none border-secondary-50"
-                  onChange={handleSelectSavedAddress}
-                  defaultValue=""
-                >
-                  <option value="" disabled>-- Chọn địa chỉ đã lưu --</option>
-                  {savedAddresses.map(addr => (
-                    <option key={addr.id} value={addr.id}>
-                      [{addr.addressType}] {addr.recipientName} - {addr.phoneNumber} ({addr.addressLine}, {addr.wardName}, {addr.districtName}, {addr.provinceName}){addr.isDefault ? ' [Mặc định]' : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
+        <div className="row">
+          {/* CỘT TRÁI: FORM */}
+          <div className="col-12 col-lg-7">
             <form onSubmit={handlePlaceOrder}>
-              <div className="row">
-                <div className="col-12 col-md-6 mb-3">
-                  <label className="small font-weight-bold text-secondary">Họ và tên người nhận *</label>
-                  <input 
-                    type="text" 
-                    className="form-control rounded-pill px-3 shadow-none border-secondary-50" 
-                    placeholder="Nguyễn Văn A..." 
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required 
-                  />
+              
+              {/* KHỐI 1: THÔNG TIN LIÊN HỆ */}
+              <div className="checkout-card">
+                <h3 className="checkout-card-title"><i className="fa-solid fa-address-card"></i> 1. Thông tin liên hệ</h3>
+                <div className="row">
+                  <div className="col-12 col-md-6 checkout-form-group">
+                    <label className="checkout-label">Họ và tên người nhận <span className="text-danger">*</span></label>
+                    <div className="checkout-input-wrapper">
+                      <span className="checkout-input-icon"><i className="fa-solid fa-user"></i></span>
+                      <input 
+                        type="text" 
+                        className="checkout-input" 
+                        placeholder="Nhập họ tên" 
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        required 
+                      />
+                    </div>
+                  </div>
+                  <div className="col-12 col-md-6 checkout-form-group">
+                    <label className="checkout-label">Số điện thoại liên hệ <span className="text-danger">*</span></label>
+                    <div className="checkout-input-wrapper">
+                      <span className="checkout-input-icon"><i className="fa-solid fa-phone"></i></span>
+                      <input 
+                        type="tel" 
+                        className="checkout-input" 
+                        placeholder="Nhập số điện thoại" 
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        required 
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="col-12 col-md-6 mb-3">
-                  <label className="small font-weight-bold text-secondary">Số điện thoại liên hệ *</label>
-                  <input 
-                    type="tel" 
-                    className="form-control rounded-pill px-3 shadow-none border-secondary-50" 
-                    placeholder="0912..." 
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    required 
-                  />
+                <div className="checkout-form-group mb-0">
+                  <label className="checkout-label">Địa chỉ Email</label>
+                  <div className="checkout-input-wrapper">
+                    <span className="checkout-input-icon"><i className="fa-solid fa-envelope"></i></span>
+                    <input 
+                      type="email" 
+                      className="checkout-input" 
+                      placeholder="nguyenvanan@gmail.com" 
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="mb-3">
-                <label className="small font-weight-bold text-secondary">Địa chỉ Email</label>
-                <input 
-                  type="email" 
-                  className="form-control rounded-pill px-3 shadow-none border-secondary-50" 
-                  placeholder="nguyenvanan@gmail.com..." 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
+              {/* KHỐI 2: ĐỊA CHỈ GIAO HÀNG */}
+              <div className="checkout-card">
+                <h3 className="checkout-card-title"><i className="fa-solid fa-truck-fast"></i> 2. Địa chỉ giao hàng</h3>
+                
+                {savedAddresses.length > 0 && (
+                  <div className="checkout-saved-address">
+                    <label><i className="fa-solid fa-bookmark"></i> Chọn nhanh địa chỉ đã lưu</label>
+                    <select 
+                      className="form-control rounded-lg px-3 shadow-none border-secondary-50"
+                      onChange={handleSelectSavedAddress}
+                      value={selectedAddressId || ''}
+                    >
+                      <option value="">-- Sử dụng thông tin cá nhân --</option>
+                      {savedAddresses.map(addr => (
+                        <option key={addr.id} value={addr.id}>
+                          [{addr.addressType}] {addr.recipientName} - {addr.phoneNumber} ({addr.addressLine}, {addr.wardName}, {addr.districtName}, {addr.provinceName}){addr.isDefault ? ' [Mặc định]' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
-              <div className="mb-3">
-                <label className="small font-weight-bold text-secondary">Địa chỉ giao hàng chi tiết *</label>
-                <input 
-                  type="text" 
-                  className="form-control rounded-pill px-3 shadow-none border-secondary-50" 
-                  placeholder="Số nhà, tên đường, phường/xã..." 
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  required 
-                />
-              </div>
-
-              <div className="row">
-                <div className="col-12 col-md-6 mb-3">
-                  <label className="small font-weight-bold text-secondary">Tỉnh / Thành phố *</label>
-                  <select 
-                    className="form-control rounded-pill px-3 shadow-none border-secondary-50" 
+                <div className="checkout-form-group mb-3">
+                  <label className="checkout-label">Tỉnh / Thành phố <span className="text-danger">*</span></label>
+                  <SearchableSelect 
+                    options={provincesList}
                     value={province}
-                    onChange={(e) => setProvince(e.target.value)}
-                    required
-                  >
-                    <option value="">-- Chọn Tỉnh/Thành phố --</option>
-                    <option value="Thành phố Hồ Chí Minh">Thành phố Hồ Chí Minh</option>
-                    <option value="Thành phố Hà Nội">Thành phố Hà Nội</option>
-                    <option value="Thành phố Đà Nẵng">Thành phố Đà Nẵng</option>
-                  </select>
+                    onChange={(val) => {
+                      setProvince(val);
+                      setDistrict('');
+                      setWard('');
+                    }}
+                    placeholder="Chọn Tỉnh/Thành"
+                    icon="fa-solid fa-map-location-dot"
+                  />
                 </div>
-                <div className="col-12 col-md-6 mb-3">
-                  <label className="small font-weight-bold text-secondary">Quận / Huyện *</label>
-                  <select 
-                    className="form-control rounded-pill px-3 shadow-none border-secondary-50" 
-                    value={district}
-                    onChange={(e) => setDistrict(e.target.value)}
-                    required
-                  >
-                    <option value="">-- Chọn Quận/Huyện --</option>
-                    <option value="Quận 1">Quận 1</option>
-                    <option value="Quận 3">Quận 3</option>
-                    <option value="Quận 8">Quận 8</option>
-                    <option value="Quận Cầu Giấy">Quận Cầu Giấy</option>
-                    <option value="Quận Hải Châu">Quận Hải Châu</option>
-                  </select>
+
+                <div className="row">
+                  <div className="col-12 col-md-6 checkout-form-group">
+                    <label className="checkout-label">Quận / Huyện <span className="text-danger">*</span></label>
+                    <SearchableSelect 
+                      options={availableDistricts}
+                      value={district}
+                      onChange={(val) => {
+                        setDistrict(val);
+                        setWard('');
+                      }}
+                      placeholder="Chọn Quận/Huyện"
+                      icon="fa-solid fa-building"
+                      disabled={!province}
+                    />
+                  </div>
+                  <div className="col-12 col-md-6 checkout-form-group">
+                    <label className="checkout-label">Phường / Xã <span className="text-danger">*</span></label>
+                    <SearchableSelect 
+                      options={availableWards}
+                      value={ward}
+                      onChange={(val) => setWard(val)}
+                      placeholder="Chọn Phường/Xã"
+                      icon="fa-solid fa-map"
+                      disabled={!district}
+                    />
+                  </div>
+                </div>
+
+                <div className="checkout-form-group mb-0">
+                  <label className="checkout-label">Địa chỉ giao hàng chi tiết <span className="text-danger">*</span></label>
+                  <div className="checkout-input-wrapper">
+                    <span className="checkout-input-icon"><i className="fa-solid fa-house-chimney"></i></span>
+                    <input 
+                      type="text" 
+                      className="checkout-input" 
+                      placeholder="Số nhà, tên đường, tòa nhà, căn hộ..." 
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      required 
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="mb-4">
-                <label className="small font-weight-bold text-secondary">Ghi chú giao hàng</label>
-                <textarea 
-                  className="form-control rounded shadow-none border-secondary-50" 
-                  rows="3" 
-                  placeholder="Ví dụ: Gọi trước khi giao, giao giờ hành chính..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                ></textarea>
+              {/* KHỐI 3: GHI CHÚ ĐƠN HÀNG */}
+              <div className="checkout-card">
+                <h3 className="checkout-card-title"><i className="fa-solid fa-clipboard"></i> 3. Ghi chú cho đơn hàng</h3>
+                <div className="checkout-form-group mb-0">
+                  <textarea 
+                    className="checkout-textarea" 
+                    placeholder="Ví dụ: Gọi điện cho tôi trước khi giao, giao vào giờ hành chính..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                  ></textarea>
+                </div>
               </div>
 
-              <h5 className="font-weight-bold text-dark mb-3 border-top pt-4">Phương thức thanh toán</h5>
-              <div className="mb-4">
-                <div className="custom-control custom-radio mb-3">
-                  <input type="radio" id="paymentCod" name="paymentMethod" className="custom-control-input" defaultChecked />
-                  <label className="custom-control-label font-weight-bold text-dark" htmlFor="paymentCod">
-                    <i className="fa-solid fa-hand-holding-dollar text-success mr-2"></i> Thanh toán khi nhận hàng (COD)
-                  </label>
+              {/* KHỐI 4: THANH TOÁN */}
+              <div className="checkout-card">
+                <h3 className="checkout-card-title"><i className="fa-solid fa-wallet"></i> 4. Phương thức thanh toán</h3>
+                
+                <div className="payment-methods-grid mb-0">
+                  <div 
+                    className={`payment-method-box ${paymentMethod === 'cod' ? 'selected' : ''}`}
+                    onClick={() => setPaymentMethod('cod')}
+                  >
+                    <div className="payment-method-icon"><i className="fa-solid fa-hand-holding-dollar"></i></div>
+                    <div className="payment-method-info">
+                      <h6>Thanh toán khi nhận hàng</h6>
+                      <p>Thanh toán COD</p>
+                    </div>
+                  </div>
+                  <div 
+                    className={`payment-method-box ${paymentMethod === 'bank' ? 'selected' : ''}`}
+                    onClick={() => setPaymentMethod('bank')}
+                  >
+                    <div className="payment-method-icon"><i className="fa-solid fa-qrcode"></i></div>
+                    <div className="payment-method-info">
+                      <h6>Chuyển khoản Ngân hàng</h6>
+                      <p>Quét mã QR Code</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="custom-control custom-radio">
-                  <input type="radio" id="paymentBank" name="paymentMethod" className="custom-control-input" />
-                  <label className="custom-control-label font-weight-bold text-dark" htmlFor="paymentBank">
-                    <i className="fa-solid fa-building-columns text-primary mr-2"></i> Chuyển khoản ngân hàng qua mã QR
-                  </label>
-                </div>
+              </div>
+
+            </form>
+          </div>
+
+          {/* CỘT PHẢI: TỔNG KẾT */}
+          <div className="col-12 col-lg-5">
+            <div className="order-summary-card">
+              <h3 className="checkout-card-title"><i className="fa-solid fa-cart-shopping"></i> Đơn hàng của bạn</h3>
+              
+              <div className="order-item-list">
+                {cartItems.map((item) => (
+                  <div className="order-item" key={item.id}>
+                    <img src={item.imageUrl || "https://placehold.co/150x150/e9ecef/6c757d?text=No+Image"} alt={item.name} className="order-item-img" />
+                    <div className="order-item-details">
+                      <h4 className="order-item-name">{item.name}</h4>
+                      <span className="order-item-qty">Số lượng: <strong>{item.quantity}</strong></span>
+                    </div>
+                    <div className="order-item-price">
+                      {new Intl.NumberFormat('vi-VN').format(item.price * item.quantity)} ₫
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="summary-row">
+                <span>Tạm tính hàng hóa:</span>
+                <span className="font-weight-bold text-dark">{new Intl.NumberFormat('vi-VN').format(subTotal)} ₫</span>
+              </div>
+              <div className="summary-row">
+                <span>Phí vận chuyển:</span>
+                <span className="font-weight-bold text-dark">{new Intl.NumberFormat('vi-VN').format(shippingFee)} ₫</span>
+              </div>
+              
+              <div className="summary-row total">
+                <span className="lbl">Tổng thanh toán:</span>
+                <span className="val">{new Intl.NumberFormat('vi-VN').format(total)} ₫</span>
               </div>
 
               <button 
-                type="submit" 
-                className="btn btn-danger btn-block rounded-pill font-weight-bold text-uppercase py-3" 
-                style={{ fontSize: '0.9rem' }}
+                type="button" 
+                className="btn-checkout-submit" 
                 disabled={loading}
+                onClick={handlePlaceOrder}
               >
                 {loading ? (
                   <>
-                    <span className="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span>
-                    Đang gửi đơn đặt hàng...
+                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    Đang xử lý...
                   </>
                 ) : (
                   <>
-                    <i className="fa-solid fa-circle-check mr-2"></i> Hoàn tất đặt hàng
+                    Hoàn tất đặt hàng <i className="fa-solid fa-arrow-right"></i>
                   </>
                 )}
               </button>
-            </form>
-          </div>
-        </div>
-
-        {/* CỘT PHẢI: TỔNG KẾT ĐƠN HÀNG THỰC TẾ */}
-        <div className="col-12 col-lg-5">
-          <div className="card shadow-sm border border-light rounded-lg p-4 bg-light">
-            <h5 className="font-weight-bold text-dark mb-4 border-bottom pb-3">Đơn hàng của bạn</h5>
-            
-            {/* Danh sách các sản phẩm thực tế */}
-            <div className="checkout-items-list mb-4 overflow-auto" style={{ maxHeight: '350px' }}>
-              {cartItems.map((item) => (
-                <div className="d-flex align-items-center mb-3 pb-3 border-bottom" key={item.id}>
-                  <img src={item.imageUrl || "https://placehold.co/150x150/e9ecef/6c757d?text=No+Image"} alt={item.name} className="rounded border mr-3" style={{ width: '60px', height: '60px', objectFit: 'cover' }} />
-                  <div className="flex-grow-1">
-                    <h6 className="font-weight-bold small text-dark mb-1 text-truncate-2" style={{ lineHeight: '1.3' }}>{item.name}</h6>
-                    <span className="text-secondary small">Số lượng: {item.quantity}</span>
-                  </div>
-                  <span className="font-weight-bold text-dark pl-2 small" style={{ whiteSpace: 'nowrap' }}>
-                    {new Intl.NumberFormat('vi-VN').format(item.price * item.quantity)} ₫
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {/* Chi tiết chi phí */}
-            <div className="d-flex justify-content-between mb-2 text-secondary small">
-              <span>Tạm tính hàng hóa:</span>
-              <span className="font-weight-bold text-dark">{new Intl.NumberFormat('vi-VN').format(subTotal)} ₫</span>
-            </div>
-            <div className="d-flex justify-content-between mb-3 text-secondary small">
-              <span>Phí vận chuyển:</span>
-              <span className="font-weight-bold text-dark">{new Intl.NumberFormat('vi-VN').format(shippingFee)} ₫</span>
-            </div>
-            <div className="d-flex justify-content-between border-top pt-3">
-              <span className="font-weight-bold text-dark">Tổng thanh toán:</span>
-              <span className="h4 font-weight-extrabold text-danger mb-0">{new Intl.NumberFormat('vi-VN').format(total)} ₫</span>
             </div>
           </div>
         </div>

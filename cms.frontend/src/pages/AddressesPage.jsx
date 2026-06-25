@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
 import addressService from '../services/addressService';
-import { provincesData } from '../utils/addressData';
 import { getMediaUrl } from '../utils/mediaUrl';
+import SearchableSelect from '../components/SearchableSelect';
 import '../assets/css/AddressesPage.css';
 
 const DEFAULT_AVATAR = 'https://ui-avatars.com/api/?background=c80f1e&color=fff&size=200&font-size=0.4&bold=true&name=';
@@ -57,7 +57,8 @@ const AddressesPage = () => {
   // State Toast thông báo nhanh
   const [toast, setToast] = useState(null); // { message, type: 'success'|'error' }
 
-  // Danh sách quận/huyện và phường/xã khả dụng dựa trên tỉnh thành được chọn
+  // Danh sách tỉnh, quận, phường từ API
+  const [provincesList, setProvincesList] = useState([]);
   const [availableDistricts, setAvailableDistricts] = useState([]);
   const [availableWards, setAvailableWards] = useState([]);
 
@@ -115,22 +116,33 @@ const AddressesPage = () => {
     }, 3000);
   };
 
-  // Đồng bộ Tỉnh -> Quận -> Phường
+  // Load danh sách tỉnh thành 1 lần khi component mount
   useEffect(() => {
-    if (!provinceName) {
+    fetch('https://provinces.open-api.vn/api/p/')
+      .then(res => res.json())
+      .then(data => setProvincesList(data))
+      .catch(err => console.error("Lỗi lấy danh sách tỉnh thành:", err));
+  }, []);
+
+  // Đồng bộ Tỉnh -> Quận (Gọi API khi provinceName thay đổi)
+  useEffect(() => {
+    if (!provinceName || provincesList.length === 0) {
       setAvailableDistricts([]);
       setAvailableWards([]);
       return;
     }
-    const foundProv = provincesData.find(p => p.name === provinceName);
+    const foundProv = provincesList.find(p => p.name === provinceName);
     if (foundProv) {
-      setAvailableDistricts(foundProv.districts || []);
+      fetch(`https://provinces.open-api.vn/api/p/${foundProv.code}?depth=2`)
+        .then(res => res.json())
+        .then(data => setAvailableDistricts(data.districts || []))
+        .catch(err => console.error("Lỗi lấy danh sách quận huyện:", err));
     } else {
       setAvailableDistricts([]);
     }
-    setAvailableWards([]);
-  }, [provinceName]);
+  }, [provinceName, provincesList]);
 
+  // Đồng bộ Quận -> Phường (Gọi API khi districtName thay đổi)
   useEffect(() => {
     if (!districtName || availableDistricts.length === 0) {
       setAvailableWards([]);
@@ -138,7 +150,10 @@ const AddressesPage = () => {
     }
     const foundDist = availableDistricts.find(d => d.name === districtName);
     if (foundDist) {
-      setAvailableWards(foundDist.wards || []);
+      fetch(`https://provinces.open-api.vn/api/d/${foundDist.code}?depth=2`)
+        .then(res => res.json())
+        .then(data => setAvailableWards(data.wards || []))
+        .catch(err => console.error("Lỗi lấy danh sách phường xã:", err));
     } else {
       setAvailableWards([]);
     }
@@ -169,22 +184,15 @@ const AddressesPage = () => {
       setRecipientName(addr.recipientName || '');
       setPhoneNumber(addr.phoneNumber || '');
       setProvinceName(addr.provinceName || '');
-      
-      // Sử dụng setTimeout để đợi hiệu ứng đồng bộ districts và wards
-      setTimeout(() => {
-        setDistrictName(addr.districtName || '');
-        setTimeout(() => {
-          setWardName(addr.wardName || '');
-        }, 50);
-      }, 50);
-
+      setDistrictName(addr.districtName || '');
+      setWardName(addr.wardName || '');
       setAddressLine(addr.addressLine || '');
       setAddressType(addr.addressType || 'Nhà riêng');
       setIsDefault(addr.isDefault || false);
     } else {
       setSelectedAddress(null);
-      setRecipientName('');
-      setPhoneNumber('');
+      setRecipientName(fullName || '');
+      setPhoneNumber(customer?.phoneNumber || ''); // Dùng sđt nếu có trong payload auth
       setProvinceName('');
       setDistrictName('');
       setWardName('');
@@ -563,143 +571,179 @@ const AddressesPage = () => {
         </div>
       </div>
 
-      {/* ===== MODAL: THÊM / SỬA ĐỊA CHỈ ===== */}
+      {/* ===== MODAL: THÊM / SỬA ĐỊA CHỈ (MODERN UI) ===== */}
       {showModal && (
         <div className="address-modal-overlay">
-          <div className="address-modal-container">
-            <div className="address-modal-header">
-              <h3>{modalMode === 'create' ? 'Thêm địa chỉ giao hàng mới' : 'Chỉnh sửa địa chỉ nhận hàng'}</h3>
-              <button type="button" className="btn-close-modal" onClick={closeAddressModal}>&times;</button>
+          <div className="modern-modal-container">
+            <div className="modern-modal-header">
+              <div className="modern-header-content">
+                <div className="modern-header-icon">
+                  <i className="fa-solid fa-location-dot"></i>
+                </div>
+                <div className="modern-header-text">
+                  <h3>{modalMode === 'create' ? 'Thêm địa chỉ giao hàng mới' : 'Chỉnh sửa địa chỉ giao hàng'}</h3>
+                  <p>Vui lòng nhập thông tin địa chỉ để chúng tôi giao hàng đến bạn</p>
+                </div>
+              </div>
+              <button type="button" className="btn-close-modal-modern" onClick={closeAddressModal}>
+                <i className="fa-solid fa-xmark"></i>
+              </button>
             </div>
 
             <form onSubmit={handleSaveAddress}>
-              <div className="address-modal-body">
-                <div className="row">
-                  <div className="col-12 col-md-6 form-group">
-                    <label className="small font-weight-bold text-secondary">Họ và tên người nhận *</label>
-                    <input 
-                      type="text" 
-                      className={`form-control rounded px-3 ${formErrors.recipientName ? 'is-invalid' : ''}`}
-                      placeholder="Nhập họ tên người nhận..." 
-                      value={recipientName}
-                      onChange={(e) => setRecipientName(e.target.value)}
-                    />
-                    {formErrors.recipientName && <div className="invalid-feedback">{formErrors.recipientName}</div>}
-                  </div>
-                  <div className="col-12 col-md-6 form-group">
-                    <label className="small font-weight-bold text-secondary">Số điện thoại liên hệ *</label>
-                    <input 
-                      type="tel" 
-                      className={`form-control rounded px-3 ${formErrors.phoneNumber ? 'is-invalid' : ''}`}
-                      placeholder="Ví dụ: 0912345678..." 
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
-                    />
-                    {formErrors.phoneNumber && <div className="invalid-feedback">{formErrors.phoneNumber}</div>}
+              <div className="modern-modal-body">
+                {/* SECTION 1: THÔNG TIN NGƯỜI NHẬN */}
+                <div className="modern-section">
+                  <h4 className="modern-section-title">
+                    <i className="fa-solid fa-user"></i> Thông tin người nhận
+                  </h4>
+                  <div className="row">
+                    <div className="col-12 col-md-6 form-group">
+                      <label className="modern-label">Họ và tên người nhận <span className="text-danger">*</span></label>
+                      <div className={`modern-input-group ${formErrors.recipientName ? 'has-error' : ''}`}>
+                        <span className="modern-input-icon"><i className="fa-solid fa-user"></i></span>
+                        <input 
+                          type="text" 
+                          className="modern-input"
+                          placeholder="Nhập họ tên người nhận" 
+                          value={recipientName}
+                          onChange={(e) => setRecipientName(e.target.value)}
+                        />
+                      </div>
+                      {formErrors.recipientName && <div className="modern-error-text"><i className="fa-solid fa-circle-exclamation"></i> {formErrors.recipientName}</div>}
+                    </div>
+                    <div className="col-12 col-md-6 form-group">
+                      <label className="modern-label">Số điện thoại liên hệ <span className="text-danger">*</span></label>
+                      <div className={`modern-input-group ${formErrors.phoneNumber ? 'has-error' : ''}`}>
+                        <span className="modern-input-icon"><i className="fa-solid fa-phone"></i></span>
+                        <input 
+                          type="tel" 
+                          className="modern-input"
+                          placeholder="Nhập số điện thoại" 
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value)}
+                        />
+                      </div>
+                      {formErrors.phoneNumber && <div className="modern-error-text"><i className="fa-solid fa-circle-exclamation"></i> {formErrors.phoneNumber}</div>}
+                    </div>
                   </div>
                 </div>
 
-                <div className="row">
-                  <div className="col-12 col-md-4 form-group">
-                    <label className="small font-weight-bold text-secondary">Tỉnh / Thành phố *</label>
-                    <select 
-                      className={`form-control rounded ${formErrors.provinceName ? 'is-invalid' : ''}`}
+                {/* SECTION 2: ĐỊA CHỈ GIAO HÀNG */}
+                <div className="modern-section">
+                  <h4 className="modern-section-title">
+                    <i className="fa-solid fa-location-dot"></i> Địa chỉ giao hàng
+                  </h4>
+                  <div className="form-group mb-3">
+                    <label className="modern-label">Tỉnh / Thành phố <span className="text-danger">*</span></label>
+                    <SearchableSelect 
+                      options={provincesList}
                       value={provinceName}
-                      onChange={(e) => {
-                        setProvinceName(e.target.value);
+                      onChange={(val) => {
+                        setProvinceName(val);
                         setDistrictName('');
                         setWardName('');
                       }}
-                    >
-                      <option value="">-- Chọn Tỉnh/TP --</option>
-                      {provincesData.map(p => (
-                        <option key={p.name} value={p.name}>{p.name}</option>
-                      ))}
-                    </select>
-                    {formErrors.provinceName && <div className="invalid-feedback">{formErrors.provinceName}</div>}
+                      placeholder="-- Chọn Tỉnh / Thành phố --"
+                      icon="fa-solid fa-map-location-dot"
+                      hasError={!!formErrors.provinceName}
+                    />
+                    {formErrors.provinceName && <div className="modern-error-text"><i className="fa-solid fa-circle-exclamation"></i> {formErrors.provinceName}</div>}
                   </div>
-                  <div className="col-12 col-md-4 form-group">
-                    <label className="small font-weight-bold text-secondary">Quận / Huyện *</label>
-                    <select 
-                      className={`form-control rounded ${formErrors.districtName ? 'is-invalid' : ''}`}
-                      value={districtName}
-                      onChange={(e) => {
-                        setDistrictName(e.target.value);
-                        setWardName('');
-                      }}
-                      disabled={!provinceName}
-                    >
-                      <option value="">-- Chọn Quận/Huyện --</option>
-                      {availableDistricts.map(d => (
-                        <option key={d.name} value={d.name}>{d.name}</option>
-                      ))}
-                    </select>
-                    {formErrors.districtName && <div className="invalid-feedback">{formErrors.districtName}</div>}
+
+                  <div className="row">
+                    <div className="col-12 col-md-6 form-group">
+                      <label className="modern-label">Quận / Huyện <span className="text-danger">*</span></label>
+                      <SearchableSelect 
+                        options={availableDistricts}
+                        value={districtName}
+                        onChange={(val) => {
+                          setDistrictName(val);
+                          setWardName('');
+                        }}
+                        placeholder="-- Chọn Quận / Huyện --"
+                        icon="fa-solid fa-building"
+                        hasError={!!formErrors.districtName}
+                        disabled={!provinceName}
+                      />
+                      {formErrors.districtName && <div className="modern-error-text"><i className="fa-solid fa-circle-exclamation"></i> {formErrors.districtName}</div>}
+                    </div>
+                    <div className="col-12 col-md-6 form-group">
+                      <label className="modern-label">Phường / Xã <span className="text-danger">*</span></label>
+                      <SearchableSelect 
+                        options={availableWards}
+                        value={wardName}
+                        onChange={(val) => setWardName(val)}
+                        placeholder="-- Chọn Phường / Xã --"
+                        icon="fa-solid fa-map"
+                        hasError={!!formErrors.wardName}
+                        disabled={!districtName}
+                      />
+                      {formErrors.wardName && <div className="modern-error-text"><i className="fa-solid fa-circle-exclamation"></i> {formErrors.wardName}</div>}
+                    </div>
                   </div>
-                  <div className="col-12 col-md-4 form-group">
-                    <label className="small font-weight-bold text-secondary">Phường / Xã *</label>
-                    <select 
-                      className={`form-control rounded ${formErrors.wardName ? 'is-invalid' : ''}`}
-                      value={wardName}
-                      onChange={(e) => setWardName(e.target.value)}
-                      disabled={!districtName}
-                    >
-                      <option value="">-- Chọn Phường/Xã --</option>
-                      {availableWards.map(w => (
-                        <option key={w} value={w}>{w}</option>
-                      ))}
-                    </select>
-                    {formErrors.wardName && <div className="invalid-feedback">{formErrors.wardName}</div>}
+
+                  <div className="form-group mt-3">
+                    <label className="modern-label">Địa chỉ chi tiết <span className="text-danger">*</span></label>
+                    <div className={`modern-input-group ${formErrors.addressLine ? 'has-error' : ''}`}>
+                      <span className="modern-input-icon"><i className="fa-solid fa-house-user"></i></span>
+                      <input 
+                        type="text" 
+                        className="modern-input"
+                        placeholder="Số nhà, tên đường, tòa nhà, căn hộ (nếu có)..." 
+                        value={addressLine}
+                        onChange={(e) => setAddressLine(e.target.value)}
+                      />
+                    </div>
+                    {formErrors.addressLine && <div className="modern-error-text"><i className="fa-solid fa-circle-exclamation"></i> {formErrors.addressLine}</div>}
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label className="small font-weight-bold text-secondary">Địa chỉ chi tiết (Số nhà, Tên đường) *</label>
-                  <input 
-                    type="text" 
-                    className={`form-control rounded px-3 ${formErrors.addressLine ? 'is-invalid' : ''}`}
-                    placeholder="Ví dụ: Số 23, Ngõ 45, Đường Lê Lợi..." 
-                    value={addressLine}
-                    onChange={(e) => setAddressLine(e.target.value)}
-                  />
-                  {formErrors.addressLine && <div className="invalid-feedback">{formErrors.addressLine}</div>}
-                </div>
-
-                <div className="form-group">
-                  <label className="small font-weight-bold text-secondary mb-2">Loại địa chỉ</label>
-                  <div className="address-type-selector">
+                {/* SECTION 3: LOẠI ĐỊA CHỈ */}
+                <div className="modern-section">
+                  <h4 className="modern-section-title">
+                    <i className="fa-solid fa-tag"></i> Loại địa chỉ
+                  </h4>
+                  <div className="modern-type-selector">
                     {['Nhà riêng', 'Văn phòng', 'Khác'].map(type => (
                       <button
                         key={type}
                         type="button"
-                        className={`btn-type-option ${addressType === type ? 'selected' : ''}`}
+                        className={`modern-type-btn ${addressType === type ? 'active' : ''}`}
                         onClick={() => setAddressType(type)}
                       >
+                        {addressType === type && <i className="fa-solid fa-circle-check modern-type-check"></i>}
+                        {addressType !== type && <i className="fa-regular fa-circle modern-type-uncheck"></i>}
                         <i className={getAddressIcon(type)}></i> {type}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                <div className="custom-control custom-checkbox mt-3">
-                  <input 
-                    type="checkbox" 
-                    className="custom-control-input" 
-                    id="isDefaultCheckbox"
-                    checked={isDefault}
-                    onChange={(e) => setIsDefault(e.target.checked)}
-                    disabled={modalMode === 'edit' && selectedAddress?.isDefault} // Không cho bỏ check mặc định nếu đang là mặc định
-                  />
-                  <label className="custom-control-label font-weight-bold text-dark" htmlFor="isDefaultCheckbox">
-                    Đặt làm địa chỉ giao hàng mặc định
+                {/* SET DEFAULT */}
+                <div className="modern-default-checkbox">
+                  <label className="modern-checkbox-wrapper">
+                    <input 
+                      type="checkbox" 
+                      className="modern-checkbox-input"
+                      checked={isDefault}
+                      onChange={(e) => setIsDefault(e.target.checked)}
+                      disabled={modalMode === 'edit' && selectedAddress?.isDefault}
+                    />
+                    <span className="modern-checkbox-custom"></span>
+                    <div className="modern-checkbox-text">
+                      <strong>Đặt làm địa chỉ mặc định</strong>
+                      <p>Địa chỉ mặc định sẽ được ưu tiên khi đặt hàng</p>
+                    </div>
                   </label>
                 </div>
               </div>
 
-              <div className="address-modal-footer">
-                <button type="button" className="btn-modal-cancel" onClick={closeAddressModal}>Hủy bỏ</button>
-                <button type="submit" className="btn-modal-save" disabled={submitting}>
-                  {submitting ? 'Đang lưu...' : 'Lưu địa chỉ'}
+              {/* FOOTER ACTIONS */}
+              <div className="modern-modal-footer">
+                <button type="button" className="modern-btn-cancel" onClick={closeAddressModal}>Hủy bỏ</button>
+                <button type="submit" className="modern-btn-save" disabled={submitting || (Object.keys(formErrors).length > 0 && !recipientName)}>
+                  <i className="fa-solid fa-floppy-disk"></i> {submitting ? 'Đang lưu...' : 'Lưu địa chỉ'}
                 </button>
               </div>
             </form>
