@@ -99,7 +99,7 @@ Mô tả: Trang danh sách sản phẩm trong khu vực quản trị (có phân 
                         <th>Loại SP</th>
                         <th style="width: 120px;">Giá</th>
                         <th style="width: 70px;">Tồn kho</th>
-                        <th style="width: 180px;" class="text-center">Trạng thái</th>
+                        <th style="width: 250px;" class="text-center">Trạng thái & Thứ tự</th>
                         <th class="text-end" style="width: 200px;">Thao tác</th>
                     </tr>
                 </thead>
@@ -150,41 +150,56 @@ Mô tả: Trang danh sách sản phẩm trong khu vực quản trị (có phân 
                                     <span class="badge bg-danger">Hết hàng</span>
                                 }
                             </td>
-                            <td class="text-center">
+                            <td class="text-center px-3">
                                 @* --- Toggle NEW --- *@
-                                <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
-                                    <span class="small text-muted" style="width: 35px;">NEW</span>
-                                    <div class="form-check form-switch mb-0">
-                                        <input class="form-check-input toggle-new-switch"
-                                               type="checkbox"
-                                               data-id="@item.Id"
-                                               @(item.IsNew ? "checked" : "")
-                                               style="cursor: pointer; width: 2.5em; height: 1.3em;" />
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="small text-muted fw-bold" style="width: 40px; text-align: left;">NEW</span>
+                                        <div class="form-check form-switch mb-0">
+                                            <input class="form-check-input toggle-new-switch"
+                                                   type="checkbox"
+                                                   data-id="@item.Id"
+                                                   @(item.IsNew ? "checked" : "")
+                                                   style="cursor: pointer; width: 2.5em; height: 1.3em;" />
+                                        </div>
                                     </div>
+                                    <input type="number" class="form-control form-control-sm text-center update-display-order" 
+                                           data-id="@item.Id" data-type="new" value="@item.DisplayOrderNew" 
+                                           min="0" style="width: 50px; font-size: 0.8rem;" title="Thứ tự MỚI" @(item.IsNew ? "" : "disabled") />
                                 </div>
                                 @* --- Toggle SALE --- *@
-                                <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
-                                    <span class="small text-muted" style="width: 35px;">SALE</span>
-                                    <div class="form-check form-switch mb-0">
-                                        <input class="form-check-input toggle-sale-switch"
-                                               type="checkbox"
-                                               data-id="@item.Id"
-                                               data-price="@item.Price"
-                                               data-sale-price="@item.SalePrice"
-                                               @(item.IsSale ? "checked" : "")
-                                               style="cursor: pointer; width: 2.5em; height: 1.3em;" />
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="small text-muted fw-bold" style="width: 40px; text-align: left;">SALE</span>
+                                        <div class="form-check form-switch mb-0">
+                                            <input class="form-check-input toggle-sale-switch"
+                                                   type="checkbox"
+                                                   data-id="@item.Id"
+                                                   data-price="@item.Price"
+                                                   data-sale-price="@item.SalePrice"
+                                                   @(item.IsSale ? "checked" : "")
+                                                   style="cursor: pointer; width: 2.5em; height: 1.3em;" />
+                                        </div>
                                     </div>
+                                    <input type="number" class="form-control form-control-sm text-center update-display-order" 
+                                           data-id="@item.Id" data-type="sale" value="@item.DisplayOrderSale" 
+                                           min="0" style="width: 50px; font-size: 0.8rem;" title="Thứ tự SALE" @(item.IsSale ? "" : "disabled") />
                                 </div>
                                 @* --- Toggle BEST --- *@
-                                <div class="d-flex align-items-center justify-content-center gap-2">
-                                    <span class="small text-muted" style="width: 35px;">BEST</span>
-                                    <div class="form-check form-switch mb-0">
-                                        <input class="form-check-input toggle-best-switch"
-                                               type="checkbox"
-                                               data-id="@item.Id"
-                                               @(item.IsBestSelling ? "checked" : "")
-                                               style="cursor: pointer; width: 2.5em; height: 1.3em;" />
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="small text-muted fw-bold" style="width: 40px; text-align: left;">BEST</span>
+                                        <div class="form-check form-switch mb-0">
+                                            <input class="form-check-input toggle-best-switch"
+                                                   type="checkbox"
+                                                   data-id="@item.Id"
+                                                   @(item.IsBestSelling ? "checked" : "")
+                                                   style="cursor: pointer; width: 2.5em; height: 1.3em;" />
+                                        </div>
                                     </div>
+                                    <input type="number" class="form-control form-control-sm text-center update-display-order" 
+                                           data-id="@item.Id" data-type="best" value="@item.DisplayOrderBestSelling" 
+                                           min="0" style="width: 50px; font-size: 0.8rem;" title="Thứ tự BÁN CHẠY" @(item.IsBestSelling ? "" : "disabled") />
                                 </div>
                             </td>
                             <td class="text-end">
@@ -461,6 +476,32 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // ========================
+    // PHẦN 3.8: CẬP NHẬT THỨ TỰ HIỂN THỊ (AJAX)
+    // ========================
+    document.querySelectorAll('.update-display-order').forEach(function (inputEl) {
+        inputEl.addEventListener('change', function () {
+            const productId = this.getAttribute('data-id');
+            const type = this.getAttribute('data-type');
+            const displayOrder = this.value;
+
+            fetch('@Url.Action("ToggleDisplayOrder", "Product")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'id=' + productId + '&type=' + type + '&displayOrder=' + displayOrder
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    alert(data.message || 'Có lỗi xảy ra.');
+                }
+            })
+            .catch(err => {
+                alert('Lỗi kết nối server.');
+            });
+        });
+    });
+
+    // ========================
     // PHẦN 4: TOGGLE SALE (AJAX + MODAL)
     // ========================
     const salePriceModal = new bootstrap.Modal(document.getElementById('salePriceModal'));
@@ -575,6 +616,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (currentSaleSwitch) {
                     currentSaleSwitch.classList.add('sale-applied');
                     currentSaleSwitch.setAttribute('data-sale-price', salePrice);
+                    // Update input state
+                    const tr = currentSaleSwitch.closest('tr');
+                    const inputOrder = tr.querySelector('.update-display-order[data-type="sale"]');
+                    if (inputOrder) inputOrder.removeAttribute('disabled');
                 }
                 salePriceModal.hide();
                 location.reload();

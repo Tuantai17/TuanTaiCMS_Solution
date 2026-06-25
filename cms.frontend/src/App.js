@@ -20,6 +20,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import Profile from './pages/Profile';
 import AddressesPage from './pages/AddressesPage';
 import ChangePassword from './pages/ChangePassword';
+import Notifications from './pages/Notifications';
 
 // Import CSS từ assets/css/ theo đúng sơ đồ module hóa
 import './assets/css/App.css';
@@ -28,7 +29,7 @@ function App() {
   return (
     <Router>
       <ScrollToTop />
-      <div className="App d-flex flex-column min-vh-100" style={{ fontFamily: "'Outfit', sans-serif" }}>
+      <div className="App d-flex flex-column min-vh-100">
         {/* Header chung trên cùng */}
         <Header />
         
@@ -52,6 +53,7 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/profile/change-password" element={<ChangePassword />} />
             <Route path="/account/addresses" element={<AddressesPage />} />
+            <Route path="/notifications" element={<Notifications />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
           </Routes>
         </main>

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using CMS.Data;
 using CMS.Data.Entities;
 using CMS.Backend.Helpers;
+using CMS.Backend.Services;
 using System.Text.RegularExpressions;
 
 namespace CMS.Backend.Controllers
@@ -12,16 +13,13 @@ namespace CMS.Backend.Controllers
     public class AuthController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
-        private readonly EmailHelper _emailHelper;
+        private readonly IEmailService _emailService;
         private readonly IConfiguration _configuration;
 
-        // Lưu trữ mã khôi phục mật khẩu tạm thời: Email -> (Mã code, Hết hạn)
-        private static readonly Dictionary<string, (string Code, DateTime Expiry)> ResetCodes = new();
-
-        public AuthController(ApplicationDbContext context, EmailHelper emailHelper, IConfiguration configuration)
+        public AuthController(ApplicationDbContext context, IEmailService emailService, IConfiguration configuration)
         {
             _context = context;
-            _emailHelper = emailHelper;
+            _emailService = emailService;
             _configuration = configuration;
         }
 
@@ -161,45 +159,48 @@ namespace CMS.Backend.Controllers
                 var random = new Random();
                 var otpCode = random.Next(100000, 999999).ToString();
 
-                // Lưu vào Dictionary tạm thời (hết hạn sau 5 phút)
-                ResetCodes[input.Email.Trim().ToLower()] = (otpCode, DateTime.Now.AddMinutes(5));
-
-                // Soạn thảo Email HTML đơn giản hơn để tránh bị bộ lọc Spam của Gmail nhận diện nhầm là giả mạo thương hiệu (phishing)
-                var htmlBody = $@"
-                    <div style='font-family: Arial, sans-serif; padding: 15px; color: #333;'>
-                        <p>Xin chào <strong>{customer.FullName}</strong>,</p>
-                        <p>Chúng tôi nhận được yêu cầu lấy lại mật khẩu cho tài khoản của bạn tại ứng dụng thử nghiệm MyKingdom.</p>
-                        <p>Mã xác minh (OTP) của bạn là:</p>
-                        <p style='font-size: 24px; font-weight: bold; color: #CF102D; letter-spacing: 3px; padding: 10px 20px; background: #f5f5f5; display: inline-block; border-radius: 5px; margin: 10px 0;'>{otpCode}</p>
-                        <p style='font-size: 0.9em; color: #666;'>Mã xác minh này có hiệu lực trong vòng <strong>5 phút</strong>. Vui lòng không chia sẻ mã này cho bất kỳ ai khác.</p>
-                        <p style='font-size: 0.9em; color: #666;'>Nếu bạn không thực hiện yêu cầu này, bạn có thể an tâm bỏ qua email này.</p>
-                        <hr style='border: none; border-top: 1px solid #eee; margin: 20px 0;' />
-                        <p style='font-size: 0.85em; color: #999;'>Đây là email tự động từ hệ thống thử nghiệm MyKingdom. Vui lòng không phản hồi email này.</p>
-                    </div>
-                ";
-
-                // Gửi email xác minh trực tiếp và đợi hoàn thành
-                bool emailSent = true;
-                string emailErrorMessage = null;
-                try
+                // Luu vao database voi ma hoa SHA256
+                using (var sha256 = System.Security.Cryptography.SHA256.Create())
                 {
-                    await _emailHelper.SendEmailAsync(customer.Email.Trim(), "[MyKingdom] Ma OTP khoi phuc mat khau", htmlBody);
+                    var bytes = System.Text.Encoding.UTF8.GetBytes(otpCode);
+                    var hash = Convert.ToBase64String(sha256.ComputeHash(bytes));
+
+                    // Vo hieu hoa cac token cu
+                    var oldTokens = await _context.PasswordResetTokens
+                        .Where(t => t.CustomerId == customer.Id && !t.IsUsed && t.ExpiredAt > DateTime.Now)
+                        .ToListAsync();
+                    foreach (var t in oldTokens) { t.IsUsed = true; }
+
+                    var token = new PasswordResetToken
+                    {
+                        CustomerId = customer.Id,
+                        TokenHash = hash,
+                        CreatedAt = DateTime.Now,
+                        ExpiredAt = DateTime.Now.AddMinutes(5),
+                        IsUsed = false
+                    };
+                    _context.PasswordResetTokens.Add(token);
+                    await _context.SaveChangesAsync();
                 }
-                catch (Exception emailEx)
+
+                // Gui email thong qua IEmailService
+                var emailModel = new CMS.Backend.Models.ForgotPasswordEmailModel
                 {
-                    emailSent = false;
-                    emailErrorMessage = emailEx.Message;
-                    Console.WriteLine($">>> Lỗi gửi email OTP: {emailEx.Message}");
-                }
+                    CustomerName = customer.FullName,
+                    CustomerEmail = customer.Email,
+                    OtpCode = otpCode,
+                    ExpiredAt = DateTime.Now.AddMinutes(5)
+                };
+
+                bool emailSent = await _emailService.SendForgotPasswordAsync(emailModel);
 
                 if (!emailSent)
                 {
                     // Trả về thành công kèm OTP để dễ test/phục hồi mật khẩu nếu cấu hình SMTP lỗi
                     return Ok(new { 
-                        message = $"Không thể gửi email OTP (Lỗi cấu hình SMTP hoặc kết nối mạng). Dưới đây là mã xác minh của bạn để tiếp tục kiểm thử: {otpCode}",
+                        message = $"Không thể gửi email OTP. Dưới đây là mã xác minh của bạn để tiếp tục kiểm thử: {otpCode}",
                         otpForTesting = otpCode,
-                        isTestMode = true,
-                        errorDetail = emailErrorMessage
+                        isTestMode = true
                     });
                 }
 
@@ -220,30 +221,36 @@ namespace CMS.Backend.Controllers
         /// POST: api/Auth/VerifyResetCode
         /// </summary>
         [HttpPost("VerifyResetCode")]
-        public IActionResult VerifyResetCode([FromBody] VerifyResetCodeInputDTO input)
+        public async Task<IActionResult> VerifyResetCode([FromBody] VerifyResetCodeInputDTO input)
         {
             if (input == null || string.IsNullOrWhiteSpace(input.Email) || string.IsNullOrWhiteSpace(input.Code))
             {
                 return BadRequest(new { message = "Email và Mã xác minh không được để trống" });
             }
 
-            var emailKey = input.Email.Trim().ToLower();
-            if (!ResetCodes.ContainsKey(emailKey))
+            var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Email == input.Email);
+            if (customer == null) return BadRequest(new { message = "Email không hợp lệ." });
+
+            string hash;
+            using (var sha256 = System.Security.Cryptography.SHA256.Create())
             {
-                return BadRequest(new { message = "Mã xác minh không tồn tại hoặc đã hết hạn. Vui lòng bấm gửi lại mã." });
+                var bytes = System.Text.Encoding.UTF8.GetBytes(input.Code.Trim());
+                hash = Convert.ToBase64String(sha256.ComputeHash(bytes));
             }
 
-            var (storedCode, expiry) = ResetCodes[emailKey];
+            var token = await _context.PasswordResetTokens
+                .Where(t => t.CustomerId == customer.Id && t.TokenHash == hash && !t.IsUsed)
+                .OrderByDescending(t => t.CreatedAt)
+                .FirstOrDefaultAsync();
 
-            if (DateTime.Now > expiry)
+            if (token == null)
             {
-                ResetCodes.Remove(emailKey);
+                return BadRequest(new { message = "Mã xác minh không tồn tại hoặc đã bị thay đổi." });
+            }
+
+            if (DateTime.Now > token.ExpiredAt)
+            {
                 return BadRequest(new { message = "Mã xác minh đã hết hạn (5 phút). Vui lòng yêu cầu mã mới." });
-            }
-
-            if (storedCode != input.Code.Trim())
-            {
-                return BadRequest(new { message = "Mã xác minh không chính xác. Vui lòng kiểm tra lại." });
             }
 
             return Ok(new { message = "Xác thực mã OTP thành công! Vui lòng đặt mật khẩu mới." });
@@ -263,39 +270,39 @@ namespace CMS.Backend.Controllers
 
             try
             {
-                var emailKey = input.Email.Trim().ToLower();
-                if (!ResetCodes.ContainsKey(emailKey))
+                var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Email == input.Email);
+                if (customer == null) return BadRequest(new { message = "Email không hợp lệ." });
+
+                string hash;
+                using (var sha256 = System.Security.Cryptography.SHA256.Create())
                 {
-                    return BadRequest(new { message = "Yêu cầu khôi phục không hợp lệ hoặc đã hết hạn." });
+                    var bytes = System.Text.Encoding.UTF8.GetBytes(input.Code.Trim());
+                    hash = Convert.ToBase64String(sha256.ComputeHash(bytes));
                 }
 
-                var (storedCode, expiry) = ResetCodes[emailKey];
+                var token = await _context.PasswordResetTokens
+                    .Where(t => t.CustomerId == customer.Id && t.TokenHash == hash && !t.IsUsed)
+                    .OrderByDescending(t => t.CreatedAt)
+                    .FirstOrDefaultAsync();
 
-                if (DateTime.Now > expiry)
+                if (token == null)
                 {
-                    ResetCodes.Remove(emailKey);
+                    return BadRequest(new { message = "Yêu cầu khôi phục không hợp lệ." });
+                }
+
+                if (DateTime.Now > token.ExpiredAt)
+                {
                     return BadRequest(new { message = "Yêu cầu khôi phục đã hết hạn. Vui lòng thực hiện lại từ đầu." });
                 }
 
-                if (storedCode != input.Code.Trim())
-                {
-                    return BadRequest(new { message = "Mã xác minh không chính xác." });
-                }
-
-                // Tìm khách hàng trong cơ sở dữ liệu
-                var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Email == input.Email);
-                if (customer == null)
-                {
-                    return BadRequest(new { message = "Không tìm thấy thông tin tài khoản." });
-                }
-
-                // Hash mật khẩu mới bằng BCrypt và lưu lại DB
+                // Cập nhật mật khẩu mới
                 customer.Password = PasswordHelper.HashPassword(input.NewPassword);
-                _context.Customers.Update(customer);
-                await _context.SaveChangesAsync();
+                
+                // Đánh dấu token đã sử dụng
+                token.IsUsed = true;
+                token.UsedAt = DateTime.Now;
 
-                // Xóa mã OTP khỏi Dictionary sau khi đổi thành công
-                ResetCodes.Remove(emailKey);
+                await _context.SaveChangesAsync();
 
                 return Ok(new { message = "Đổi mật khẩu mới thành công! Bạn có thể dùng mật khẩu này để đăng nhập." });
             }

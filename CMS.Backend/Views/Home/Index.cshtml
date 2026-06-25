@@ -22,8 +22,28 @@ Mô tả: Trang Dashboard quản trị bán hàng thương mại điện tử hi
             <i class="bi bi-wallet2"></i>
         </div>
         <div class="db-stat-card__body">
-            <span class="db-stat-card__label">Tổng doanh thu</span>
-            <h3 class="db-stat-card__value">@Model.TotalRevenue.ToString("N0")₫</h3>
+            <span class="db-stat-card__label" style="display:flex; justify-content:space-between; align-items:center;">
+                Tổng doanh thu
+                <form method="get" id="revenueFilterForm" class="db-revenue-filter" style="display:inline-block; margin-left:10px;">
+                    <select name="revenueFilter" class="form-select form-select-sm" style="width: auto; display: inline-block; background-color: rgba(255,255,255,0.1); color: inherit; border: 1px solid rgba(255,255,255,0.2);" onchange="toggleCustomDates(this.value); if(this.value !== 'custom') this.form.submit();">
+                        <option style="color: black;" value="all" selected="@(Model.RevenueFilter == "all")">Tất cả</option>
+                        <option style="color: black;" value="24h" selected="@(Model.RevenueFilter == "24h")">24 giờ qua</option>
+                        <option style="color: black;" value="7days" selected="@(Model.RevenueFilter == "7days")">7 ngày qua</option>
+                        <option style="color: black;" value="30days" selected="@(Model.RevenueFilter == "30days")">30 ngày qua</option>
+                        <option style="color: black;" value="custom" selected="@(Model.RevenueFilter == "custom")">Tùy chỉnh...</option>
+                    </select>
+                </form>
+            </span>
+            <div id="customDateRange" style="display: @(Model.RevenueFilter == "custom" ? "block" : "none"); margin-top: 10px; font-size: 0.85rem;">
+                <form method="get" id="customRevenueForm" style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
+                    <input type="hidden" name="revenueFilter" value="custom" />
+                    <input type="date" name="startDate" value="@Model.StartDate?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" style="width:auto; background-color: rgba(255,255,255,0.1); color: inherit; border: 1px solid rgba(255,255,255,0.2);" required />
+                    <span>-</span>
+                    <input type="date" name="endDate" value="@Model.EndDate?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" style="width:auto; background-color: rgba(255,255,255,0.1); color: inherit; border: 1px solid rgba(255,255,255,0.2);" required />
+                    <button type="submit" class="btn btn-sm btn-light" style="padding: 2px 8px;">Lọc</button>
+                </form>
+            </div>
+            <h3 class="db-stat-card__value" style="margin-top: 10px;">@Model.TotalRevenue.ToString("N0")₫</h3>
             <span class="db-stat-card__sub">Đơn hàng hoàn thành</span>
         </div>
         <div class="db-stat-card__glow"></div>
@@ -68,12 +88,12 @@ Mô tả: Trang Dashboard quản trị bán hàng thương mại điện tử hi
 
 @* ===== ROW 2: BIỂU ĐỒ DOANH THU + TOP SẢN PHẨM ===== *@
 <section class="db-grid-2col">
-    @* --- Biểu đồ doanh thu 7 ngày --- *@
+    @* --- Biểu đồ doanh thu --- *@
     <div class="db-panel">
         <div class="db-panel__header">
             <div>
-                <h2 class="db-panel__title"><i class="bi bi-graph-up-arrow"></i> Doanh thu 7 ngày gần nhất</h2>
-                <p class="db-panel__subtitle">Thống kê doanh thu từ đơn hàng hoàn thành</p>
+                <h2 class="db-panel__title"><i class="bi bi-graph-up-arrow"></i> @Model.ChartTitle</h2>
+                <p class="db-panel__subtitle">@Model.ChartSubtitle</p>
             </div>
         </div>
         <div class="db-panel__body">
@@ -283,7 +303,17 @@ Mô tả: Trang Dashboard quản trị bán hàng thương mại điện tử hi
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <script>
-        // === BIỂU ĐỒ DOANH THU 7 NGÀY ===
+        // === XỬ LÝ BỘ LỌC DOANH THU ===
+        function toggleCustomDates(value) {
+            var customRange = document.getElementById('customDateRange');
+            if (value === 'custom') {
+                customRange.style.display = 'block';
+            } else {
+                customRange.style.display = 'none';
+            }
+        }
+
+        // === BIỂU ĐỒ DOANH THU ĐỘNG ===
         (function () {
             var ctx = document.getElementById('revenueChart').getContext('2d');
             var labels = [@Html.Raw(string.Join(",", Model.DailyRevenues.Select(d => $"'{d.Date}'")))];

@@ -76,6 +76,9 @@ namespace CMS.Backend.Controllers
           p.IsSale,
           p.SalePrice,
           p.IsBestSelling,
+          p.DisplayOrderNew,
+          p.DisplayOrderSale,
+          p.DisplayOrderBestSelling,
           DiscountPercent = p.IsSale && p.Price > 0
             ? (int)Math.Round((1 - p.SalePrice / p.Price) * 100)
             : 0,
@@ -86,13 +89,30 @@ namespace CMS.Backend.Controllers
 
         var sortKey = sortBy?.Trim().ToLower();
         var isBestSelling = sortKey == "best-selling" || sortKey == "bestselling" || sortKey == "sold";
+        var isNew = filter?.Equals("new", StringComparison.OrdinalIgnoreCase) == true;
+        var isSale = filter?.Equals("sale", StringComparison.OrdinalIgnoreCase) == true;
+
         var filteredProducts = isBestSelling
           ? productQuery.Where(p => p.IsBestSelling || p.SoldQuantity > 0)
           : productQuery;
 
-        var sortedProducts = isBestSelling
-          ? filteredProducts.OrderByDescending(p => p.IsBestSelling).ThenByDescending(p => p.SoldQuantity).ThenByDescending(p => p.Id)
-          : filteredProducts.OrderByDescending(p => p.Id); // Mặc định sắp xếp theo ID giảm dần (Sản phẩm mới nhất)
+        IQueryable<dynamic> sortedProducts;
+        if (isBestSelling)
+        {
+          sortedProducts = filteredProducts.OrderBy(p => p.DisplayOrderBestSelling == 0 ? int.MaxValue : p.DisplayOrderBestSelling).ThenByDescending(p => p.IsBestSelling).ThenByDescending(p => p.SoldQuantity).ThenByDescending(p => p.Id);
+        }
+        else if (isNew)
+        {
+          sortedProducts = filteredProducts.OrderBy(p => p.DisplayOrderNew == 0 ? int.MaxValue : p.DisplayOrderNew).ThenByDescending(p => p.Id);
+        }
+        else if (isSale)
+        {
+          sortedProducts = filteredProducts.OrderBy(p => p.DisplayOrderSale == 0 ? int.MaxValue : p.DisplayOrderSale).ThenByDescending(p => p.Id);
+        }
+        else
+        {
+          sortedProducts = filteredProducts.OrderByDescending(p => p.Id); // Mặc định sắp xếp theo ID giảm dần
+        }
 
         var finalQuery = sortedProducts.AsQueryable();
         if (take.HasValue && take.Value > 0)

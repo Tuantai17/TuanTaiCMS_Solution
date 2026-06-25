@@ -8,6 +8,8 @@ Mô tả: Controller quản lý đơn hàng, gồm hiển thị danh sách, xem 
 
 using CMS.Data;
 using CMS.Data.Entities;
+using CMS.Backend.Models;
+using CMS.Backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -20,10 +22,20 @@ namespace CMS.Backend.Controllers
     public class OrderController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IEmailService _emailService;
+        private readonly INotificationService _notificationService;
+        private readonly ILogger<OrderController> _logger;
 
-        public OrderController(ApplicationDbContext context)
+        public OrderController(
+            ApplicationDbContext context,
+            IEmailService emailService,
+            INotificationService notificationService,
+            ILogger<OrderController> logger)
         {
             _context = context;
+            _emailService = emailService;
+            _notificationService = notificationService;
+            _logger = logger;
         }
 
         // Action Index hiển thị danh sách tất cả đơn hàng kèm tên khách hàng và tổng tiền.
@@ -78,9 +90,9 @@ namespace CMS.Backend.Controllers
             return View(order);
         }
 
-        // Action POST Edit chỉ cập nhật Trạng thái (Status) và Ghi chú (Notes) của đơn hàng.
+        // Action POST Edit cập nhật Trạng thái và Ghi chú của đơn hàng.
         [HttpPost]
-        public IActionResult Edit(Order model)
+        public async Task<IActionResult> Edit(Order model)
         {
             var existingOrder = _context.Orders
                 .Include(o => o.Customer)
@@ -98,8 +110,37 @@ namespace CMS.Backend.Controllers
 
             if (oldStatus != newStatus)
             {
-                // Nếu chuyển sang trạng thái "Đã hủy" (3) từ trạng thái khác
-                if (newStatus == 3 && oldStatus != 3)
+                // Kiểm tra Validation Quy trình
+                bool isValidTransition = false;
+                switch (oldStatus)
+                {
+                    case 0: // PENDING
+                        isValidTransition = (newStatus == 1 || newStatus == 5);
+                        break;
+                    case 1: // CONFIRMED
+                        isValidTransition = (newStatus == 2 || newStatus == 5);
+                        break;
+                    case 2: // PROCESSING
+                        isValidTransition = (newStatus == 3 || newStatus == 5);
+                        break;
+                    case 3: // SHIPPING
+                        isValidTransition = (newStatus == 4);
+                        break;
+                    case 4: // COMPLETED
+                    case 5: // CANCELLED
+                        isValidTransition = false; // Không được chuyển tiếp
+                        break;
+                }
+
+                if (!isValidTransition)
+                {
+                    ModelState.AddModelError("", "Quy trình chuyển trạng thái không hợp lệ.");
+                    PrepareEditViewBag(existingOrder);
+                    return View(existingOrder);
+                }
+
+                // Nếu chuyển sang trạng thái "Đã hủy" (5) từ trạng thái khác
+                if (newStatus == 5)
                 {
                     // Hoàn trả tồn kho
                     if (existingOrder.OrderDetails != null)
@@ -114,50 +155,117 @@ namespace CMS.Backend.Controllers
                         }
                     }
                 }
-                // Nếu chuyển từ "Đã hủy" (3) quay lại các trạng thái hoạt động (0, 1, 2)
-                else if (oldStatus == 3 && newStatus != 3)
+
+                // Lưu vết lịch sử thay đổi vào Ghi chú
+                var oldStatusStr = GetStatusName(oldStatus);
+                var newStatusStr = GetStatusName(newStatus);
+                var timestamp = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+                string newNotes = model.Notes ?? "";
+                newNotes += $"\n[{timestamp}] Trạng thái: {oldStatusStr} -> {newStatusStr}";
+                
+                existingOrder.Status = newStatus;
+                existingOrder.Notes = newNotes;
+
+                // Gui thong bao cho khach hang ve su thay doi trang thai
+                if (existingOrder.CustomerId > 0)
                 {
-                    // Kiểm tra tồn kho trước khi trừ
-                    if (existingOrder.OrderDetails != null)
+                    await _notificationService.CreateForCustomerAsync(
+                        $"Đơn hàng #{existingOrder.Id} đã cập nhật",
+                        $"Trạng thái đơn hàng của bạn đã chuyển sang: {newStatusStr}",
+                        "OrderStatusUpdate",
+                        existingOrder.CustomerId,
+                        "Order",
+                        existingOrder.Id
+                    );
+                }
+
+                // Gui email khi chuyen trang thai sang Delivered (4)
+                if (newStatus == 4 && existingOrder.DeliverySuccessEmailSentAt == null)
+                {
+                    existingOrder.DeliveredDate = DateTime.Now;
+                    var customer = existingOrder.Customer;
+                    if (customer != null && !string.IsNullOrWhiteSpace(customer.Email))
                     {
-                        foreach (var detail in existingOrder.OrderDetails)
+                        var orderCode = $"ORD-{existingOrder.Id:D6}";
+                        var totalAmount = existingOrder.OrderDetails?.Sum(od => od.UnitPrice * od.Quantity) ?? 0;
+
+                        var emailModel = new DeliverySuccessEmailModel
                         {
-                            var product = _context.Products.Find(detail.ProductId);
-                            if (product == null)
+                            OrderId = existingOrder.Id,
+                            OrderCode = orderCode,
+                            CustomerName = customer.FullName,
+                            CustomerEmail = customer.Email,
+                            DeliveredDate = existingOrder.DeliveredDate,
+                            Address = customer.Address,
+                            TotalAmount = totalAmount
+                        };
+
+                        var emailLog = new EmailLog
+                        {
+                            EmailType = "DeliverySuccess",
+                            RecipientEmail = customer.Email,
+                            RecipientName = customer.FullName,
+                            Subject = $"[TuanTaiCMS] Giao hang thanh cong - Don hang {orderCode}",
+                            ReferenceType = "Order",
+                            ReferenceId = existingOrder.Id,
+                            Status = "Pending",
+                            CreatedAt = DateTime.Now
+                        };
+                        _context.EmailLogs.Add(emailLog);
+
+                        try
+                        {
+                            var sent = await _emailService.SendDeliverySuccessAsync(emailModel);
+                            if (sent)
                             {
-                                ModelState.AddModelError("", $"Sản phẩm ID {detail.ProductId} không tồn tại.");
-                                PrepareEditViewBag(existingOrder);
-                                return View(existingOrder);
+                                emailLog.Status = "Sent";
+                                emailLog.SentAt = DateTime.Now;
+                                existingOrder.DeliverySuccessEmailSentAt = DateTime.Now;
                             }
-                            if (product.StockQuantity < detail.Quantity)
+                            else
                             {
-                                ModelState.AddModelError("", $"Sản phẩm '{product.Name}' không đủ số lượng trong kho để khôi phục đơn hàng (Còn tồn: {product.StockQuantity}).");
-                                PrepareEditViewBag(existingOrder);
-                                return View(existingOrder);
+                                emailLog.Status = "Failed";
+                                emailLog.ErrorMessage = "EmailService returned false";
                             }
+                        }
+                        catch (Exception emailEx)
+                        {
+                            emailLog.Status = "Failed";
+                            emailLog.ErrorMessage = emailEx.Message.Length > 1000 ? emailEx.Message[..1000] : emailEx.Message;
+                            _logger.LogError(emailEx, "Loi gui email giao hang cho don #{Id}", existingOrder.Id);
                         }
 
-                        // Thực hiện trừ tồn kho
-                        foreach (var detail in existingOrder.OrderDetails)
-                        {
-                            var product = _context.Products.Find(detail.ProductId);
-                            if (product != null)
-                            {
-                                product.StockQuantity -= detail.Quantity;
-                            }
-                        }
+                        await _notificationService.CreateForAllAdminsAsync(
+                            $"Don hang #{existingOrder.Id} da giao thanh cong",
+                            $"Don hang {orderCode} da duoc giao cho {customer.FullName}",
+                            "DeliverySuccess", "Order", existingOrder.Id);
                     }
                 }
             }
+            else
+            {
+                // Chỉ cập nhật Ghi chú
+                existingOrder.Notes = model.Notes;
+            }
 
-            // Chỉ cập nhật Trạng thái và Ghi chú của đơn hàng
-            existingOrder.Status = newStatus;
-            existingOrder.Notes = model.Notes;
+            await _context.SaveChangesAsync();
 
-            _context.SaveChanges();
-
-            TempData["SuccessMessage"] = $"Đơn hàng #{model.Id} đã được cập nhật trạng thái thành công!";
+            TempData["SuccessMessage"] = $"Don hang #{model.Id} da duoc cap nhat trang thai thanh cong!";
             return RedirectToAction("Index");
+        }
+
+        private string GetStatusName(int status)
+        {
+            return status switch
+            {
+                0 => "Chờ duyệt",
+                1 => "Đã duyệt",
+                2 => "Đang chuẩn bị hàng",
+                3 => "Đang giao hàng",
+                4 => "Hoàn thành",
+                5 => "Đã hủy",
+                _ => "Không xác định"
+            };
         }
 
         private void PrepareEditViewBag(Order order)
@@ -179,10 +287,10 @@ namespace CMS.Backend.Controllers
                 return NotFound();
             }
 
-            // Chỉ cho phép hủy đơn hàng đang chờ duyệt (0) hoặc đang giao (1)
-            if (order.Status == 2 || order.Status == 3)
+            // Chỉ cho phép hủy đơn hàng đang chờ duyệt (0), đã duyệt (1), đang chuẩn bị (2)
+            if (order.Status >= 3)
             {
-                TempData["ErrorMessage"] = "Không thể hủy đơn hàng đã hoàn thành hoặc đã hủy trước đó.";
+                TempData["ErrorMessage"] = "Không thể hủy đơn hàng đang giao, đã hoàn thành hoặc đã hủy trước đó.";
                 return RedirectToAction("Index");
             }
 
@@ -199,7 +307,10 @@ namespace CMS.Backend.Controllers
                 }
             }
 
-            order.Status = 3; // 3: Đã hủy
+            var timestamp = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+            order.Notes = (order.Notes ?? "") + $"\n[{timestamp}] Trạng thái: {GetStatusName(order.Status)} -> Đã hủy (Bởi Admin)";
+            
+            order.Status = 5; // 5: CANCELLED
             _context.SaveChanges();
 
             TempData["SuccessMessage"] = $"Đơn hàng #{id} đã được hủy thành công! Sản phẩm đã được hoàn trả lại kho.";

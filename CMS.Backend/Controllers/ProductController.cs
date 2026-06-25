@@ -183,6 +183,9 @@ namespace CMS.Backend.Controllers
             existingProduct.IsBestSelling = model.IsBestSelling;
             existingProduct.IsSale = model.IsSale;
             existingProduct.SalePrice = model.IsSale ? model.SalePrice : 0;
+            existingProduct.DisplayOrderNew = model.DisplayOrderNew;
+            existingProduct.DisplayOrderSale = model.DisplayOrderSale;
+            existingProduct.DisplayOrderBestSelling = model.DisplayOrderBestSelling;
 
             var newImageUrl = SaveUploadImage(uploadImage);
             if (!string.IsNullOrWhiteSpace(newImageUrl))
@@ -310,6 +313,40 @@ namespace CMS.Backend.Controllers
             _context.SaveChanges();
 
             return Json(new { success = true, isBestSelling = product.IsBestSelling });
+        }
+
+        // Action AJAX: Cập nhật thứ tự hiển thị riêng biệt cho sản phẩm.
+        [HttpPost]
+        public IActionResult ToggleDisplayOrder(int id, string type, int displayOrder)
+        {
+            var product = _context.Products.Find(id);
+            if (product == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy sản phẩm." });
+            }
+
+            if (displayOrder < 0) displayOrder = 0;
+
+            if (type == "new")
+            {
+                product.DisplayOrderNew = displayOrder;
+            }
+            else if (type == "sale")
+            {
+                product.DisplayOrderSale = displayOrder;
+            }
+            else if (type == "best")
+            {
+                product.DisplayOrderBestSelling = displayOrder;
+            }
+            else
+            {
+                return Json(new { success = false, message = "Loại trạng thái không hợp lệ." });
+            }
+
+            _context.SaveChanges();
+
+            return Json(new { success = true, type = type, displayOrder = displayOrder });
         }
 
         // Action POST: Xóa nhiều sản phẩm đã chọn.

@@ -6,29 +6,42 @@ Ngày Tạo: 22/5/2026
 Mô tả: API Controller quản lý đơn đặt hàng trực tiếp từ giỏ hàng Frontend, cung cấp phương thức POST để chèn dữ liệu vào Database.
 */
 
-using Microsoft.AspNetCore.Mvc; // Import thư viện hỗ trợ xây dựng các API Controller của ASP.NET Core
-using Microsoft.EntityFrameworkCore; // Import thư viện hỗ trợ truy vấn Database bất đồng bộ và load quan hệ
-using CMS.Data; // Import namespace chứa lớp ngữ cảnh dữ liệu ApplicationDbContext
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using CMS.Data;
 using CMS.Data.Entities;
 using CMS.Backend.Helpers;
+using CMS.Backend.Models;
+using CMS.Backend.Services;
 using System.Globalization;
 
 namespace CMS.Backend.Controllers
 {
   [Route("api/[controller]")] // Định nghĩa đường dẫn gọi API: api/Orders
   [ApiController] // Kích hoạt thuộc tính xác thực dữ liệu đầu vào tự động (Validation)
-  public class OrdersController : ControllerBase // Kế thừa ControllerBase để tối ưu bộ nhớ cho API thuần dữ liệu JSON
+  public class OrdersController : ControllerBase
   {
-    private readonly ApplicationDbContext _context; // Khai báo đối tượng trung gian kết nối cơ sở dữ liệu SQL Server
-    private readonly EmailHelper _emailHelper; // Khai báo đối tượng helper gửi email
+    private readonly ApplicationDbContext _context;
+    private readonly EmailHelper _emailHelper;
+    private readonly IEmailService _emailService;
+    private readonly INotificationService _notificationService;
     private readonly IConfiguration _configuration;
+    private readonly ILogger<OrdersController> _logger;
 
-    // Hàm khởi tạo (Constructor): "Tiêm" (Inject) ngữ cảnh dữ liệu cơ sở dữ liệu vào Controller thông qua DI
-    public OrdersController(ApplicationDbContext context, EmailHelper emailHelper, IConfiguration configuration)
+    public OrdersController(
+      ApplicationDbContext context,
+      EmailHelper emailHelper,
+      IEmailService emailService,
+      INotificationService notificationService,
+      IConfiguration configuration,
+      ILogger<OrdersController> logger)
     {
-      _context = context; // Gán context được tiêm vào cho biến nội bộ sử dụng
+      _context = context;
       _emailHelper = emailHelper;
+      _emailService = emailService;
+      _notificationService = notificationService;
       _configuration = configuration;
+      _logger = logger;
     }
 
     /// <summary>
@@ -108,106 +121,135 @@ namespace CMS.Backend.Controllers
           _context.OrderDetails.Add(orderDetail);
         }
 
-        // Lưu toàn bộ chi tiết đơn hàng và cập nhật tồn kho sản phẩm xuống SQL Server
+        // Luu toan bo chi tiet don hang va cap nhat ton kho san pham xuong SQL Server
         await _context.SaveChangesAsync();
 
-        // Chốt và commit giao dịch thành công
+        // Chot va commit giao dich thanh cong
         await transaction.CommitAsync();
 
-        // Gửi email xác nhận đơn hàng bất đồng bộ
+        // Luu PaymentMethod tu Notes (parse tu Frontend)
+        var orderCode = $"ORD-{newOrder.Id:D6}";
+
+        // Gui email xac nhan don hang bat dong bo
+        bool emailSent = false;
         var customer = await _context.Customers.FindAsync(input.CustomerId);
-        if (customer != null && !string.IsNullOrWhiteSpace(customer.Email))
+        if (customer != null && !string.IsNullOrWhiteSpace(customer.Email) && newOrder.OrderConfirmationEmailSentAt == null)
         {
             var orderDetailsList = await _context.OrderDetails
                 .Where(od => od.OrderId == newOrder.Id)
                 .Include(od => od.Product)
                 .ToListAsync();
 
-            decimal totalAmount = 0;
-            var itemsHtml = "";
-            foreach (var detail in orderDetailsList)
+            decimal totalAmount = orderDetailsList.Sum(d => d.Quantity * d.UnitPrice);
+
+            var emailModel = new OrderEmailModel
             {
-                var productName = detail.Product?.Name ?? "Sản phẩm";
-                var qty = detail.Quantity;
-                var price = detail.UnitPrice;
-                var subTotal = qty * price;
-                totalAmount += subTotal;
-                itemsHtml += $"<tr><td style='border: 1px solid #ddd; padding: 8px;'>{productName}</td><td style='border: 1px solid #ddd; padding: 8px; text-align: center;'>{qty}</td><td style='border: 1px solid #ddd; padding: 8px; text-align: right;'>{price:N0}₫</td><td style='border: 1px solid #ddd; padding: 8px; text-align: right;'>{subTotal:N0}₫</td></tr>";
-            }
+                OrderId = newOrder.Id,
+                OrderCode = orderCode,
+                CustomerName = customer.FullName,
+                CustomerEmail = customer.Email,
+                Phone = customer.Phone,
+                Address = customer.Address,
+                OrderDate = newOrder.OrderDate,
+                PaymentMethod = newOrder.PaymentMethod ?? "COD",
+                PaymentStatus = "Cho thanh toan",
+                OrderStatus = "Cho duyet",
+                TotalAmount = totalAmount,
+                Items = orderDetailsList.Select(d => new OrderEmailItemModel
+                {
+                    ProductId = d.ProductId,
+                    ProductName = d.Product?.Name ?? "San pham",
+                    ProductImage = d.Product?.ImageUrl,
+                    UnitPrice = d.UnitPrice,
+                    Quantity = d.Quantity,
+                    LineTotal = d.UnitPrice * d.Quantity
+                }).ToList()
+            };
 
-            var htmlBody = $@"
-                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 20px; border-radius: 10px;'>
-                    <div style='text-align: center; border-bottom: 2px solid #CF102D; padding-bottom: 10px; margin-bottom: 20px;'>
-                        <h2 style='color: #CF102D; margin: 0;'>MyKingdom - Xác Nhận Đơn Hàng</h2>
-                    </div>
-                    <p>Xin chào <strong>{customer.FullName}</strong>,</p>
-                    <p>Cảm ơn bạn đã đặt mua sản phẩm tại <strong>Vương Quốc Đồ Chơi MyKingdom</strong>. Đơn hàng của bạn đã được tiếp nhận thành công và đang chờ xử lý.</p>
-                    
-                    <h3 style='color: #002664; border-bottom: 1px solid #eee; padding-bottom: 5px;'>Thông tin đơn hàng #{newOrder.Id}</h3>
-                    <p><strong>Ngày đặt hàng:</strong> {newOrder.OrderDate:dd/MM/yyyy HH:mm}</p>
-                    <p><strong>Trạng thái:</strong> Chờ duyệt</p>
-                    {(string.IsNullOrWhiteSpace(newOrder.Notes) ? "" : $"<p><strong>Ghi chú:</strong> {newOrder.Notes}</p>")}
-
-                    <h3 style='color: #002664; border-bottom: 1px solid #eee; padding-bottom: 5px;'>Chi tiết sản phẩm</h3>
-                    <table style='width: 100%; border-collapse: collapse; margin-bottom: 20px;'>
-                        <thead>
-                            <tr style='background-color: #f2f2f2;'>
-                                <th style='border: 1px solid #ddd; padding: 8px; text-align: left;'>Tên sản phẩm</th>
-                                <th style='border: 1px solid #ddd; padding: 8px; text-align: center; width: 80px;'>SL</th>
-                                <th style='border: 1px solid #ddd; padding: 8px; text-align: right; width: 100px;'>Đơn giá</th>
-                                <th style='border: 1px solid #ddd; padding: 8px; text-align: right; width: 120px;'>Thành tiền</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {itemsHtml}
-                        </tbody>
-                        <tfoot>
-                            <tr>
-                                <td colspan='3' style='border: 1px solid #ddd; padding: 8px; text-align: right; font-weight: bold;'>Tổng tiền thanh toán:</td>
-                                <td style='border: 1px solid #ddd; padding: 8px; text-align: right; font-weight: bold; color: #CF102D;'>{totalAmount:N0}₫</td>
-                            </tr>
-                        </tfoot>
-                    </table>
-
-                    <p style='font-size: 0.9em; color: #666; text-align: center; border-top: 1px solid #eee; padding-top: 15px; margin-top: 25px;'>
-                        Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ tổng đài hỗ trợ <strong>1900 1208</strong> hoặc phản hồi email này.<br/>
-                        Chúc bạn và gia đình có những giây phút vui chơi tuyệt vời!
-                    </p>
-                </div>
-            ";
+            // Tao EmailLog Pending
+            var emailLog = new EmailLog
+            {
+                EmailType = "OrderConfirmation",
+                RecipientEmail = customer.Email,
+                RecipientName = customer.FullName,
+                Subject = $"[TuanTaiCMS] Xac nhan don hang {orderCode}",
+                ReferenceType = "Order",
+                ReferenceId = newOrder.Id,
+                Status = "Pending",
+                CreatedAt = DateTime.Now
+            };
+            _context.EmailLogs.Add(emailLog);
+            await _context.SaveChangesAsync();
 
             try
             {
-                _ = Task.Run(async () => {
-                    try
-                    {
-                        await _emailHelper.SendEmailAsync(customer.Email, $"[MyKingdom] Xác nhận đơn đặt hàng #{newOrder.Id} thành công", htmlBody);
-                    }
-                    catch (Exception emailEx)
-                    {
-                        Console.WriteLine($">>> Lỗi gửi thư: {emailEx.Message}");
-                    }
-                });
+                emailSent = await _emailService.SendOrderConfirmationAsync(emailModel);
+                if (emailSent)
+                {
+                    emailLog.Status = "Sent";
+                    emailLog.SentAt = DateTime.Now;
+                    newOrder.OrderConfirmationEmailSentAt = DateTime.Now;
+                }
+                else
+                {
+                    emailLog.Status = "Failed";
+                    emailLog.ErrorMessage = "EmailService returned false";
+                }
             }
-            catch (Exception ex)
+            catch (Exception emailEx)
             {
-                Console.WriteLine($">>> Lỗi khi kích hoạt luồng gửi mail: {ex.Message}");
+                emailLog.Status = "Failed";
+                emailLog.ErrorMessage = emailEx.Message.Length > 1000 ? emailEx.Message[..1000] : emailEx.Message;
+                _logger.LogError(emailEx, "Loi gui email xac nhan don hang #{OrderId}", newOrder.Id);
+            }
+
+            await _context.SaveChangesAsync();
+
+            // Tao Notification neu email that bai
+            if (!emailSent)
+            {
+                await _notificationService.CreateForAllAdminsAsync(
+                    $"Email xac nhan don hang #{newOrder.Id} that bai",
+                    $"Khong gui duoc email xac nhan don hang {orderCode} cho {customer.Email}",
+                    "EmailFailed", "EmailLog", emailLog.Id);
+            }
+        }
+
+        // Tao thong bao don hang moi cho Admin
+        await _notificationService.CreateForAllAdminsAsync(
+            $"Don hang moi #{newOrder.Id}",
+            $"Khach hang {customer?.FullName ?? "N/A"} vua dat don hang {orderCode}",
+            "NewOrder", "Order", newOrder.Id);
+
+        // Kiem tra ton kho thap
+        foreach (var cartItem in input.CartItems)
+        {
+            var product = await _context.Products.FindAsync(cartItem.ProductId);
+            if (product != null && product.StockQuantity <= 5)
+            {
+                await _notificationService.CreateForAllAdminsAsync(
+                    $"San pham sap het hang: {product.Name}",
+                    $"San pham '{product.Name}' chi con {product.StockQuantity} san pham trong kho.",
+                    "LowStock", "Product", product.Id);
             }
         }
 
         return StatusCode(201, new
         {
-          message = "Đặt hàng thành công!",
-          orderId = newOrder.Id
+          success = true,
+          message = "Dat hang thanh cong!",
+          orderId = newOrder.Id,
+          orderCode = orderCode,
+          emailSent = emailSent
         });
       }
       catch (Exception ex)
       {
-        // Có lỗi xảy ra, tiến hành hoàn tác dữ liệu
         await transaction.RollbackAsync();
         return StatusCode(500, new
         {
-          message = "Lỗi xử lý tạo đơn hàng ngầm bên phía Server",
+          success = false,
+          message = "Loi xu ly tao don hang ngam ben phia Server",
           detail = ex.Message
         });
       }
@@ -415,6 +457,61 @@ namespace CMS.Backend.Controllers
       }
     }
 
+    [HttpPut("my/{id:int}/cancel")]
+    public async Task<IActionResult> CancelMyOrder(int id, [FromBody] CancelOrderRequestDto request)
+    {
+      if (!TryGetAuthenticatedCustomerId(out var customerId, out var authError))
+      {
+        return authError!;
+      }
+
+      using var transaction = await _context.Database.BeginTransactionAsync();
+      try
+      {
+        var order = await _context.Orders
+          .Include(o => o.OrderDetails)
+            .ThenInclude(od => od.Product)
+          .FirstOrDefaultAsync(o => o.Id == id && o.CustomerId == customerId);
+
+        if (order == null)
+        {
+          return NotFound(new { message = "Không tìm thấy đơn hàng." });
+        }
+
+        if (order.Status >= 2) // Allow cancelling when Pending (0) or Confirmed (1)
+        {
+            return BadRequest(new { message = "Không thể hủy đơn hàng lúc này vì đơn hàng đã được chuẩn bị hoặc đã giao." });
+        }
+
+        // Cancel order
+        var timestamp = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+        order.Status = 5; // Cancelled
+        order.Notes = (order.Notes ?? "") + $"\n[{timestamp}] Trạng thái: Chờ duyệt -> Đã hủy (Bởi Người dùng)\n[Lý do hủy: {request.Reason}]";
+
+        // Restore inventory
+        if (order.OrderDetails != null)
+        {
+          foreach (var detail in order.OrderDetails)
+          {
+            if (detail.Product != null)
+            {
+              detail.Product.StockQuantity += detail.Quantity;
+            }
+          }
+        }
+
+        await _context.SaveChangesAsync();
+        await transaction.CommitAsync();
+
+        return Ok(new { message = "Hủy đơn hàng thành công." });
+      }
+      catch (Exception ex)
+      {
+        await transaction.RollbackAsync();
+        return StatusCode(500, new { message = "Không thể hủy đơn hàng. Vui lòng thử lại.", detail = ex.Message });
+      }
+    }
+
     private bool TryGetAuthenticatedCustomerId(out int customerId, out IActionResult? errorResult)
     {
       customerId = 0;
@@ -514,5 +611,10 @@ namespace CMS.Backend.Controllers
     public int Quantity { get; set; }
     public decimal UnitPrice { get; set; }
     public decimal LineTotal { get; set; }
+  }
+
+  public class CancelOrderRequestDto
+  {
+    public string Reason { get; set; } = string.Empty;
   }
 }

@@ -1,0 +1,136 @@
+@model List<CMS.Data.Entities.EmailLog>
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h5 class="mb-1"><i class="bi bi-envelope-paper-fill text-primary"></i> Nhat ky gui Email</h5>
+        <small class="text-muted">Tong: @ViewBag.TotalItems ban ghi</small>
+    </div>
+</div>
+
+<!-- Bo loc -->
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2 px-3">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <input type="text" name="keyword" class="form-control form-control-sm" placeholder="Tim theo email, ma don..." value="@ViewBag.Keyword" />
+            </div>
+            <div class="col-auto">
+                <select name="emailType" class="form-select form-select-sm">
+                    <option value="">-- Loai email --</option>
+                    <option value="OrderConfirmation" selected="@(ViewBag.EmailType == "OrderConfirmation")">Xac nhan don</option>
+                    <option value="PaymentSuccess" selected="@(ViewBag.EmailType == "PaymentSuccess")">Thanh toan</option>
+                    <option value="DeliverySuccess" selected="@(ViewBag.EmailType == "DeliverySuccess")">Giao hang</option>
+                    <option value="ForgotPassword" selected="@(ViewBag.EmailType == "ForgotPassword")">Quen mat khau</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">-- Trang thai --</option>
+                    <option value="Sent" selected="@(ViewBag.Status == "Sent")">Sent</option>
+                    <option value="Failed" selected="@(ViewBag.Status == "Failed")">Failed</option>
+                    <option value="Pending" selected="@(ViewBag.Status == "Pending")">Pending</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search"></i> Loc</button>
+                <a asp-action="Index" class="btn btn-sm btn-outline-secondary"><i class="bi bi-x-lg"></i> Xoa loc</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Bang du lieu -->
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0" style="font-size:0.83rem;">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Loai</th>
+                    <th>Nguoi nhan</th>
+                    <th>Email</th>
+                    <th>Tham chieu</th>
+                    <th>Tieu de</th>
+                    <th>Trang thai</th>
+                    <th>Thu</th>
+                    <th>Tao luc</th>
+                    <th>Gui luc</th>
+                    <th>Loi</th>
+                    <th>Thao tac</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Count == 0)
+                {
+                    <tr><td colspan="12" class="text-center text-muted py-4">Khong co ban ghi nao.</td></tr>
+                }
+                @foreach (var log in Model)
+                {
+                    <tr>
+                        <td>@log.Id</td>
+                        <td>
+                            @{
+                                var badge = log.EmailType switch
+                                {
+                                    "OrderConfirmation" => "bg-primary",
+                                    "PaymentSuccess" => "bg-success",
+                                    "DeliverySuccess" => "bg-info",
+                                    "ForgotPassword" => "bg-warning text-dark",
+                                    _ => "bg-secondary"
+                                };
+                            }
+                            <span class="badge @badge">@log.EmailType</span>
+                        </td>
+                        <td>@log.RecipientName</td>
+                        <td><small>@log.RecipientEmail</small></td>
+                        <td><small>@log.ReferenceType #@log.ReferenceId</small></td>
+                        <td><small>@(log.Subject.Length > 40 ? log.Subject[..40] + "..." : log.Subject)</small></td>
+                        <td>
+                            @{
+                                var statusBadge = log.Status switch
+                                {
+                                    "Sent" => "bg-success",
+                                    "Failed" => "bg-danger",
+                                    "Pending" => "bg-warning text-dark",
+                                    _ => "bg-secondary"
+                                };
+                            }
+                            <span class="badge @statusBadge">@log.Status</span>
+                        </td>
+                        <td>@log.RetryCount</td>
+                        <td><small>@log.CreatedAt.ToString("dd/MM HH:mm")</small></td>
+                        <td><small>@(log.SentAt?.ToString("dd/MM HH:mm") ?? "-")</small></td>
+                        <td><small class="text-danger">@(log.ErrorMessage != null && log.ErrorMessage.Length > 30 ? log.ErrorMessage[..30] + "..." : log.ErrorMessage)</small></td>
+                        <td>
+                            @if (log.Status == "Failed")
+                            {
+                                <form asp-action="Retry" method="post" class="d-inline">
+                                    <input type="hidden" name="id" value="@log.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-warning" title="Gui lai"><i class="bi bi-arrow-repeat"></i></button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Phan trang -->
+@if (ViewBag.TotalPages > 1)
+{
+    <nav class="mt-3">
+        <ul class="pagination pagination-sm justify-content-center">
+            @for (int i = 1; i <= ViewBag.TotalPages; i++)
+            {
+                <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-keyword="@ViewBag.Keyword" asp-route-emailType="@ViewBag.EmailType" asp-route-status="@ViewBag.Status">@i</a>
+                </li>
+            }
+        </ul>
+    </nav>
+}

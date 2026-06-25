@@ -7,7 +7,7 @@ import orderService from '../services/orderService';
 import authService from '../services/authService';
 import { clearStoredCustomer, getStoredCustomer } from '../utils/customerSession';
 import { getMediaUrl } from '../utils/mediaUrl';
-import { formatOrderCode, getOrderStatusMeta, ORDER_STATUS_OPTIONS } from '../utils/orderStatus';
+import { formatOrderCode, getOrderStatusMeta, ORDER_STATUS_OPTIONS, parseOrderNotes } from '../utils/orderStatus';
 
 const DEFAULT_PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 400;
@@ -389,6 +389,8 @@ function OrderHistory() {
                       {orders.map((order) => {
                         const statusMeta = getOrderStatusMeta(order.status);
                         const otherProductCount = Math.max((order.productCount || 0) - 1, 0);
+                        const parsedNotes = parseOrderNotes(order.notes);
+                        const displayPaymentMethod = order.paymentMethod || parsedNotes.paymentMethod || 'Không xác định';
 
                         return (
                           <tr key={order.id}>
@@ -437,10 +439,12 @@ function OrderHistory() {
                               </div>
                             </td>
                             <td>
-                              <span className="order-history-payment">{order.paymentMethod || 'Không xác định'}</span>
-                              <span className="order-history-payment-sub">
-                                Hệ thống hiện chưa lưu chi tiết phương thức thanh toán cho đơn này
-                              </span>
+                              <span className="order-history-payment">{displayPaymentMethod}</span>
+                              {(!order.paymentMethod && !parsedNotes.paymentMethod) && (
+                                <span className="order-history-payment-sub">
+                                  Hệ thống hiện chưa lưu chi tiết phương thức thanh toán cho đơn này
+                                </span>
+                              )}
                             </td>
                             <td>
                               <span className={`order-status-badge ${statusMeta.badgeClass}`}>
@@ -460,6 +464,8 @@ function OrderHistory() {
                   {orders.map((order) => {
                     const statusMeta = getOrderStatusMeta(order.status);
                     const otherProductCount = Math.max((order.productCount || 0) - 1, 0);
+                    const parsedNotes = parseOrderNotes(order.notes);
+                    const displayPaymentMethod = order.paymentMethod || parsedNotes.paymentMethod || 'Không xác định';
 
                     return (
                       <article className="order-history-mobile-card" key={order.id}>
@@ -490,7 +496,7 @@ function OrderHistory() {
                             {otherProductCount > 0 && (
                               <div className="order-history-mobile-meta">Và {otherProductCount} sản phẩm khác</div>
                             )}
-                            <div className="order-history-mobile-meta">Thanh toán: {order.paymentMethod || 'Không xác định'}</div>
+                            <div className="order-history-mobile-meta">Thanh toán: {displayPaymentMethod}</div>
                           </div>
                         </div>
 

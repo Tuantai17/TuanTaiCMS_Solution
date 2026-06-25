@@ -4,8 +4,8 @@
 @{
     ViewData["Title"] = "Cập nhật trạng thái đơn hàng";
     Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
-    var currentStatusText = Model.Status switch { 0 => "Chờ duyệt", 1 => "Đang giao", 2 => "Hoàn thành", 3 => "Đã hủy", _ => "Không xác định" };
-    var currentBadgeClass = Model.Status switch { 0 => "bg-warning text-dark", 1 => "bg-primary", 2 => "bg-success", 3 => "bg-danger", _ => "bg-secondary" };
+    var currentStatusText = Model.Status switch { 0 => "Chờ duyệt", 1 => "Đã duyệt", 2 => "Đang chuẩn bị hàng", 3 => "Đang giao hàng", 4 => "Hoàn thành", 5 => "Đã hủy", _ => "Không xác định" };
+    var currentBadgeClass = Model.Status switch { 0 => "bg-warning text-dark", 1 => "bg-info text-dark", 2 => "bg-primary", 3 => "bg-primary", 4 => "bg-success", 5 => "bg-danger", _ => "bg-secondary" };
 
     // Phân tích ghi chú lấy thông tin nhận hàng thực tế
     string recipientName = "";
@@ -162,9 +162,11 @@
                                 <label asp-for="Status" class="form-label fw-bold">Cập nhật trạng thái đơn hàng: <span class="text-danger">*</span></label>
                                 <select asp-for="Status" class="form-select form-select-lg" id="status-select">
                                     <option value="0">⏳ Chờ duyệt (Pending)</option>
-                                    <option value="1">🚚 Đang giao hàng (Shipping)</option>
-                                    <option value="2">✅ Hoàn thành (Completed)</option>
-                                    <option value="3">❌ Đã hủy (Cancelled)</option>
+                                    <option value="1">📋 Đã duyệt (Confirmed)</option>
+                                    <option value="2">📦 Đang chuẩn bị hàng (Processing)</option>
+                                    <option value="3">🚚 Đang giao hàng (Shipping)</option>
+                                    <option value="4">✅ Hoàn thành (Completed)</option>
+                                    <option value="5">❌ Đã hủy (Cancelled)</option>
                                 </select>
                                 <div class="form-text text-muted mt-2">
                                     <i class="bi bi-info-circle me-1"></i> Chọn trạng thái mới rồi nhấn "Cập nhật" để lưu thay đổi.

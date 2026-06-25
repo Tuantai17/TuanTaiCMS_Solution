@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
 
 /* Reset & Variables */
 :root {
@@ -12,13 +12,11 @@
   --mk-gray-200: #E9ECEF;
   --mk-gray-600: #6C757D;
   --mk-gray-800: #343A40;
-  --mk-font: 'Outfit', sans-serif;
   --header-height: 140px;
 }
 
 /* Base Styles */
 .main-header-wrapper {
-  font-family: var(--mk-font);
   width: 100%;
   position: relative;
   z-index: 1000;

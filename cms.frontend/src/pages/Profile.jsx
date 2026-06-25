@@ -371,7 +371,15 @@ const Profile = () => {
                 </div>
                 <div className="profile-form-group">
                   <label>Địa chỉ mặc định</label>
-                  <input type="text" className="profile-form-input" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Nhập địa chỉ..." />
+                  <textarea 
+                    className="profile-form-input" 
+                    value={defaultAddressObj ? `${defaultAddressObj.addressLine}, ${defaultAddressObj.wardName}, ${defaultAddressObj.districtName}, ${defaultAddressObj.provinceName}` : address} 
+                    readOnly 
+                    rows={2}
+                    style={{ background: '#f8f9fa', cursor: 'not-allowed', resize: 'none', height: 'auto', lineHeight: '1.4' }}
+                    title="Vui lòng cập nhật trong mục Sổ địa chỉ nhận hàng"
+                    placeholder="Chưa thiết lập địa chỉ mặc định..." 
+                  />
                 </div>
               </div>
 

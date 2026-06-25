@@ -6,7 +6,8 @@ const DEFAULT_AVATAR = 'https://ui-avatars.com/api/?background=c80f1e&color=fff&
 
 const MENU_ITEMS = [
   { key: 'info', label: 'Thông tin tài khoản', icon: 'fa-solid fa-user' },
-  { key: 'address', label: 'Sổ địa chỉ', icon: 'fa-solid fa-location-dot' },
+  { key: 'notifications', label: 'Thông báo', icon: 'fa-regular fa-bell' },
+  { key: 'address', label: 'Địa chỉ nhận hàng', icon: 'fa-solid fa-location-dot' },
   { key: 'order-history', label: 'Lịch sử mua hàng', icon: 'fa-solid fa-clock-rotate-left' },
   { key: 'change-password', label: 'Đổi mật khẩu', icon: 'fa-solid fa-key' },
   { key: 'logout', label: 'Đăng xuất', icon: 'fa-solid fa-right-from-bracket', isLogout: true },
@@ -23,6 +24,11 @@ function AccountSidebar({ activeKey, customer, onLogout }) {
 
     if (key === 'info') {
       navigate('/profile');
+      return;
+    }
+
+    if (key === 'notifications') {
+      navigate('/notifications');
       return;
     }
 

@@ -63,6 +63,21 @@ body {
   color: #adb5bd;
   background: var(--admin-sidebar);
   box-shadow: none;
+  overflow-y: auto;
+}
+
+.admin-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+.admin-sidebar::-webkit-scrollbar-track {
+  background: var(--admin-sidebar);
+}
+.admin-sidebar::-webkit-scrollbar-thumb {
+  background: #3a3f44;
+  border-radius: 4px;
+}
+.admin-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #4f555b;
 }
 
 .admin-brand {

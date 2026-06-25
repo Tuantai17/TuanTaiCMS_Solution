@@ -19,6 +19,12 @@ const orderService = {
     return axiosClient.get(url);
   },
 
+  // API hủy đơn hàng của khách đang đăng nhập
+  cancelMyOrder: (id, reason) => {
+    const url = `/Orders/my/${id}/cancel`;
+    return axiosClient.put(url, { reason });
+  },
+
   // Giữ lại API cũ để tránh ảnh hưởng các phần khác nếu đang dùng
   getCustomerOrders: (customerId) => {
     const url = `/Orders/customer/${customerId}`;

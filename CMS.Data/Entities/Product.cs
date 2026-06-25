@@ -43,6 +43,11 @@ namespace CMS.Data.Entities
         // Trang thai san pham ban chay (bat on se uu tien hien thi o section Ban chay tren trang chu)
         public bool IsBestSelling { get; set; } = false;
 
+        // Số thứ tự hiển thị riêng biệt cho từng trạng thái (0: mặc định theo ID mới nhất, >0: số nhỏ xếp trên)
+        public int DisplayOrderNew { get; set; } = 0;
+        public int DisplayOrderSale { get; set; } = 0;
+        public int DisplayOrderBestSelling { get; set; } = 0;
+
         // Khoa ngoai noi toi CategoryProduct
         public int CategoryProductId { get; set; }
 
