@@ -80,6 +80,18 @@ Mô tả: Trang danh sách sản phẩm trong khu vực quản trị (có phân 
                         }
                     </select>
                 </div>
+
+                <div class="vr text-muted opacity-25 d-none d-sm-block"></div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <label class="form-label mb-0 text-muted small d-none d-md-block">Tình trạng kho</label>
+                    <div class="btn-group btn-group-sm" role="group" aria-label="Stock filter">
+                        <button type="button" class="btn @(string.IsNullOrEmpty(ViewBag.StockStatus) ? "btn-primary" : "btn-outline-primary") stock-filter-btn" data-value="">Tất cả</button>
+                        <button type="button" class="btn @(ViewBag.StockStatus == "low" ? "btn-warning" : "btn-outline-warning") stock-filter-btn" data-value="low">Gần hết</button>
+                        <button type="button" class="btn @(ViewBag.StockStatus == "out" ? "btn-danger" : "btn-outline-danger") stock-filter-btn" data-value="out">Hết hàng</button>
+                    </div>
+                    <input type="hidden" id="stockFilter" value="@ViewBag.StockStatus" />
+                </div>
             </div>
             <div class="text-muted small">
                 Hiển thị <strong>@startItem–@endItem</strong> trên tổng <strong>@totalItems</strong> sản phẩm
@@ -240,7 +252,7 @@ Mô tả: Trang danh sách sản phẩm trong khu vực quản trị (có phân 
                     <ul class="pagination pagination-sm mb-0">
                         @* Nút Đầu *@
                         <li class="page-item @(currentPage == 1 ? "disabled" : "")">
-                            <a class="page-link" asp-action="Index" asp-route-page="1" asp-route-pageSize="@pageSize" asp-route-categoryId="@ViewBag.SelectedCategoryId"
+                            <a class="page-link" asp-action="Index" asp-route-page="1" asp-route-pageSize="@pageSize" asp-route-categoryId="@ViewBag.SelectedCategoryId" asp-route-stockStatus="@ViewBag.StockStatus"
                                title="Trang đầu">
                                 <i class="bi bi-chevron-double-left"></i>
                             </a>
@@ -248,7 +260,7 @@ Mô tả: Trang danh sách sản phẩm trong khu vực quản trị (có phân 
 
                         @* Nút Trước *@
                         <li class="page-item @(currentPage == 1 ? "disabled" : "")">
-                            <a class="page-link" asp-action="Index" asp-route-page="@(currentPage - 1)" asp-route-pageSize="@pageSize" asp-route-categoryId="@ViewBag.SelectedCategoryId"
+                            <a class="page-link" asp-action="Index" asp-route-page="@(currentPage - 1)" asp-route-pageSize="@pageSize" asp-route-categoryId="@ViewBag.SelectedCategoryId" asp-route-stockStatus="@ViewBag.StockStatus"
                                title="Trang trước">
                                 <i class="bi bi-chevron-left"></i>
                             </a>
@@ -264,13 +276,13 @@ Mô tả: Trang danh sách sản phẩm trong khu vực quản trị (có phân 
                         @for (int i = startPage; i <= endPage; i++)
                         {
                             <li class="page-item @(i == currentPage ? "active" : "")">
-                                <a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-pageSize="@pageSize" asp-route-categoryId="@ViewBag.SelectedCategoryId">@i</a>
+                                <a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-pageSize="@pageSize" asp-route-categoryId="@ViewBag.SelectedCategoryId" asp-route-stockStatus="@ViewBag.StockStatus">@i</a>
                             </li>
                         }
 
                         @* Nút Sau *@
                         <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
-                            <a class="page-link" asp-action="Index" asp-route-page="@(currentPage + 1)" asp-route-pageSize="@pageSize" asp-route-categoryId="@ViewBag.SelectedCategoryId"
+                            <a class="page-link" asp-action="Index" asp-route-page="@(currentPage + 1)" asp-route-pageSize="@pageSize" asp-route-categoryId="@ViewBag.SelectedCategoryId" asp-route-stockStatus="@ViewBag.StockStatus"
                                title="Trang sau">
                                 <i class="bi bi-chevron-right"></i>
                             </a>
@@ -278,7 +290,7 @@ Mô tả: Trang danh sách sản phẩm trong khu vực quản trị (có phân 
 
                         @* Nút Cuối *@
                         <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
-                            <a class="page-link" asp-action="Index" asp-route-page="@totalPages" asp-route-pageSize="@pageSize" asp-route-categoryId="@ViewBag.SelectedCategoryId"
+                            <a class="page-link" asp-action="Index" asp-route-page="@totalPages" asp-route-pageSize="@pageSize" asp-route-categoryId="@ViewBag.SelectedCategoryId" asp-route-stockStatus="@ViewBag.StockStatus"
                                title="Trang cuối">
                                 <i class="bi bi-chevron-double-right"></i>
                             </a>
@@ -340,16 +352,23 @@ document.addEventListener("DOMContentLoaded", function () {
     // ========================
     // PHẦN 1: PHÂN TRANG & LỌC
     // ========================
-    document.getElementById('pageSizeSelector').addEventListener('change', function () {
-        const pageSize = this.value;
-        const categoryId = '@ViewBag.SelectedCategoryId' || '';
-        window.location.href = '@Url.Action("Index")' + '?page=1&pageSize=' + pageSize + (categoryId ? '&categoryId=' + categoryId : '');
-    });
+    function applyFilters(page) {
+        const pageSize = document.getElementById('pageSizeSelector').value;
+        const categoryId = document.getElementById('categoryFilter').value;
+        const stockStatus = document.getElementById('stockFilter').value;
+        let url = '@Url.Action("Index")' + '?page=' + page + '&pageSize=' + pageSize;
+        if (categoryId) url += '&categoryId=' + categoryId;
+        if (stockStatus) url += '&stockStatus=' + stockStatus;
+        window.location.href = url;
+    }
 
-    document.getElementById('categoryFilter').addEventListener('change', function () {
-        const categoryId = this.value;
-        const pageSize = '@ViewBag.PageSize';
-        window.location.href = '@Url.Action("Index")' + '?page=1&pageSize=' + pageSize + (categoryId ? '&categoryId=' + categoryId : '');
+    document.getElementById('pageSizeSelector').addEventListener('change', function () { applyFilters(1); });
+    document.getElementById('categoryFilter').addEventListener('change', function () { applyFilters(1); });
+    document.querySelectorAll('.stock-filter-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.getElementById('stockFilter').value = this.getAttribute('data-value');
+            applyFilters(1);
+        });
     });
 
     // ========================

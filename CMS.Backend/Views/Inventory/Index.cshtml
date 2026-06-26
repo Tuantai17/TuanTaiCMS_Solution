@@ -1,0 +1,478 @@
+@model IEnumerable<CMS.Data.Entities.Inventory>
+@{
+    ViewData["Title"] = "Quản lý kho";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+
+    int totalItems = ViewBag.TotalItems ?? 0;
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int pageSize = ViewBag.PageSize ?? 10;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    int startItem = totalItems == 0 ? 0 : (currentPage - 1) * pageSize + 1;
+    int endItem = Math.Min(currentPage * pageSize, totalItems);
+
+    string GetStockStatusLabel(int currentStock, int reservedStock, int alertThreshold)
+    {
+        int available = Math.Max(currentStock - reservedStock, 0);
+        if (available <= 0) return "Hết hàng";
+        if (available <= alertThreshold) return "Sắp hết";
+        return "Còn hàng";
+    }
+
+    string GetStockStatusBadge(int currentStock, int reservedStock, int alertThreshold)
+    {
+        int available = Math.Max(currentStock - reservedStock, 0);
+        if (available <= 0) return "bg-danger text-white";
+        if (available <= alertThreshold) return "bg-warning text-dark";
+        return "bg-success text-white";
+    }
+}
+
+<style>
+    /* Add specific styles for the inventory page */
+    .stat-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+    .stat-info h3 {
+        font-size: 13px;
+        text-transform: uppercase;
+        color: #6b7280;
+        margin: 0 0 4px 0;
+        font-weight: 600;
+    }
+    .stat-info p.val {
+        font-size: 24px;
+        font-weight: 700;
+        margin: 0;
+        color: #172033;
+    }
+    .stat-info p.desc {
+        font-size: 12px;
+        color: #6b7280;
+        margin: 4px 0 0 0;
+    }
+    .admin-page-title {
+        display: none !important; /* Xóa H1 thừa từ Layout */
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h4 mb-1 fw-bold">QUẢN LÝ KHO</h2>
+        <p class="text-muted mb-0 small">Quản lý tồn kho, số lượng đang giữ và tình trạng hàng hóa.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-primary" onclick="openBulkImportModal()">
+            <i class="bi bi-box-arrow-in-down"></i> Nhập kho
+        </button>
+        <button class="btn btn-success" onclick="openBulkExportModal()">
+            <i class="bi bi-box-arrow-up"></i> Xuất kho
+        </button>
+        <a class="btn" style="background-color: #6f42c1; color: white;" asp-action="History">
+            <i class="bi bi-clock-history"></i> Lịch sử kho
+        </a>
+        <button class="btn btn-outline-success bg-white">
+            <i class="bi bi-file-earmark-excel"></i> Xuất Excel
+        </button>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-2 col-sm-6">
+        <div class="stat-card">
+            <div class="stat-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-box-seam"></i></div>
+            <div class="stat-info">
+                <h3>Tổng SKU</h3>
+                <p class="val">@ViewBag.TotalSku</p>
+                <p class="desc">Sản phẩm đang KD</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6">
+        <div class="stat-card">
+            <div class="stat-icon bg-success bg-opacity-10 text-success"><i class="bi bi-check-circle"></i></div>
+            <div class="stat-info">
+                <h3>Còn hàng</h3>
+                <p class="val">@ViewBag.InStock</p>
+                <p class="desc">Sản phẩm</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6">
+        <div class="stat-card">
+            <div class="stat-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-exclamation-circle"></i></div>
+            <div class="stat-info">
+                <h3>Sắp hết</h3>
+                <p class="val">@ViewBag.LowStock</p>
+                <p class="desc">Dưới cảnh báo</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card">
+            <div class="stat-icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-x-circle"></i></div>
+            <div class="stat-info">
+                <h3>Hết hàng</h3>
+                <p class="val">@ViewBag.OutOfStock</p>
+                <p class="desc">Sản phẩm</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-12">
+        <div class="stat-card">
+            <div class="stat-icon bg-info bg-opacity-10 text-info" style="color: #6f42c1 !important; background-color: rgba(111,66,193,0.1) !important;"><i class="bi bi-currency-dollar"></i></div>
+            <div class="stat-info">
+                <h3>Giá trị tồn kho</h3>
+                <p class="val">@(((decimal)ViewBag.TotalValue).ToString("N0")) đ</p>
+                <p class="desc">Theo giá vốn</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+        <form method="get" action="@Url.Action("Index")" class="d-flex flex-wrap gap-2 align-items-center mb-3">
+            <div class="input-group input-group-sm" style="max-width: 300px;">
+                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                <input type="text" name="keyword" class="form-control" placeholder="Tìm theo tên sản phẩm / SKU..." value="@ViewBag.Keyword" />
+            </div>
+            
+            <select name="categoryId" class="form-select form-select-sm" style="width: auto;" asp-items="@ViewBag.CategoryList">
+                <option value="">-- Tất cả danh mục --</option>
+            </select>
+
+            <div class="btn-group btn-group-sm" role="group">
+                <a href="@Url.Action("Index", new { keyword = ViewBag.Keyword, categoryId = ViewBag.CategoryId, stockStatus = "" })" class="btn @(string.IsNullOrEmpty(ViewBag.StockStatus) ? "btn-primary" : "btn-outline-primary")">Tất cả</a>
+                <a href="@Url.Action("Index", new { keyword = ViewBag.Keyword, categoryId = ViewBag.CategoryId, stockStatus = "in" })" class="btn @(ViewBag.StockStatus == "in" ? "btn-success" : "btn-outline-success")">Còn hàng</a>
+                <a href="@Url.Action("Index", new { keyword = ViewBag.Keyword, categoryId = ViewBag.CategoryId, stockStatus = "low" })" class="btn @(ViewBag.StockStatus == "low" ? "btn-warning" : "btn-outline-warning")">Sắp hết</a>
+                <a href="@Url.Action("Index", new { keyword = ViewBag.Keyword, categoryId = ViewBag.CategoryId, stockStatus = "out" })" class="btn @(ViewBag.StockStatus == "out" ? "btn-danger" : "btn-outline-danger")">Hết hàng</a>
+            </div>
+
+            <a href="@Url.Action("Index")" class="btn btn-light btn-sm border"><i class="bi bi-arrow-clockwise"></i> Làm mới</a>
+        </form>
+
+        <div class="d-flex bg-light p-2 rounded mb-3 gap-2 align-items-center">
+            <input type="checkbox" class="form-check-input ms-2" id="selectAll" />
+            <span class="small ms-2">Đã chọn <strong id="selectedCountText">0</strong> / @totalItems sản phẩm</span>
+            <div class="vr mx-2"></div>
+            <button class="btn btn-sm btn-outline-primary" onclick="openBulkImportModal()" id="btnBulkImport" disabled><i class="bi bi-box-arrow-in-down"></i> Nhập kho</button>
+            <button class="btn btn-sm btn-outline-success" onclick="openBulkExportModal()" id="btnBulkExport" disabled><i class="bi bi-box-arrow-up"></i> Xuất kho</button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th></th>
+                        <th>Mã SP</th>
+                        <th>Ảnh</th>
+                        <th>Tên sản phẩm</th>
+                        <th>Danh mục</th>
+                        <th class="text-center">Tồn hiện tại</th>
+                        <th class="text-center">Đang giữ</th>
+                        <th class="text-center">Có thể bán</th>
+                        <th class="text-center">Ngưỡng</th>
+                        <th>Tình trạng</th>
+                        <th>Cập nhật</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="12" class="text-center py-4">Không tìm thấy sản phẩm tồn kho phù hợp.</td>
+                        </tr>
+                    }
+                    @foreach (var item in Model)
+                    {
+                        string statusLabel = GetStockStatusLabel(item.CurrentStock, item.ReservedStock, item.AlertThreshold);
+                        string badgeClass = GetStockStatusBadge(item.CurrentStock, item.ReservedStock, item.AlertThreshold);
+                        
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="form-check-input product-checkbox" value="@item.Id" 
+                                       data-name="@item.Product.Name" 
+                                       data-sku="SP-@item.ProductId.ToString("D4")"
+                                       data-img="@(string.IsNullOrEmpty(item.Product.ImageUrl) ? "/images/placeholder.jpg" : item.Product.ImageUrl)"
+                                       data-stock="@item.AvailableStock" />
+                            </td>
+                            <td><small class="text-muted">#@item.ProductId</small></td>
+                            <td>
+                                <img src="@(string.IsNullOrEmpty(item.Product.ImageUrl) ? "/images/placeholder.jpg" : item.Product.ImageUrl)" alt="" style="width: 48px; height: 48px; object-fit: contain; border-radius: 6px; border: 1px solid #ddd;" />
+                            </td>
+                            <td>
+                                <div class="fw-bold text-truncate" style="max-width: 200px;" title="@item.Product.Name">@item.Product.Name</div>
+                                <div class="small text-muted">SKU: SP-@item.ProductId.ToString("D4")</div>
+                            </td>
+                            <td><small>@(item.Product.CategoryProduct?.Name ?? "")</small></td>
+                            <td class="text-center fw-bold text-primary">@item.CurrentStock</td>
+                            <td class="text-center">@item.ReservedStock</td>
+                            <td class="text-center fw-bold text-success">@item.AvailableStock</td>
+                            <td class="text-center">@item.AlertThreshold</td>
+                            <td>
+                                <span class="badge rounded-pill @badgeClass"><i class="bi bi-circle-fill" style="font-size:8px;"></i> @statusLabel</span>
+                            </td>
+                            <td>
+                                <small class="d-block">@item.UpdatedAt.ToString("dd/MM/yyyy")</small>
+                                <small class="text-muted">@item.UpdatedAt.ToString("HH:mm")</small>
+                            </td>
+                            <td>
+                                <div class="d-flex gap-1">
+                                    <button class="btn btn-sm btn-outline-primary btn-action" onclick="openImportModal(@item.Id)" title="Nhập kho"><i class="bi bi-box-arrow-in-down"></i></button>
+                                    <button class="btn btn-sm btn-outline-success btn-action" onclick="openExportModal(@item.Id)" title="Xuất kho"><i class="bi bi-box-arrow-up"></i></button>
+                                    <button class="btn btn-sm btn-outline-secondary btn-action" onclick="openAdjustModal(@item.Id, @item.CurrentStock, @item.AlertThreshold, '@item.Product.Name')" title="Điều chỉnh"><i class="bi bi-pencil"></i></button>
+                                    <a href="@Url.Action("History", new { productId = item.ProductId })" class="btn btn-sm btn-outline-info btn-action" title="Lịch sử"><i class="bi bi-clock-history"></i></a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination (Same as existing ones) -->
+        <div class="d-flex justify-content-between align-items-center mt-3 border-top pt-3">
+            <div class="small text-muted">
+                Hiển thị <strong>@startItem–@endItem</strong> trên tổng <strong>@totalItems</strong> sản phẩm
+            </div>
+            @if (totalPages > 1)
+            {
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                        <a class="page-link" href="@Url.Action("Index", new { page = currentPage - 1, pageSize, keyword = ViewBag.Keyword, categoryId = ViewBag.CategoryId, stockStatus = ViewBag.StockStatus })">Trước</a>
+                    </li>
+                    @for (int i = 1; i <= totalPages; i++)
+                    {
+                        <li class="page-item @(i == currentPage ? "active" : "")">
+                            <a class="page-link" href="@Url.Action("Index", new { page = i, pageSize, keyword = ViewBag.Keyword, categoryId = ViewBag.CategoryId, stockStatus = ViewBag.StockStatus })">@i</a>
+                        </li>
+                    }
+                    <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                        <a class="page-link" href="@Url.Action("Index", new { page = currentPage + 1, pageSize, keyword = ViewBag.Keyword, categoryId = ViewBag.CategoryId, stockStatus = ViewBag.StockStatus })">Sau</a>
+                    </li>
+                </ul>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<div class="modal fade" id="adjustModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="@Url.Action("Adjust")">
+                <div class="modal-header">
+                    <h5 class="modal-title">Điều chỉnh tồn kho</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="inventoryId" id="adj_inventoryId" />
+                    <div class="mb-3">
+                        <label class="form-label">Sản phẩm</label>
+                        <input type="text" class="form-control" id="adj_productName" readonly />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tồn kho mới</label>
+                        <input type="number" name="newCurrentStock" id="adj_currentStock" class="form-control" min="0" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ngưỡng cảnh báo</label>
+                        <input type="number" name="newAlertThreshold" id="adj_alertThreshold" class="form-control" min="0" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Lý do điều chỉnh</label>
+                        <input type="text" name="reason" class="form-control" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="importModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="@Url.Action("Import")">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nhập kho</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3" id="importProductList">
+                        <label class="form-label">Sản phẩm đã chọn</label>
+                        <div class="form-control bg-light" id="importSelectedText">0 sản phẩm</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Số lượng nhập</label>
+                        <input type="number" name="quantity" class="form-control" min="1" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Giá vốn (đơn giá)</label>
+                        <input type="number" name="unitCost" class="form-control" min="0" value="0" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ghi chú / Mã phiếu</label>
+                        <input type="text" name="note" class="form-control" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Xác nhận nhập kho</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="exportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="@Url.Action("Export")">
+                <div class="modal-header">
+                    <h5 class="modal-title">Xuất kho</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3" id="exportProductList">
+                        <label class="form-label">Sản phẩm đã chọn</label>
+                        <div class="form-control bg-light" id="exportSelectedText">0 sản phẩm</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Số lượng xuất</label>
+                        <input type="number" name="quantity" class="form-control" min="1" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ghi chú / Lý do xuất</label>
+                        <input type="text" name="note" class="form-control" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-success">Xác nhận xuất kho</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openAdjustModal(id, stock, threshold, name) {
+            document.getElementById('adj_inventoryId').value = id;
+            document.getElementById('adj_currentStock').value = stock;
+            document.getElementById('adj_alertThreshold').value = threshold;
+            document.getElementById('adj_productName').value = name;
+            var modal = new bootstrap.Modal(document.getElementById('adjustModal'));
+            modal.show();
+        }
+
+        function renderSelectedProductsHtml(ids) {
+            let html = '<label class="form-label">Sản phẩm đã chọn (' + ids.length + ')</label>';
+            html += '<div class="list-group mb-2 shadow-sm" style="max-height: 250px; overflow-y: auto;">';
+            
+            ids.forEach(id => {
+                const cb = document.querySelector('.product-checkbox[value="' + id + '"]');
+                if (cb) {
+                    const name = cb.getAttribute('data-name');
+                    const img = cb.getAttribute('data-img');
+                    const sku = cb.getAttribute('data-sku');
+                    const stock = cb.getAttribute('data-stock');
+                    
+                    html += `
+                        <div class="list-group-item d-flex align-items-center gap-3 p-2 bg-light">
+                            <img src="${img}" style="width: 48px; height: 48px; object-fit: contain; border: 1px solid #ddd; border-radius: 4px; background: white;" />
+                            <div>
+                                <div class="fw-bold text-dark text-truncate" style="max-width: 300px; font-size: 13px;" title="${name}">${name}</div>
+                                <div class="text-muted mt-1" style="font-size: 11px;">SKU: ${sku} <span class="mx-1">|</span> Có thể bán: <span class="fw-bold text-success">${stock}</span></div>
+                            </div>
+                        </div>
+                    `;
+                }
+                html += '<input type="hidden" name="inventoryIds" value="' + id + '" />';
+            });
+            html += '</div>';
+            return html;
+        }
+
+        function openImportModal(ids) {
+            if (!Array.isArray(ids)) ids = [ids];
+            if (ids.length === 0) {
+                alert("Vui lòng chọn ít nhất 1 sản phẩm.");
+                return;
+            }
+            const container = document.getElementById('importProductList');
+            container.innerHTML = renderSelectedProductsHtml(ids);
+            var modal = new bootstrap.Modal(document.getElementById('importModal'));
+            modal.show();
+        }
+
+        function openExportModal(ids) {
+            if (!Array.isArray(ids)) ids = [ids];
+            if (ids.length === 0) {
+                alert("Vui lòng chọn ít nhất 1 sản phẩm.");
+                return;
+            }
+            const container = document.getElementById('exportProductList');
+            container.innerHTML = renderSelectedProductsHtml(ids);
+            var modal = new bootstrap.Modal(document.getElementById('exportModal'));
+            modal.show();
+        }
+
+        function openBulkImportModal() {
+            const checkboxes = document.querySelectorAll('.product-checkbox:checked');
+            const ids = Array.from(checkboxes).map(cb => cb.value);
+            openImportModal(ids);
+        }
+
+        function openBulkExportModal() {
+            const checkboxes = document.querySelectorAll('.product-checkbox:checked');
+            const ids = Array.from(checkboxes).map(cb => cb.value);
+            openExportModal(ids);
+        }
+
+        // Checkbox logic for selecting products
+        const selectAll = document.getElementById('selectAll');
+        const checkboxes = document.querySelectorAll('.product-checkbox');
+        const selectedCount = document.getElementById('selectedCountText');
+        const btnBulkImport = document.getElementById('btnBulkImport');
+        const btnBulkExport = document.getElementById('btnBulkExport');
+
+        if(selectAll) {
+            selectAll.addEventListener('change', function() {
+                checkboxes.forEach(cb => cb.checked = this.checked);
+                updateCount();
+            });
+        }
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', updateCount);
+        });
+
+        function updateCount() {
+            const count = document.querySelectorAll('.product-checkbox:checked').length;
+            if(selectedCount) selectedCount.innerText = count;
+            if (btnBulkImport) btnBulkImport.disabled = count === 0;
+            if (btnBulkExport) btnBulkExport.disabled = count === 0;
+        }
+    </script>
+}

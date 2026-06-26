@@ -119,21 +119,21 @@ Chú thích chi tiết:
 
         <nav class="admin-nav" aria-label="Menu quan tri chinh">
             <!-- Tong quan -->
-            <span class="admin-nav__group-label" style="display:block;padding:10px 16px 4px;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);font-weight:600;">Tong quan</span>
+            <span class="admin-nav__group-label" style="display:block;padding:10px 16px 4px;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);font-weight:600;">Tổng quan</span>
             <a id="nav-dashboard" class="admin-nav__link @IsActive("Home", "Index")" asp-controller="Home" asp-action="Index">
                 <i class="bi bi-speedometer2"></i>
-                <span>Bang dieu khien</span>
+                <span>Bảng điều khiển</span>
             </a>
 
             <!-- Quan ly noi dung -->
-            <span class="admin-nav__group-label" style="display:block;padding:18px 16px 4px;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);font-weight:600;">Quan ly noi dung</span>
+            <span class="admin-nav__group-label" style="display:block;padding:18px 16px 4px;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);font-weight:600;">Quản lý nội dung</span>
             <a id="nav-category" class="admin-nav__link @IsActive("Category")" asp-controller="Category" asp-action="Index">
                 <i class="bi bi-grid-1x2-fill"></i>
-                <span>Danh muc bai viet</span>
+                <span>Danh mục bài viết</span>
             </a>
             <a id="nav-post" class="admin-nav__link @IsActive("Post")" asp-controller="Post" asp-action="Index">
                 <i class="bi bi-file-earmark-text-fill"></i>
-                <span>Bai viet</span>
+                <span>Bài viết</span>
             </a>
             <a id="nav-menu" class="admin-nav__link @IsActive("Menu")" asp-controller="Menu" asp-action="Index">
                 <i class="bi bi-compass-fill"></i>
@@ -145,43 +145,47 @@ Chú thích chi tiết:
             </a>
 
             <!-- Quan ly san pham -->
-            <span class="admin-nav__group-label" style="display:block;padding:18px 16px 4px;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);font-weight:600;">Quan ly san pham</span>
+            <span class="admin-nav__group-label" style="display:block;padding:18px 16px 4px;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);font-weight:600;">Quản lý sản phẩm</span>
             <a id="nav-category-product" class="admin-nav__link @IsActive("CategoryProduct")" asp-controller="CategoryProduct" asp-action="Index">
                 <i class="bi bi-tags-fill"></i>
-                <span>Danh muc san pham</span>
+                <span>Danh mục sản phẩm</span>
             </a>
             <a id="nav-product" class="admin-nav__link @IsActive("Product")" asp-controller="Product" asp-action="Index">
                 <i class="bi bi-box-seam-fill"></i>
-                <span>San pham</span>
+                <span>Sản phẩm</span>
+            </a>
+            <a id="nav-inventory" class="admin-nav__link @IsActive("Inventory")" asp-controller="Inventory" asp-action="Index">
+                <i class="bi bi-box2-fill"></i>
+                <span>Kho sản phẩm</span>
             </a>
 
             <!-- Quan ly tai khoan -->
-            <span class="admin-nav__group-label" style="display:block;padding:18px 16px 4px;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);font-weight:600;">Quan ly tai khoan</span>
+            <span class="admin-nav__group-label" style="display:block;padding:18px 16px 4px;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);font-weight:600;">Quản lý tài khoản</span>
             <a id="nav-user" class="admin-nav__link @IsActive("User")" asp-controller="User" asp-action="Index">
                 <i class="bi bi-people-fill"></i>
-                <span>Admin / Nhan vien</span>
+                <span>Admin / Nhân viên</span>
             </a>
             <a id="nav-customer" class="admin-nav__link @IsActive("Customer")" asp-controller="Customer" asp-action="Index">
                 <i class="bi bi-person-badge-fill"></i>
-                <span>Khach hang</span>
+                <span>Khách hàng</span>
             </a>
 
             <!-- Quan ly ban hang -->
-            <span class="admin-nav__group-label" style="display:block;padding:18px 16px 4px;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);font-weight:600;">Quan ly ban hang</span>
+            <span class="admin-nav__group-label" style="display:block;padding:18px 16px 4px;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);font-weight:600;">Quản lý bán hàng</span>
             <a id="nav-order" class="admin-nav__link @IsActive("Order")" asp-controller="Order" asp-action="Index">
                 <i class="bi bi-cart-check-fill"></i>
-                <span>Don hang</span>
+                <span>Đơn hàng</span>
             </a>
 
             <!-- Thong bao va Email -->
-            <span class="admin-nav__group-label" style="display:block;padding:18px 16px 4px;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);font-weight:600;">Thong bao & Email</span>
+            <span class="admin-nav__group-label" style="display:block;padding:18px 16px 4px;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);font-weight:600;">Thông báo & Email</span>
             <a id="nav-notification" class="admin-nav__link @IsActive("Notification")" asp-controller="Notification" asp-action="Index">
                 <i class="bi bi-bell-fill"></i>
-                <span>Thong bao</span>
+                <span>Thông báo</span>
             </a>
             <a id="nav-emaillog" class="admin-nav__link @IsActive("EmailLog")" asp-controller="EmailLog" asp-action="Index">
                 <i class="bi bi-envelope-paper-fill"></i>
-                <span>Nhat ky gui email</span>
+                <span>Nhật ký gửi email</span>
             </a>
         </nav>
 

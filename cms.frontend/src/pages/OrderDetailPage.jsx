@@ -379,7 +379,11 @@ function OrderDetailPage() {
                   <div className="shipping-info-row">
                     <div className="info-lbl">Trạng thái</div>
                     <div className="info-val">
-                      <span className="payment-badge unpaid">Chưa thanh toán</span>
+                      {order?.status === 4 ? (
+                        <span className="payment-badge paid">Đã thanh toán</span>
+                      ) : (
+                        <span className="payment-badge unpaid">Chưa thanh toán</span>
+                      )}
                     </div>
                   </div>
 

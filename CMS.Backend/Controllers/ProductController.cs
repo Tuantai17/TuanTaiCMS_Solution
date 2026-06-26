@@ -30,7 +30,7 @@ namespace CMS.Backend.Controllers
         // categoryId: mã danh mục cần lọc (mặc định = null là không lọc)
         // page: trang hiện tại (mặc định = 1)
         // pageSize: số sản phẩm mỗi trang (mặc định = 10)
-        public IActionResult Index(int? categoryId = null, int page = 1, int pageSize = 10)
+        public IActionResult Index(int? categoryId = null, string? stockStatus = null, int page = 1, int pageSize = 10)
         {
             // Đảm bảo giá trị hợp lệ
             if (page < 1) page = 1;
@@ -41,6 +41,19 @@ namespace CMS.Backend.Controllers
             if (categoryId.HasValue)
             {
                 query = query.Where(p => p.CategoryProductId == categoryId.Value);
+            }
+
+            // Lọc sản phẩm theo tình trạng kho
+            if (!string.IsNullOrEmpty(stockStatus))
+            {
+                if (stockStatus == "low")
+                {
+                    query = query.Where(p => p.StockQuantity > 0 && p.StockQuantity <= 10);
+                }
+                else if (stockStatus == "out")
+                {
+                    query = query.Where(p => p.StockQuantity <= 0);
+                }
             }
 
             // Tổng số sản phẩm trong database sau khi lọc
@@ -68,6 +81,7 @@ namespace CMS.Backend.Controllers
             ViewBag.TotalItems = totalItems;
             ViewBag.TotalPages = totalPages;
             ViewBag.SelectedCategoryId = categoryId;
+            ViewBag.StockStatus = stockStatus;
 
             return View(products);
         }

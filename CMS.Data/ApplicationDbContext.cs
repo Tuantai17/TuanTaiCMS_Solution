@@ -22,6 +22,8 @@ namespace CMS.Data
         public DbSet<OrderDetail> OrderDetails { get; set; }
         public DbSet<Menu> Menus { get; set; }
         public DbSet<Banner> Banners { get; set; }
+        public DbSet<Inventory> Inventories { get; set; }
+        public DbSet<InventoryTransaction> InventoryTransactions { get; set; }
 
         // Entities ho tro Email, Notification, Password Reset
         public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
