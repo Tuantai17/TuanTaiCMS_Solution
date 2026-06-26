@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import productService from '../services/productService';
+import favoriteService from '../services/favoriteService';
 import { getMediaUrl } from '../utils/mediaUrl';
 import ProductCard from '../components/ProductCard';
+import { useFavorite } from '../contexts/FavoriteContext';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -15,6 +17,8 @@ const ProductDetail = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [relatedStartIndex, setRelatedStartIndex] = useState(0);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const { toggleFavorite } = useFavorite();
 
   useEffect(() => {
     const fetchProductDetail = async () => {
@@ -27,6 +31,12 @@ const ProductDetail = () => {
         setQuantity(1); // Reset số lượng về 1
         setIsExpanded(false); // Reset trạng thái mở rộng mô tả
         setRelatedStartIndex(0); // Reset trượt sản phẩm liên quan
+
+        if (localStorage.getItem('customer')) {
+          favoriteService.checkStatus(id).then(res => setIsFavorite(res.isFavorite)).catch(() => {});
+        } else {
+          setIsFavorite(false);
+        }
 
         // Lấy sản phẩm liên quan
         const catId = data.categoryProductId || data.categoryProduct?.id;
@@ -398,6 +408,25 @@ const ProductDetail = () => {
               disabled={product.stockQuantity === 0}
             >
               {product.stockQuantity === 0 ? 'Hết Hàng' : 'Mua Ngay'}
+            </button>
+            <button 
+              onClick={async (e) => {
+                e.preventDefault();
+                const newStatus = await toggleFavorite(product.id, isFavorite);
+                setIsFavorite(newStatus);
+              }}
+              className="btn font-weight-bold text-uppercase py-3 px-3 d-flex align-items-center justify-content-center shadow-sm"
+              style={{
+                backgroundColor: isFavorite ? '#CF102D' : '#ffffff',
+                borderColor: '#CF102D',
+                color: isFavorite ? '#ffffff' : '#CF102D',
+                border: '2px solid',
+                borderRadius: '8px',
+                fontSize: '1.2rem',
+                transition: 'all 0.2s'
+              }}
+            >
+              <i className={`fa-${isFavorite ? 'solid' : 'regular'} fa-heart`}></i>
             </button>
           </div>
         </div>

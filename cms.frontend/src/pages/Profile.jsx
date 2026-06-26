@@ -3,6 +3,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import authService from '../services/authService';
 import addressService from '../services/addressService';
 import { getMediaUrl } from '../utils/mediaUrl';
+import { useFavorite } from '../contexts/FavoriteContext';
 import '../assets/css/Profile.css';
 
 const DEFAULT_AVATAR = 'https://ui-avatars.com/api/?background=c80f1e&color=fff&size=200&font-size=0.4&bold=true&name=';
@@ -11,6 +12,7 @@ const MENU_ITEMS = [
   { key: 'info', label: 'Thông tin tài khoản', icon: 'fa-solid fa-user' },
   { key: 'address', label: 'Sổ địa chỉ', icon: 'fa-solid fa-location-dot' },
   { key: 'order-history', label: 'Lịch sử mua hàng', icon: 'fa-solid fa-clock-rotate-left' },
+  { key: 'favorites', label: 'Sản phẩm yêu thích', icon: 'fa-solid fa-heart' },
   { key: 'change-password', label: 'Đổi mật khẩu', icon: 'fa-solid fa-key' },
   { key: 'logout', label: 'Đăng xuất', icon: 'fa-solid fa-right-from-bracket', isLogout: true },
 ];
@@ -22,6 +24,7 @@ const Profile = () => {
 
   // State dữ liệu tài khoản
   const [customerId, setCustomerId] = useState(null);
+  const { favoriteCount } = useFavorite();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -150,6 +153,10 @@ const Profile = () => {
     }
     if (key === 'address') {
       navigate('/account/addresses');
+      return;
+    }
+    if (key === 'favorites') {
+      navigate('/profile/favorites');
       return;
     }
     setActiveTab(key);
@@ -470,8 +477,14 @@ const Profile = () => {
               <span className="profile-stat-label">Đơn hàng gần đây</span>
               <span className="profile-stat-link">Xem đơn hàng</span>
             </Link>
+            <Link to="/profile/favorites" className="profile-stat-item">
+              <div className="profile-stat-icon wishlist" style={{ background: '#FFF0F2', color: '#CF102D' }}><i className="fa-solid fa-heart"></i></div>
+              <span className="profile-stat-number">{favoriteCount}</span>
+              <span className="profile-stat-label">Sản phẩm yêu thích</span>
+              <span className="profile-stat-link">Xem danh sách</span>
+            </Link>
             <Link to="/account/addresses" className="profile-stat-item">
-              <div className="profile-stat-icon wishlist"><i className="fa-solid fa-location-dot"></i></div>
+              <div className="profile-stat-icon address"><i className="fa-solid fa-location-dot"></i></div>
               <span className="profile-stat-number">1</span>
               <span className="profile-stat-label">Quản lý địa chỉ</span>
               <span className="profile-stat-link">Xem sổ địa chỉ</span>

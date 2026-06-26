@@ -21,6 +21,11 @@ import Profile from './pages/Profile';
 import AddressesPage from './pages/AddressesPage';
 import ChangePassword from './pages/ChangePassword';
 import Notifications from './pages/Notifications';
+import OriginalToysPage from './pages/OriginalToysPage';
+import ReturnPolicyPage from './pages/ReturnPolicyPage';
+import SupportPage from './pages/SupportPage';
+import AboutPage from './pages/AboutPage';
+import FavoriteProductsPage from './pages/FavoriteProductsPage';
 
 // Import CSS từ assets/css/ theo đúng sơ đồ module hóa
 import './assets/css/App.css';
@@ -52,9 +57,14 @@ function App() {
             <Route path="/account/orders/:id" element={<OrderDetailPage />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/profile/change-password" element={<ChangePassword />} />
+            <Route path="/profile/favorites" element={<FavoriteProductsPage />} />
             <Route path="/account/addresses" element={<AddressesPage />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/do-choi-chinh-hang" element={<OriginalToysPage />} />
+            <Route path="/doi-tra-trong-7-ngay" element={<ReturnPolicyPage />} />
+            <Route path="/ho-tro-khach-hang" element={<SupportPage />} />
+            <Route path="/gioi-thieu" element={<AboutPage />} />
           </Routes>
         </main>
         

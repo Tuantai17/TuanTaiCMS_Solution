@@ -24,6 +24,7 @@ namespace CMS.Data
         public DbSet<Banner> Banners { get; set; }
         public DbSet<Inventory> Inventories { get; set; }
         public DbSet<InventoryTransaction> InventoryTransactions { get; set; }
+        public DbSet<ProductFavorite> ProductFavorites { get; set; }
 
         // Entities ho tro Email, Notification, Password Reset
         public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
@@ -57,6 +58,11 @@ namespace CMS.Data
             // Index cho Order
             modelBuilder.Entity<Order>()
                 .HasIndex(o => o.TransactionCode);
+
+            // Index cho ProductFavorite
+            modelBuilder.Entity<ProductFavorite>()
+                .HasIndex(pf => new { pf.CustomerId, pf.ProductId })
+                .IsUnique();
         }
     }
 }

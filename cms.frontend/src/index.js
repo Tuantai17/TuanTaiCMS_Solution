@@ -7,12 +7,15 @@ import "@fontsource/inter/700.css";
 import "@fontsource/inter/800.css";
 import './assets/css/index.css';
 import App from './App';
+import { FavoriteProvider } from './contexts/FavoriteContext';
 import reportWebVitals from './reportWebVitals';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <App />
+    <FavoriteProvider>
+      <App />
+    </FavoriteProvider>
   </React.StrictMode>
 );
 
