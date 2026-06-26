@@ -117,50 +117,75 @@ Chú thích chi tiết:
             <strong>TuanTaiCMS Admin</strong>
         </a>
 
-        <nav class="admin-nav" aria-label="Menu quản trị chính">
+        <nav class="admin-nav" aria-label="Menu quan tri chinh">
+            <!-- Tong quan -->
+            <span class="admin-nav__group-label" style="display:block;padding:10px 16px 4px;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);font-weight:600;">Tổng quan</span>
             <a id="nav-dashboard" class="admin-nav__link @IsActive("Home", "Index")" asp-controller="Home" asp-action="Index">
                 <i class="bi bi-speedometer2"></i>
                 <span>Bảng điều khiển</span>
             </a>
+
+            <!-- Quan ly noi dung -->
+            <span class="admin-nav__group-label" style="display:block;padding:18px 16px 4px;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);font-weight:600;">Quản lý nội dung</span>
             <a id="nav-category" class="admin-nav__link @IsActive("Category")" asp-controller="Category" asp-action="Index">
                 <i class="bi bi-grid-1x2-fill"></i>
-                <span>Quản lý Danh mục</span>
+                <span>Danh mục bài viết</span>
             </a>
             <a id="nav-post" class="admin-nav__link @IsActive("Post")" asp-controller="Post" asp-action="Index">
                 <i class="bi bi-file-earmark-text-fill"></i>
-                <span>Quản lý Bài viết</span>
-            </a>
-            <a id="nav-user" class="admin-nav__link @IsActive("User")" asp-controller="User" asp-action="Index">
-                <i class="bi bi-people-fill"></i>
-                <span>Quản lý Admin / Staff</span>
+                <span>Bài viết</span>
             </a>
             <a id="nav-menu" class="admin-nav__link @IsActive("Menu")" asp-controller="Menu" asp-action="Index">
                 <i class="bi bi-compass-fill"></i>
-                <span>Quản lý Menu</span>
+                <span>Menu</span>
             </a>
             <a id="nav-banner" class="admin-nav__link @IsActive("Banner")" asp-controller="Banner" asp-action="Index">
                 <i class="bi bi-image-fill"></i>
-                <span>Quản lý Banner</span>
+                <span>Banner</span>
             </a>
+
+            <!-- Quan ly san pham -->
+            <span class="admin-nav__group-label" style="display:block;padding:18px 16px 4px;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);font-weight:600;">Quản lý sản phẩm</span>
             <a id="nav-category-product" class="admin-nav__link @IsActive("CategoryProduct")" asp-controller="CategoryProduct" asp-action="Index">
                 <i class="bi bi-tags-fill"></i>
-                <span>Loại sản phẩm</span>
+                <span>Danh mục sản phẩm</span>
             </a>
             <a id="nav-product" class="admin-nav__link @IsActive("Product")" asp-controller="Product" asp-action="Index">
                 <i class="bi bi-box-seam-fill"></i>
-                <span>Quản lý Sản phẩm</span>
+                <span>Sản phẩm</span>
+            </a>
+            <a id="nav-inventory" class="admin-nav__link @IsActive("Inventory")" asp-controller="Inventory" asp-action="Index">
+                <i class="bi bi-box2-fill"></i>
+                <span>Kho sản phẩm</span>
+            </a>
+
+            <!-- Quan ly tai khoan -->
+            <span class="admin-nav__group-label" style="display:block;padding:18px 16px 4px;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);font-weight:600;">Quản lý tài khoản</span>
+            <a id="nav-user" class="admin-nav__link @IsActive("User")" asp-controller="User" asp-action="Index">
+                <i class="bi bi-people-fill"></i>
+                <span>Admin / Nhân viên</span>
             </a>
             <a id="nav-customer" class="admin-nav__link @IsActive("Customer")" asp-controller="Customer" asp-action="Index">
                 <i class="bi bi-person-badge-fill"></i>
-                <span>Quản lý Khách hàng</span>
+                <span>Khách hàng</span>
             </a>
+
+            <!-- Quan ly ban hang -->
+            <span class="admin-nav__group-label" style="display:block;padding:18px 16px 4px;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);font-weight:600;">Quản lý bán hàng</span>
             <a id="nav-order" class="admin-nav__link @IsActive("Order")" asp-controller="Order" asp-action="Index">
                 <i class="bi bi-cart-check-fill"></i>
-                <span>Quản lý Đơn hàng</span>
+                <span>Đơn hàng</span>
             </a>
-            <a id="nav-order-detail" class="admin-nav__link @IsActive("OrderDetail")" asp-controller="OrderDetail" asp-action="Index">
-                <i class="bi bi-list-check"></i>
-                <span>Chi tiết Đơn hàng</span>
+
+            <!-- Thong bao va Email -->
+            <span class="admin-nav__group-label" style="display:block;padding:18px 16px 4px;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);font-weight:600;">Thông báo & Email</span>
+            <a id="nav-notification" class="admin-nav__link @IsActive("Notification")" asp-controller="Notification" asp-action="Index">
+                <i class="bi bi-bell-fill"></i>
+                <span>Thông báo</span>
+            </a>
+            <a id="nav-emaillog" class="admin-nav__link @IsActive("EmailLog")" asp-controller="EmailLog" asp-action="Index">
+                <i class="bi bi-envelope-paper-fill"></i>
+                <span>Nhật ký gửi email</span>
             </a>
         </nav>
 

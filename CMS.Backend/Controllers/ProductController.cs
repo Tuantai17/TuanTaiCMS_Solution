@@ -30,7 +30,7 @@ namespace CMS.Backend.Controllers
         // categoryId: mã danh mục cần lọc (mặc định = null là không lọc)
         // page: trang hiện tại (mặc định = 1)
         // pageSize: số sản phẩm mỗi trang (mặc định = 10)
-        public IActionResult Index(int? categoryId = null, int page = 1, int pageSize = 10)
+        public IActionResult Index(int? categoryId = null, string? stockStatus = null, int page = 1, int pageSize = 10)
         {
             // Đảm bảo giá trị hợp lệ
             if (page < 1) page = 1;
@@ -41,6 +41,19 @@ namespace CMS.Backend.Controllers
             if (categoryId.HasValue)
             {
                 query = query.Where(p => p.CategoryProductId == categoryId.Value);
+            }
+
+            // Lọc sản phẩm theo tình trạng kho
+            if (!string.IsNullOrEmpty(stockStatus))
+            {
+                if (stockStatus == "low")
+                {
+                    query = query.Where(p => p.StockQuantity > 0 && p.StockQuantity <= 10);
+                }
+                else if (stockStatus == "out")
+                {
+                    query = query.Where(p => p.StockQuantity <= 0);
+                }
             }
 
             // Tổng số sản phẩm trong database sau khi lọc
@@ -68,6 +81,7 @@ namespace CMS.Backend.Controllers
             ViewBag.TotalItems = totalItems;
             ViewBag.TotalPages = totalPages;
             ViewBag.SelectedCategoryId = categoryId;
+            ViewBag.StockStatus = stockStatus;
 
             return View(products);
         }
@@ -183,6 +197,9 @@ namespace CMS.Backend.Controllers
             existingProduct.IsBestSelling = model.IsBestSelling;
             existingProduct.IsSale = model.IsSale;
             existingProduct.SalePrice = model.IsSale ? model.SalePrice : 0;
+            existingProduct.DisplayOrderNew = model.DisplayOrderNew;
+            existingProduct.DisplayOrderSale = model.DisplayOrderSale;
+            existingProduct.DisplayOrderBestSelling = model.DisplayOrderBestSelling;
 
             var newImageUrl = SaveUploadImage(uploadImage);
             if (!string.IsNullOrWhiteSpace(newImageUrl))
@@ -310,6 +327,40 @@ namespace CMS.Backend.Controllers
             _context.SaveChanges();
 
             return Json(new { success = true, isBestSelling = product.IsBestSelling });
+        }
+
+        // Action AJAX: Cập nhật thứ tự hiển thị riêng biệt cho sản phẩm.
+        [HttpPost]
+        public IActionResult ToggleDisplayOrder(int id, string type, int displayOrder)
+        {
+            var product = _context.Products.Find(id);
+            if (product == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy sản phẩm." });
+            }
+
+            if (displayOrder < 0) displayOrder = 0;
+
+            if (type == "new")
+            {
+                product.DisplayOrderNew = displayOrder;
+            }
+            else if (type == "sale")
+            {
+                product.DisplayOrderSale = displayOrder;
+            }
+            else if (type == "best")
+            {
+                product.DisplayOrderBestSelling = displayOrder;
+            }
+            else
+            {
+                return Json(new { success = false, message = "Loại trạng thái không hợp lệ." });
+            }
+
+            _context.SaveChanges();
+
+            return Json(new { success = true, type = type, displayOrder = displayOrder });
         }
 
         // Action POST: Xóa nhiều sản phẩm đã chọn.

@@ -370,31 +370,34 @@ const ProductDetail = () => {
               onClick={handleAddToCart}
               className="btn font-weight-bold text-uppercase py-3 px-2 flex-grow-1 d-flex align-items-center justify-content-center shadow-sm"
               style={{
-                border: '2px solid #CF102D',
-                color: '#CF102D',
-                backgroundColor: '#FFF0F2',
+                border: '2px solid',
+                color: product.stockQuantity === 0 ? '#6c757d' : '#CF102D',
+                backgroundColor: product.stockQuantity === 0 ? '#e9ecef' : '#FFF0F2',
+                borderColor: product.stockQuantity === 0 ? '#ced4da' : '#CF102D',
                 borderRadius: '8px',
                 fontSize: '0.88rem',
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
+                cursor: product.stockQuantity === 0 ? 'not-allowed' : 'pointer'
               }}
               disabled={product.stockQuantity === 0}
             >
-              <i className="fa-solid fa-cart-shopping mr-2"></i> Thêm Vào Giỏ Hàng
+              <i className="fa-solid fa-cart-shopping mr-2"></i> {product.stockQuantity === 0 ? 'Hết Hàng' : 'Thêm Vào Giỏ Hàng'}
             </button>
             <button 
               onClick={handleBuyNow}
-              className="btn btn-danger font-weight-bold text-uppercase py-3 px-2 flex-grow-1 d-flex align-items-center justify-content-center shadow-sm"
+              className={`btn ${product.stockQuantity === 0 ? 'btn-secondary' : 'btn-danger'} font-weight-bold text-uppercase py-3 px-2 flex-grow-1 d-flex align-items-center justify-content-center shadow-sm`}
               style={{
-                backgroundColor: '#CF102D',
-                borderColor: '#CF102D',
+                backgroundColor: product.stockQuantity === 0 ? '#6c757d' : '#CF102D',
+                borderColor: product.stockQuantity === 0 ? '#6c757d' : '#CF102D',
                 color: '#fff',
                 borderRadius: '8px',
                 fontSize: '0.88rem',
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
+                cursor: product.stockQuantity === 0 ? 'not-allowed' : 'pointer'
               }}
               disabled={product.stockQuantity === 0}
             >
-              Mua Ngay
+              {product.stockQuantity === 0 ? 'Hết Hàng' : 'Mua Ngay'}
             </button>
           </div>
         </div>

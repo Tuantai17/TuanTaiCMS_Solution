@@ -50,9 +50,9 @@
                 <tbody>
                     @foreach (var item in Model)
                     {
-                        var badgeClass = item.Status switch { 0 => "bg-warning text-dark", 1 => "bg-primary", 2 => "bg-success", 3 => "bg-danger", _ => "bg-secondary" };
-                        var statusText = item.Status switch { 0 => "Chờ duyệt", 1 => "Đang giao", 2 => "Hoàn thành", 3 => "Đã hủy", _ => "Không xác định" };
-                        var statusIcon = item.Status switch { 0 => "bi-hourglass-split", 1 => "bi-truck", 2 => "bi-check-circle-fill", 3 => "bi-x-circle-fill", _ => "bi-question-circle" };
+                        var badgeClass = item.Status switch { 0 => "bg-warning text-dark", 1 => "bg-info text-dark", 2 => "bg-primary", 3 => "bg-primary", 4 => "bg-success", 5 => "bg-danger", _ => "bg-secondary" };
+                        var statusText = item.Status switch { 0 => "Chờ duyệt", 1 => "Đã duyệt", 2 => "Đang chuẩn bị hàng", 3 => "Đang giao hàng", 4 => "Hoàn thành", 5 => "Đã hủy", _ => "Không xác định" };
+                        var statusIcon = item.Status switch { 0 => "bi-hourglass-split", 1 => "bi-clipboard-check", 2 => "bi-box-seam", 3 => "bi-truck", 4 => "bi-check-circle-fill", 5 => "bi-x-circle-fill", _ => "bi-question-circle" };
                         var totalAmount = item.OrderDetails?.Sum(x => x.Quantity * x.UnitPrice) ?? 0;
                         <tr>
                             <td><strong>#@item.Id</strong></td>
@@ -82,7 +82,7 @@
                                     <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning" title="Cập nhật trạng thái">
                                         <i class="bi bi-pencil-square"></i> Cập nhật
                                     </a>
-                                    @if (item.Status == 0 || item.Status == 1)
+                                    @if (item.Status <= 2)
                                     {
                                         <a asp-action="Cancel" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger" title="Hủy đơn hàng" onclick="return confirm('Bạn có chắc muốn HỦY đơn hàng #@item.Id không?\nSản phẩm sẽ được hoàn trả lại kho.')">
                                             <i class="bi bi-x-circle"></i> Hủy đơn

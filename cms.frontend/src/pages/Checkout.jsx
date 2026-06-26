@@ -69,14 +69,25 @@ const Checkout = () => {
     }
     setAuthChecking(false);
 
-    // 2. Lấy giỏ hàng
-    const storedCart = localStorage.getItem('cart');
-    if (storedCart) {
+    // 2. Lấy giỏ hàng đã chọn từ sessionStorage
+    const storedCheckoutItems = sessionStorage.getItem('checkoutItems');
+    if (storedCheckoutItems) {
       try {
-        const parsedCart = JSON.parse(storedCart);
-        setCartItems(parsedCart);
+        const parsedItems = JSON.parse(storedCheckoutItems);
+        setCartItems(parsedItems);
       } catch (e) {
         setCartItems([]);
+      }
+    } else {
+      // Fallback: Nếu không có checkoutItems (trường hợp mua ngay), thử lấy từ cart
+      const storedCart = localStorage.getItem('cart');
+      if (storedCart) {
+        try {
+          const parsedCart = JSON.parse(storedCart);
+          setCartItems(parsedCart);
+        } catch (e) {
+          setCartItems([]);
+        }
       }
     }
   }, []);
@@ -199,10 +210,27 @@ const Checkout = () => {
     };
 
     try {
-      await orderService.createOrder(orderData);
-      localStorage.removeItem('cart');
+      const result = await orderService.createOrder(orderData);
+      
+      // Xoa cac san pham da thanh toan khoi gio hang thay vi xoa toan bo
+      const currentCartStr = localStorage.getItem('cart');
+      if (currentCartStr) {
+        let currentCart = JSON.parse(currentCartStr);
+        const checkedOutIds = cartItems.map(i => i.id);
+        currentCart = currentCart.filter(item => !checkedOutIds.includes(item.id));
+        localStorage.setItem('cart', JSON.stringify(currentCart));
+      }
+      
+      sessionStorage.removeItem('checkoutItems');
       window.dispatchEvent(new Event('cartChange'));
-      alert("Đặt hàng thành công! Cảm ơn bạn đã mua hàng tại MyKingdom.");
+      
+      // Hien thi thong bao phu hop dua vao emailSent
+      const orderCode = result?.orderCode || `#${result?.orderId}`;
+      if (result?.emailSent) {
+        alert(`Dat hang thanh cong! Ma don hang: ${orderCode}. Email xac nhan da duoc gui toi hop thu cua ban.`);
+      } else {
+        alert(`Dat hang thanh cong! Ma don hang: ${orderCode}. Cam on ban da mua hang tai TuanTaiCMS Shop.`);
+      }
       navigate('/account/orders');
     } catch (err) {
       if (err.response && err.response.data && err.response.data.message) {

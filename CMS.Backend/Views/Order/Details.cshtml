@@ -4,9 +4,9 @@
 @{
     ViewData["Title"] = "Chi tiết đơn hàng";
     Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
-    var badgeClass = Model.Status switch { 0 => "bg-warning text-dark", 1 => "bg-primary", 2 => "bg-success", 3 => "bg-danger", _ => "bg-secondary" };
-    var statusText = Model.Status switch { 0 => "Chờ duyệt", 1 => "Đang giao", 2 => "Hoàn thành", 3 => "Đã hủy", _ => "Không xác định" };
-    var statusIcon = Model.Status switch { 0 => "bi-hourglass-split", 1 => "bi-truck", 2 => "bi-check-circle-fill", 3 => "bi-x-circle-fill", _ => "bi-question-circle" };
+    var statusText = Model.Status switch { 0 => "Chờ duyệt", 1 => "Đã duyệt", 2 => "Đang chuẩn bị hàng", 3 => "Đang giao hàng", 4 => "Hoàn thành", 5 => "Đã hủy", _ => "Không xác định" };
+    var badgeClass = Model.Status switch { 0 => "bg-warning text-dark", 1 => "bg-info text-dark", 2 => "bg-primary", 3 => "bg-primary", 4 => "bg-success", 5 => "bg-danger", _ => "bg-secondary" };
+    var statusIcon = Model.Status switch { 0 => "bi-hourglass-split", 1 => "bi-check2-square", 2 => "bi-box-seam", 3 => "bi-truck", 4 => "bi-check-circle-fill", 5 => "bi-x-circle-fill", _ => "bi-question-circle" };
     var total = Model.OrderDetails?.Sum(x => x.Quantity * x.UnitPrice) ?? 0;
     var shippingFee = 35000m;
     var grandTotal = total + shippingFee;

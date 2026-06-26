@@ -1,0 +1,142 @@
+@model List<CMS.Data.Entities.Notification>
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h5 class="mb-1"><i class="bi bi-bell-fill text-warning"></i> Thong bao he thong</h5>
+        <small class="text-muted">Tong: @ViewBag.TotalItems | Chua doc: <span class="badge bg-danger">@ViewBag.UnreadCount</span></small>
+    </div>
+    <form asp-action="MarkAllRead" method="post" class="d-inline">
+        <button type="submit" class="btn btn-sm btn-outline-primary"><i class="bi bi-check-all"></i> Danh dau tat ca da doc</button>
+    </form>
+</div>
+
+<!-- Bo loc -->
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2 px-3">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-auto">
+                <select name="type" class="form-select form-select-sm">
+                    <option value="">-- Loai thong bao --</option>
+                    <option value="NewOrder" selected="@(ViewBag.FilterType == "NewOrder")">Don hang moi</option>
+                    <option value="PaymentSuccess" selected="@(ViewBag.FilterType == "PaymentSuccess")">Thanh toan</option>
+                    <option value="DeliverySuccess" selected="@(ViewBag.FilterType == "DeliverySuccess")">Giao hang</option>
+                    <option value="EmailFailed" selected="@(ViewBag.FilterType == "EmailFailed")">Email loi</option>
+                    <option value="PasswordResetRequest" selected="@(ViewBag.FilterType == "PasswordResetRequest")">Quen mat khau</option>
+                    <option value="LowStock" selected="@(ViewBag.FilterType == "LowStock")">Sap het hang</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <select name="isRead" class="form-select form-select-sm">
+                    <option value="">-- Trang thai --</option>
+                    <option value="false">Chua doc</option>
+                    <option value="true">Da doc</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-funnel"></i> Loc</button>
+                <a asp-action="Index" class="btn btn-sm btn-outline-secondary"><i class="bi bi-x-lg"></i> Xoa loc</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Danh sach -->
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0" style="font-size:0.85rem;">
+            <thead class="table-light">
+                <tr>
+                    <th style="width:40px;">#</th>
+                    <th>Loai</th>
+                    <th>Tieu de</th>
+                    <th>Noi dung</th>
+                    <th>Thoi gian</th>
+                    <th>Trang thai</th>
+                    <th style="width:100px;">Thao tac</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Count == 0)
+                {
+                    <tr><td colspan="7" class="text-center text-muted py-4">Khong co thong bao nao.</td></tr>
+                }
+                @foreach (var n in Model)
+                {
+                    <tr class="@(n.IsRead ? "" : "table-warning")">
+                        <td>@n.Id</td>
+                        <td>
+                            @{
+                                var typeIcon = n.NotificationType switch
+                                {
+                                    "NewOrder" => "bi-cart-plus text-primary",
+                                    "PaymentSuccess" => "bi-credit-card text-success",
+                                    "DeliverySuccess" => "bi-truck text-info",
+                                    "EmailFailed" => "bi-envelope-x text-danger",
+                                    "PasswordResetRequest" => "bi-key text-warning",
+                                    "LowStock" => "bi-exclamation-triangle text-warning",
+                                    _ => "bi-bell text-muted"
+                                };
+                            }
+                            <i class="bi @typeIcon"></i> @n.NotificationType
+                        </td>
+                        <td class="@(n.IsRead ? "text-muted" : "fw-bold")">
+                            @if (n.ReferenceType == "Order" && n.ReferenceId.HasValue)
+                            {
+                                <a href="/Order/Edit/@n.ReferenceId.Value" class="text-decoration-none" style="color: inherit;">
+                                    @n.Title
+                                </a>
+                            }
+                            else
+                            {
+                                @n.Title
+                            }
+                        </td>
+                        <td><small class="text-muted">@(n.Message != null && n.Message.Length > 80 ? n.Message[..80] + "..." : n.Message)</small></td>
+                        <td><small>@n.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small></td>
+                        <td>
+                            @if (n.IsRead)
+                            {
+                                <span class="badge bg-secondary">Da doc</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark">Chua doc</span>
+                            }
+                        </td>
+                        <td>
+                            @if (n.ReferenceType == "Order" && n.ReferenceId.HasValue)
+                            {
+                                <a href="/Order/Edit/@n.ReferenceId.Value" class="btn btn-sm btn-outline-primary" title="Xem don hang"><i class="bi bi-eye"></i></a>
+                            }
+                            @if (!n.IsRead)
+                            {
+                                <form asp-action="MarkRead" method="post" class="d-inline">
+                                    <input type="hidden" name="id" value="@n.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Danh dau da doc"><i class="bi bi-check2"></i></button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Phan trang -->
+@if (ViewBag.TotalPages > 1)
+{
+    <nav class="mt-3">
+        <ul class="pagination pagination-sm justify-content-center">
+            @for (int i = 1; i <= ViewBag.TotalPages; i++)
+            {
+                <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-type="@ViewBag.FilterType" asp-route-isRead="@ViewBag.FilterIsRead">@i</a>
+                </li>
+            }
+        </ul>
+    </nav>
+}

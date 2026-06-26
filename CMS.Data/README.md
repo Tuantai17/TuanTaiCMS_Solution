@@ -19,6 +19,7 @@ CMS.Data/
 ├── Entities/                  # Chứa định nghĩa các thực thể ánh xạ xuống bảng cơ sở dữ liệu
 │   ├── User.cs                # Thực thể quản trị nội bộ (Admin/Staff)
 │   ├── Customer.cs            # Thực thể khách hàng đăng ký mua sắm ở frontend
+│   ├── CustomerAddress.cs     # Sổ địa chỉ nhận hàng của khách hàng
 │   ├── CategoryProduct.cs     # Danh mục sản phẩm (Ví dụ: LEGO, Hot Wheels...)
 │   ├── Product.cs             # Thông tin sản phẩm đồ chơi/thời trang
 │   ├── ProductImage.cs        # Các hình ảnh phụ đi kèm của sản phẩm
@@ -37,12 +38,13 @@ CMS.Data/
 
 ## 2. Chi tiết các bảng Cơ sở dữ liệu (DbSets)
 
-Lớp `ApplicationDbContext.cs` khai báo 11 bảng dữ liệu phục vụ các nghiệp vụ quản trị và bán hàng:
+Lớp `ApplicationDbContext.cs` khai báo 12 bảng dữ liệu phục vụ các nghiệp vụ quản trị và bán hàng:
 
 | Tên DbSet | Thực thể (Entity) | Vai trò nghiệp vụ |
 | :--- | :--- | :--- |
 | `Users` | `User` | Lưu trữ tài khoản của Admin (quản trị) và Staff (nhân viên) |
 | `Customers` | `Customer` | Lưu trữ tài khoản của Khách hàng đăng ký ở Frontend React |
+| `CustomerAddresses` | `CustomerAddress` | Lưu trữ danh sách địa chỉ nhận hàng của Khách hàng |
 | `CategoriesProducts` | `CategoryProduct` | Phân loại danh mục sản phẩm của cửa hàng |
 | `Products` | `Product` | Danh sách sản phẩm, giá bán, tồn kho và trạng thái New/Sale |
 | `ProductImages` | `ProductImage` | Lưu trữ các góc chụp phụ khác của sản phẩm |
@@ -60,6 +62,7 @@ Lớp `ApplicationDbContext.cs` khai báo 11 bảng dữ liệu phục vụ các
 * **CategoryProduct (1) - Product (N):** Một danh mục sản phẩm chứa nhiều sản phẩm. Nếu xóa danh mục, các sản phẩm thuộc danh mục đó sẽ được xử lý ràng buộc.
 * **Product (1) - ProductImage (N):** Một sản phẩm có thể hiển thị nhiều góc chụp hình ảnh phụ khác nhau.
 * **Category (1) - Post (N):** Một chuyên mục tin tức chứa nhiều bài viết khác nhau.
+* **Customer (1) - CustomerAddress (N):** Một khách hàng có thể có nhiều địa chỉ nhận hàng trong sổ địa chỉ (nhà riêng, cơ quan...).
 * **Customer (1) - Order (N):** Một khách hàng có thể đặt nhiều đơn hàng trong lịch sử mua sắm.
 * **Order (1) - OrderDetail (N):** Một đơn hàng chứa nhiều dòng chi tiết sản phẩm mua khác nhau.
 * **Product (1) - OrderDetail (N):** Một dòng chi tiết đơn hàng liên kết trỏ tới thông tin của một sản phẩm cụ thể.

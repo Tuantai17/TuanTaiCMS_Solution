@@ -18,6 +18,8 @@ const ProductCard = ({ item }) => {
   const originalPrice = item.price;
   const imageUrl = getMediaUrl(item.imageUrl, "https://placehold.co/200x200/e9ecef/6c757d?text=No+Image");
 
+  const isOutOfStock = item.stockQuantity == null || item.stockQuantity <= 0;
+
   // Xác định nhãn tag bên trái
   const tagLabel = isNew ? 'NEW' : (item.isBestSelling ? 'HOT' : (item.tagLabel || (item.price > 500000 ? 'LEGO' : 'SẢN PHẨM')));
   const tagColor = isNew ? '#28a745' : (item.isBestSelling ? '#e0a800' : '#002664');
@@ -55,13 +57,36 @@ const ProductCard = ({ item }) => {
           </span>
         )}
 
-        <Link to={`/products/${item.id}`} className="d-block w-100 h-100 d-flex align-items-center justify-content-center">
+        <Link to={`/products/${item.id}`} className="d-block w-100 h-100 d-flex align-items-center justify-content-center position-relative overflow-hidden">
           <img 
             src={imageUrl} 
             className="img-fluid" 
             alt={item.name} 
-            style={{ maxHeight: '160px', maxWidth: '100%', objectFit: 'contain', transition: 'transform 0.4s ease' }} 
+            style={{ maxHeight: '160px', maxWidth: '100%', objectFit: 'contain', transition: 'transform 0.4s ease', opacity: isOutOfStock ? 0.6 : 1 }} 
           />
+          {isOutOfStock && (
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '-20%',
+              width: '140%',
+              transform: 'translateY(-50%) rotate(15deg)',
+              color: '#fff',
+              fontWeight: '800',
+              textTransform: 'uppercase',
+              letterSpacing: '2px',
+              textAlign: 'center',
+              padding: '8px 0',
+              zIndex: 3,
+              textShadow: '1px 1px 4px rgba(0,0,0,0.6)',
+              pointerEvents: 'none',
+              fontSize: '1.4rem',
+              background: 'linear-gradient(to right, rgba(100,100,100,0.85), rgba(70,70,70,0.95), rgba(100,100,100,0.85))',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+            }}>
+              HẾT HÀNG
+            </div>
+          )}
         </Link>
       </div>
 
@@ -108,11 +133,12 @@ const ProductCard = ({ item }) => {
       </div>
 
       {/* Khối chân thẻ chứa nút bấm mua và tim yêu thích */}
-      <div className="card-footer bg-white border-top-0 p-3 pt-0">
+      <div className="card-footer bg-white border-top-0 p-3 pt-0 d-flex flex-column">
         <div className="d-flex align-items-center justify-content-between">
           <button 
             onClick={(e) => {
               e.preventDefault();
+              if (isOutOfStock) return;
               const cart = JSON.parse(localStorage.getItem('cart') || '[]');
               const index = cart.findIndex(c => c.id === item.id);
               if (index > -1) {
@@ -131,19 +157,24 @@ const ProductCard = ({ item }) => {
               window.dispatchEvent(new Event('cartChange'));
               alert(`Đã thêm "${item.name}" vào giỏ hàng thành công!`);
             }}
-            className="btn font-weight-bold text-uppercase py-2 flex-grow-1 mr-2" 
+            disabled={isOutOfStock}
+            aria-disabled={isOutOfStock}
+            className="btn font-weight-bold text-uppercase py-2 flex-grow-1 mr-2 d-flex align-items-center justify-content-center" 
             style={{ 
               fontSize: '0.75rem',
-              backgroundColor: '#CF102D',
-              borderColor: '#CF102D',
+              backgroundColor: isOutOfStock ? '#a0aab5' : '#CF102D',
+              borderColor: isOutOfStock ? '#a0aab5' : '#CF102D',
               color: '#ffffff',
               borderRadius: '25px',
               borderWidth: '1px',
               borderStyle: 'solid',
-              transition: 'all 0.2s'
+              transition: 'all 0.2s',
+              cursor: isOutOfStock ? 'not-allowed' : 'pointer'
             }}
           >
-            Thêm Vào Giỏ Hàng
+            {isOutOfStock ? (
+              <>HẾT HÀNG <i className="fa-solid fa-ban ml-1" style={{ fontSize: '13px' }}></i></>
+            ) : 'THÊM VÀO GIỎ HÀNG'}
           </button>
           
           <button 
@@ -157,7 +188,8 @@ const ProductCard = ({ item }) => {
               borderColor: '#CF102D',
               color: isFavorite ? '#ffffff' : '#CF102D',
               backgroundColor: isFavorite ? '#CF102D' : 'transparent',
-              transition: 'all 0.3s ease'
+              transition: 'all 0.3s ease',
+              flexShrink: 0
             }}
           >
             <i className={`fa-${isFavorite ? 'solid' : 'regular'} fa-heart`} style={{ fontSize: '0.9rem' }}></i>

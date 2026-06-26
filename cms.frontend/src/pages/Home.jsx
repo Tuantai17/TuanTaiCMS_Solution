@@ -133,6 +133,7 @@ const Home = () => {
   const [newestPage, setNewestPage] = useState(1);
   const [salePage, setSalePage] = useState(1);
   const [blogPage, setBlogPage] = useState(1);
+  const [bestSellingPage, setBestSellingPage] = useState(1);
 
   useEffect(() => {
     const fetchHomeData = async () => {
@@ -441,6 +442,10 @@ const Home = () => {
         outlineClass="btn-outline-danger"
         products={bestSellingProducts}
         emptyMessage="Chưa có sản phẩm bán chạy vì chưa có đơn hàng nào."
+        currentPage={bestSellingPage}
+        onPageChange={setBestSellingPage}
+        pageSize={4}
+        enablePagination={true}
       />
 
       <ProductSection

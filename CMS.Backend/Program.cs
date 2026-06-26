@@ -1,6 +1,8 @@
 using CMS.Data;
 using CMS.Data.Entities;
 using CMS.Backend.Helpers;
+using CMS.Backend.Models;
+using CMS.Backend.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,8 +28,11 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.AccessDeniedPath = "/Account/AccessDenied";
     });
 
-// Đăng ký dịch vụ gửi email
+// Dang ky dich vu gui email moi (IEmailService) va giu lai EmailHelper cu
 builder.Services.AddTransient<EmailHelper>();
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+builder.Services.AddTransient<IEmailService, EmailService>();
+builder.Services.AddTransient<INotificationService, NotificationService>();
 
 // 1. Đăng ký các dịch vụ bổ trợ khám phá Endpoint phục vụ Web API
 builder.Services.AddEndpointsApiExplorer();

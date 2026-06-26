@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate, useSearchParams } from 'react-router-dom';
 import './Header.css';
 import categoryProductService from '../services/categoryProductService';
 import menuService from '../services/menuService';
+import notificationService from '../services/notificationService';
 import { getMediaUrl } from '../utils/mediaUrl';
 
 // ==========================================
@@ -83,6 +84,11 @@ const Header = () => {
     payment: false,
     member: false
   });
+
+  // Notifications State
+  const [notifications, setNotifications] = useState([]);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+  const [notificationOpen, setNotificationOpen] = useState(false);
 
   const navigate = useNavigate();
 
@@ -240,20 +246,41 @@ const Header = () => {
     };
   }, []);
 
-  // Tự động đóng dropdown tài khoản khi người dùng click ra ngoài khu vực menu
+  // Fetch Notifications
+  useEffect(() => {
+    if (customer && isApiOnline) {
+      const fetchNotifications = async () => {
+        try {
+          const res = await notificationService.getNotifications(1, 5); // get top 5
+          setNotifications(res.items || []);
+          const countRes = await notificationService.getUnreadCount();
+          setUnreadNotifCount(countRes.count || 0);
+        } catch (err) {
+          console.error("Lỗi khi tải thông báo", err);
+        }
+      };
+      fetchNotifications();
+    } else {
+      setNotifications([]);
+      setUnreadNotifCount(0);
+    }
+  }, [customer, isApiOnline]);
+
+  // Tự động đóng dropdown tài khoản/thông báo khi người dùng click ra ngoài khu vực menu
   useEffect(() => {
     const handleOutsideClick = (e) => {
-      if (!e.target.closest('.dropdown')) {
+      if (!e.target.closest('.dropdown') && !e.target.closest('.notification-dropdown-container')) {
         setDropdownOpen(false);
+        setNotificationOpen(false);
       }
     };
-    if (dropdownOpen) {
+    if (dropdownOpen || notificationOpen) {
       document.addEventListener('click', handleOutsideClick);
     }
     return () => {
       document.removeEventListener('click', handleOutsideClick);
     };
-  }, [dropdownOpen]);
+  }, [dropdownOpen, notificationOpen]);
 
   const handleLogout = () => {
     localStorage.removeItem('customer');
@@ -447,10 +474,61 @@ const Header = () => {
                     )}
                   </button>
 
-                  {/* Language Selector */}
-                  <div className="lang-selector d-none d-sm-flex">
-                    <img src="https://flagcdn.com/w20/vn.png" alt="VN Flag" className="lang-flag" />
-                    <i className="fa-solid fa-caret-down text-white-50" style={{ fontSize: '0.8rem' }}></i>
+                  {/* Notifications */}
+                  <div className="notification-dropdown-container d-none d-sm-flex align-items-center ml-3" style={{ position: 'relative' }}>
+                    <button 
+                      className="btn btn-link text-white p-0 shadow-none position-relative" 
+                      title="Thông báo"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if(customer) setNotificationOpen(!notificationOpen);
+                        else navigate('/login');
+                      }}
+                    >
+                      <i className="fa-regular fa-bell fs-4"></i>
+                      {unreadNotifCount > 0 && (
+                        <span className="cart-badge bg-warning" style={{ right: '-5px', top: '-5px' }}>{unreadNotifCount}</span>
+                      )}
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    {notificationOpen && customer && (
+                      <div className="dropdown-menu dropdown-menu-right show" style={{ position: 'absolute', top: '100%', right: 0, width: '320px', padding: 0, marginTop: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', borderRadius: '8px', overflow: 'hidden' }}>
+                        <div className="dropdown-header bg-light border-bottom d-flex justify-content-between align-items-center" style={{ padding: '10px 15px' }}>
+                          <span className="font-weight-bold text-dark mb-0" style={{ fontSize: '1rem' }}>Thông báo mới</span>
+                        </div>
+                        <div className="notification-list" style={{ maxHeight: '350px', overflowY: 'auto' }}>
+                          {notifications.length > 0 ? (
+                            notifications.map(n => (
+                              <Link 
+                                to={n.referenceType === 'Order' && n.referenceId ? `/account/orders/${n.referenceId}` : '/notifications'} 
+                                key={n.id} 
+                                className={`dropdown-item border-bottom d-flex flex-column align-items-start ${!n.isRead ? 'bg-light' : ''}`}
+                                style={{ padding: '12px 15px', whiteSpace: 'normal' }}
+                                onClick={() => setNotificationOpen(false)}
+                              >
+                                <div className="d-flex w-100 justify-content-between align-items-center mb-1">
+                                  <strong className={`mb-0 ${!n.isRead ? 'text-danger' : 'text-dark'}`} style={{ fontSize: '0.9rem' }}>{n.title}</strong>
+                                  {!n.isRead && <span className="badge badge-danger" style={{ width: '8px', height: '8px', borderRadius: '50%', padding: 0 }}></span>}
+                                </div>
+                                <span className="text-muted text-truncate w-100" style={{ fontSize: '0.8rem' }}>{n.message}</span>
+                                <small className="text-secondary mt-1">{new Date(n.createdAt).toLocaleString('vi-VN')}</small>
+                              </Link>
+                            ))
+                          ) : (
+                            <div className="text-center p-4 text-muted">
+                              <i className="fa-regular fa-bell-slash fs-2 mb-2"></i>
+                              <p className="mb-0" style={{ fontSize: '0.9rem' }}>Không có thông báo nào</p>
+                            </div>
+                          )}
+                        </div>
+                        <div className="dropdown-footer border-top text-center" style={{ padding: '10px' }}>
+                          <Link to="/notifications" className="font-weight-bold text-danger text-decoration-none" onClick={() => setNotificationOpen(false)}>
+                            Xem tất cả thông báo <i className="fa-solid fa-arrow-right ml-1"></i>
+                          </Link>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -913,10 +991,7 @@ const Header = () => {
         </div>
 
         <div className="cart-drawer-content">
-          <div className="freeship-notice">
-            <i className="fa-solid fa-circle-check fs-5"></i>
-            <span>Bạn đã được FREESHIP cho đơn hàng này!</span>
-          </div>
+
 
           {cartItems.length === 0 ? (
             <div className="text-center py-5 text-muted">
@@ -954,20 +1029,7 @@ const Header = () => {
 
         {cartItems.length > 0 && (
           <div className="cart-drawer-footer">
-            <div className="cart-terms-agreement">
-              <label className="term-checkbox-label">
-                <input type="checkbox" checked={termsAgreed.privacy} onChange={() => toggleTerms('privacy')} />
-                <span>Tôi đồng ý với <a href="/pages/private-policy" target="_blank" rel="noopener noreferrer">Chính sách bảo mật</a></span>
-              </label>
-              <label className="term-checkbox-label">
-                <input type="checkbox" checked={termsAgreed.payment} onChange={() => toggleTerms('payment')} />
-                <span>Tôi đồng ý với <a href="/pages/payment" target="_blank" rel="noopener noreferrer">Điều khoản thanh toán</a> & <a href="/pages/chinh-sach-giao-hang" target="_blank" rel="noopener noreferrer">Giao hàng</a></span>
-              </label>
-              <label className="term-checkbox-label">
-                <input type="checkbox" checked={termsAgreed.member} onChange={() => toggleTerms('member')} />
-                <span>Tôi đồng ý với <a href="/pages/member-terms" target="_blank" rel="noopener noreferrer">Điều kiện & Điều khoản thành viên</a></span>
-              </label>
-            </div>
+
 
             <div className="cart-total-row">
               <span>Tổng cộng:</span>
@@ -982,7 +1044,6 @@ const Header = () => {
               </Link>
               <button 
                 className="cart-drawer-btn cart-drawer-btn-checkout"
-                disabled={!isAllTermsAgreed}
                 onClick={() => {
                   setCartDrawerOpen(false);
                   navigate('/checkout');

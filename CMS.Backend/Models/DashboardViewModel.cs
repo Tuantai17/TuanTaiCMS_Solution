@@ -15,6 +15,10 @@ namespace CMS.Backend.Models
     {
         // === THỐNG KÊ TỔNG QUAN (4 Stat Cards) ===
         public decimal TotalRevenue { get; set; }         // Tổng doanh thu (từ đơn hoàn thành Status=2)
+        public string RevenueFilter { get; set; } = "all"; // Bộ lọc doanh thu
+        public DateTime? StartDate { get; set; }          // Từ ngày (nếu chọn custom)
+        public DateTime? EndDate { get; set; }            // Đến ngày (nếu chọn custom)
+
         public int TotalOrders { get; set; }              // Tổng số đơn hàng
         public int TotalProducts { get; set; }            // Tổng số sản phẩm
         public int TotalCustomers { get; set; }           // Tổng số khách hàng
@@ -25,8 +29,10 @@ namespace CMS.Backend.Models
         public int CompletedOrders { get; set; }          // Đơn hoàn thành (Status=2)
         public int CancelledOrders { get; set; }          // Đơn đã hủy (Status=3)
 
-        // === BIỂU ĐỒ DOANH THU 7 NGÀY GẦN NHẤT ===
+        // === BIỂU ĐỒ DOANH THU ===
         public List<DailyRevenueDto> DailyRevenues { get; set; } = new();
+        public string ChartTitle { get; set; } = "Doanh thu 7 ngày gần nhất";
+        public string ChartSubtitle { get; set; } = "Thống kê doanh thu từ đơn hàng hoàn thành";
 
         // === TOP 5 SẢN PHẨM BÁN CHẠY ===
         public List<TopProductDto> TopProducts { get; set; } = new();
