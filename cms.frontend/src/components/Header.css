@@ -230,8 +230,8 @@
   margin: 0;
   width: 100%;
   justify-content: flex-start;
-  gap: 0;
-  position: relative; /* Căn lề mega menu theo list này */
+  gap: 8px; /* Tách các mục menu ra một chút theo yêu cầu */
+  position: relative; 
 }
 
 .nav-menu-item {
@@ -244,7 +244,8 @@
   gap: 8px;
   color: var(--mk-white);
   text-decoration: none;
-  padding: 14px 16px;
+  padding: 10px 14px; /* Giảm padding một chút để vừa vặn hơn khi có border-radius */
+  border-radius: 8px; /* Bo góc để hover đẹp hơn */
   font-size: 14px;
   font-weight: 700;
   text-transform: uppercase;
@@ -253,8 +254,8 @@
 }
 
 .nav-menu-link:hover, .nav-menu-link.active {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: var(--mk-yellow);
+  background-color: var(--mk-white); /* Hover sang màu trắng */
+  color: var(--mk-dark-red); /* Đổi màu chữ sang đỏ đậm để nổi bật trên nền trắng */
   text-decoration: none;
 }
 

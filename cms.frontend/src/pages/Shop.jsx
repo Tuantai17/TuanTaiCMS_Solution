@@ -44,6 +44,7 @@ const Shop = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const urlCategory = searchParams.get('category');
   const urlSearch = searchParams.get('search');
+  const urlSort = searchParams.get('sort');
 
   // Lọc theo Category & Expandable sidebar
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
@@ -78,6 +79,19 @@ const Shop = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [urlSearch]);
+
+  // Đồng bộ sort từ URL vào state
+  useEffect(() => {
+    if (urlSort === 'sale') {
+      setSortOption('Hàng khuyến mãi');
+    } else if (urlSort === 'new') {
+      setSortOption('Sản phẩm mới');
+    } else if (urlSort === 'best') {
+      setSortOption('Bán chạy');
+    } else if (!urlSort) {
+      setSortOption('Mặc định');
+    }
+  }, [urlSort]);
 
   // 1. Tải danh mục một lần khi mount
   useEffect(() => {
@@ -116,6 +130,7 @@ const Shop = () => {
             salePrice: p.salePrice || 0,
             isSale: p.isSale || false,
             isNew: p.isNew || false,
+            isBest: p.isBest || false,
             discountPercent: p.discountPercent || 0,
             brandName: p.brandName || "MYKINGDOM",
             sku: p.sku || `SKU${120000 + p.id}`,
@@ -143,10 +158,20 @@ const Shop = () => {
   useEffect(() => {
     let result = [...products];
 
-    if (sortOption === 'Giá tăng dần') {
+    if (sortOption === 'Hàng khuyến mãi') {
+      result = result.filter(p => p.isSale);
+    } else if (sortOption === 'Sản phẩm mới') {
+      result = result.filter(p => p.isNew);
+    } else if (sortOption === 'Bán chạy') {
+      result = result.filter(p => p.isBest);
+    } else if (sortOption === 'Giá tăng dần') {
       result.sort((a, b) => a.price - b.price);
     } else if (sortOption === 'Giá giảm dần') {
       result.sort((a, b) => b.price - a.price);
+    } else if (sortOption === 'Tên sản phẩm A-Z') {
+      result.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortOption === 'Tên sản phẩm Z-A') {
+      result.sort((a, b) => b.name.localeCompare(a.name));
     }
 
     setFilteredProducts(result);
@@ -547,15 +572,20 @@ const Shop = () => {
                   onChange={(e) => setSortOption(e.target.value)}
                   className="form-control form-control-sm shadow-none rounded-pill px-3" 
                   style={{ 
-                    width: '140px',
+                    width: '180px',
                     borderColor: '#dddddd',
                     height: '32px',
                     cursor: 'pointer'
                   }}
                 >
                   <option>Mặc định</option>
-                  <option>Giá tăng dần</option>
+                  <option>Hàng khuyến mãi</option>
+                  <option>Sản phẩm mới</option>
+                  <option>Bán chạy</option>
+                  <option>Tên sản phẩm A-Z</option>
+                  <option>Tên sản phẩm Z-A</option>
                   <option>Giá giảm dần</option>
+                  <option>Giá tăng dần</option>
                 </select>
               </div>
             </div>

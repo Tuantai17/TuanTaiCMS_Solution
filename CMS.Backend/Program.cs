@@ -3,6 +3,7 @@ using CMS.Data.Entities;
 using CMS.Backend.Helpers;
 using CMS.Backend.Models;
 using CMS.Backend.Services;
+using CMS.Backend.Services.Favorite;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 
@@ -33,6 +34,7 @@ builder.Services.AddTransient<EmailHelper>();
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddTransient<INotificationService, NotificationService>();
+builder.Services.AddTransient<IProductFavoriteService, ProductFavoriteService>();
 
 // 1. Đăng ký các dịch vụ bổ trợ khám phá Endpoint phục vụ Web API
 builder.Services.AddEndpointsApiExplorer();

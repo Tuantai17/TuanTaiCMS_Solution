@@ -282,6 +282,17 @@ const Header = () => {
     };
   }, [dropdownOpen, notificationOpen]);
 
+  const handleMarkAllAsRead = async (e) => {
+    e.stopPropagation();
+    try {
+      await notificationService.markAllAsRead();
+      setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+      setUnreadNotifCount(0);
+    } catch (err) {
+      console.error("Lỗi khi đánh dấu đã đọc", err);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('customer');
     setCustomer(null);
@@ -319,25 +330,19 @@ const Header = () => {
           {/* 1. TOP BAR (Navy Blue) */}
           <div className="top-bar-navy py-2 text-white">
             <div className="container d-flex justify-content-between align-items-center flex-wrap">
-              <div className="top-bar-group">
-                <a href="/pages/delivery" className="top-bar-item">
-                  <i className="fa-solid fa-truck-fast top-bar-icon"></i>
-                  <span>Giao hàng hỏa tốc 4 tiếng</span>
-                </a>
-                <a href="/pages/member-benefits" className="top-bar-item">
-                  <i className="fa-solid fa-users top-bar-icon"></i>
-                  <span>Chương trình thành viên</span>
-                </a>
-              </div>
-              <div className="top-bar-group">
-                <a href="/pages/installment" className="top-bar-item">
-                  <i className="fa-solid fa-hand-holding-dollar top-bar-icon"></i>
-                  <span>Mua hàng trả góp</span>
-                </a>
-                <a href="/pages/stores" className="top-bar-item">
-                  <i className="fa-solid fa-store top-bar-icon"></i>
-                  <span>Hệ thống 200 cửa hàng</span>
-                </a>
+              <div className="top-bar-group w-100 d-flex justify-content-between">
+                <Link to="/do-choi-chinh-hang" className="top-bar-item text-white text-decoration-none">
+                  <i className="fa-regular fa-circle-check top-bar-icon"></i>
+                  <span>Đồ chơi chính hãng 100%</span>
+                </Link>
+                <Link to="/doi-tra-trong-7-ngay" className="top-bar-item text-white text-decoration-none">
+                  <i className="fa-solid fa-rotate top-bar-icon"></i>
+                  <span>Đổi trả trong 7 ngày</span>
+                </Link>
+                <Link to="/ho-tro-khach-hang" className="top-bar-item text-white text-decoration-none">
+                  <i className="fa-solid fa-phone top-bar-icon"></i>
+                  <span>Hỗ trợ khách hàng 24/7</span>
+                </Link>
               </div>
             </div>
           </div>
@@ -401,7 +406,12 @@ const Header = () => {
                           aria-haspopup="true" 
                           aria-expanded={dropdownOpen ? "true" : "false"}
                         >
-                          <i className="fa-solid fa-user-check fs-5 mr-1"></i>
+                          <img 
+                            src={displayCustomer.avatarUrl ? getMediaUrl(displayCustomer.avatarUrl) : `https://ui-avatars.com/api/?background=c80f1e&color=fff&size=200&font-size=0.4&bold=true&name=${encodeURIComponent(displayCustomer.fullName || 'User')}`} 
+                            alt={displayCustomer.fullName} 
+                            className="mr-2"
+                            style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} 
+                          />
                           <span className="font-weight-bold text-truncate" style={{ maxWidth: '90px' }}>{displayCustomer.fullName}</span>
                         </button>
                         <div className={`dropdown-menu dropdown-menu-right ${dropdownOpen ? 'show' : ''}`} aria-labelledby="customerDropdown" style={{ fontSize: '0.85rem' }}>
@@ -440,7 +450,11 @@ const Header = () => {
                           aria-haspopup="true" 
                           aria-expanded={dropdownOpen ? "true" : "false"}
                         >
-                          <i className="fa-solid fa-user-check fs-4"></i>
+                          <img 
+                            src={displayCustomer.avatarUrl ? getMediaUrl(displayCustomer.avatarUrl) : `https://ui-avatars.com/api/?background=c80f1e&color=fff&size=200&font-size=0.4&bold=true&name=${encodeURIComponent(displayCustomer.fullName || 'User')}`} 
+                            alt={displayCustomer.fullName} 
+                            style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} 
+                          />
                         </button>
                         <div className={`dropdown-menu dropdown-menu-right ${dropdownOpen ? 'show' : ''}`} style={{ fontSize: '0.85rem', position: 'absolute' }}>
                           <Link className="dropdown-item font-weight-bold" to="/profile" onClick={() => setDropdownOpen(false)}>
@@ -496,6 +510,15 @@ const Header = () => {
                       <div className="dropdown-menu dropdown-menu-right show" style={{ position: 'absolute', top: '100%', right: 0, width: '320px', padding: 0, marginTop: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', borderRadius: '8px', overflow: 'hidden' }}>
                         <div className="dropdown-header bg-light border-bottom d-flex justify-content-between align-items-center" style={{ padding: '10px 15px' }}>
                           <span className="font-weight-bold text-dark mb-0" style={{ fontSize: '1rem' }}>Thông báo mới</span>
+                          {unreadNotifCount > 0 && (
+                            <button 
+                              className="btn btn-sm btn-link text-primary p-0 text-decoration-none" 
+                              style={{ fontSize: '0.85rem' }}
+                              onClick={handleMarkAllAsRead}
+                            >
+                              <i className="fa-solid fa-check-double mr-1"></i> Đánh dấu đã đọc
+                            </button>
+                          )}
                         </div>
                         <div className="notification-list" style={{ maxHeight: '350px', overflowY: 'auto' }}>
                           {notifications.length > 0 ? (
@@ -539,8 +562,9 @@ const Header = () => {
           <nav className="navbar-custom d-none d-lg-block">
             <div className="container">
               <ul className="nav-menu-list">
+                {/* Các mục menu động từ Backend */}
                 {menus.map((menu) => {
-                  const isProducts = menu.url === '/products' || menu.title.toLowerCase().includes('sản phẩm');
+                  const isProducts = menu.url === '/products' || menu.title.toLowerCase().trim() === 'sản phẩm';
                   
                   if (isProducts) {
                     return (
@@ -551,6 +575,9 @@ const Header = () => {
                         >
                           {menu.title.toLowerCase().includes('trang chủ') && <i className="fa-solid fa-house mr-1"></i>}
                           {menu.title.toLowerCase().includes('tin tức') && <i className="fa-solid fa-newspaper mr-1"></i>}
+                          {menu.title.toUpperCase().includes('MEGA SALE') && <img style={{ padding: '2px', width: '24px', height: '24px', objectFit: 'contain' }} loading="lazy" src="https://cdn.shopify.com/s/files/1/0731/6514/4343/files/nov_sale_2.webp?v=1761932776" alt="mega-sale" />}
+                          {menu.title.toUpperCase().includes('ĐỘC QUYỀN') && <img style={{ padding: '2px', width: '24px', height: '24px', objectFit: 'contain' }} loading="lazy" src="https://cdn.shopify.com/s/files/1/0731/6514/4343/files/discount_tag_header.webp?v=1780051164" alt="doc-quyen" />}
+                          {menu.title.toUpperCase() === 'LEGO' && <img style={{ padding: '1px', width: '24px', height: '24px', objectFit: 'contain' }} loading="lazy" src="https://cdn.shopify.com/s/files/1/0731/6514/4343/files/lego_brick_minify.webp?v=1780296840" alt="lego" />}
                           <span>{menu.title}</span>
                           <i className="fa-solid fa-caret-down ml-1 text-white-50" style={{ fontSize: '0.8rem' }}></i>
                         </NavLink>
@@ -714,6 +741,9 @@ const Header = () => {
                       >
                         {menu.title.toLowerCase().includes('trang chủ') && <i className="fa-solid fa-house mr-1"></i>}
                         {menu.title.toLowerCase().includes('tin tức') && <i className="fa-solid fa-newspaper mr-1"></i>}
+                        {menu.title.toUpperCase().includes('MEGA SALE') && <img style={{ padding: '2px', width: '24px', height: '24px', objectFit: 'contain' }} loading="lazy" src="https://cdn.shopify.com/s/files/1/0731/6514/4343/files/nov_sale_2.webp?v=1761932776" alt="mega-sale" />}
+                        {menu.title.toUpperCase().includes('ĐỘC QUYỀN') && <img style={{ padding: '2px', width: '24px', height: '24px', objectFit: 'contain' }} loading="lazy" src="https://cdn.shopify.com/s/files/1/0731/6514/4343/files/discount_tag_header.webp?v=1780051164" alt="doc-quyen" />}
+                        {menu.title.toUpperCase() === 'LEGO' && <img style={{ padding: '1px', width: '24px', height: '24px', objectFit: 'contain' }} loading="lazy" src="https://cdn.shopify.com/s/files/1/0731/6514/4343/files/lego_brick_minify.webp?v=1780296840" alt="lego" />}
                         <span>{menu.title}</span>
                       </NavLink>
                     </li>

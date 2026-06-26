@@ -1,9 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getMediaUrl } from '../utils/mediaUrl';
+import { useFavorite } from '../contexts/FavoriteContext';
+import favoriteService from '../services/favoriteService';
 
 const ProductCard = ({ item }) => {
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(item.isFavorite || false);
+  const { toggleFavorite } = useFavorite();
+
+  // Optionally check status if not provided (thêm để chắc chắn lấy đúng trạng thái yêu thích)
+  useEffect(() => {
+    if (item.isFavorite === undefined && localStorage.getItem('customer')) {
+      favoriteService.checkStatus(item.id).then(res => {
+        setIsFavorite(res.isFavorite);
+      }).catch(() => {});
+    }
+  }, [item.id, item.isFavorite]);
 
   // Định dạng đơn giá VND chuẩn Việt Nam
   const formatCurrency = (value) => {
@@ -178,7 +190,11 @@ const ProductCard = ({ item }) => {
           </button>
           
           <button 
-            onClick={(e) => { e.preventDefault(); setIsFavorite(!isFavorite); }}
+            onClick={async (e) => { 
+              e.preventDefault(); 
+              const newStatus = await toggleFavorite(item.id, isFavorite);
+              setIsFavorite(newStatus);
+            }}
             className="btn btn-outline-danger d-flex align-items-center justify-content-center" 
             style={{ 
               width: '36px', 
