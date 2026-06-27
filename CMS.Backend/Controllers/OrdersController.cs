@@ -295,6 +295,27 @@ namespace CMS.Backend.Controllers
       }
     }
 
+    /// <summary>
+    /// API: Lấy tổng doanh thu toàn thời gian (từ các đơn hàng hoàn thành) (Giao thức GET)
+    /// Đường dẫn gọi dữ liệu: GET https://localhost:xxxx/api/Orders/total-revenue
+    /// </summary>
+    [HttpGet("total-revenue")]
+    public async Task<IActionResult> GetTotalRevenue()
+    {
+      try
+      {
+        var totalRevenue = await _context.OrderDetails
+          .Where(od => od.Order != null && od.Order.Status == 4) // 4 = Hoàn thành
+          .SumAsync(od => (decimal?)(od.Quantity * od.UnitPrice)) ?? 0;
+
+        return Ok(new { TotalRevenue = totalRevenue });
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, new { message = "Lỗi hệ thống khi tải tổng doanh thu", detail = ex.Message });
+      }
+    }
+
     [HttpGet("my")]
     public async Task<IActionResult> GetMyOrders(
       [FromQuery] int? status,

@@ -153,7 +153,19 @@ Mô tả: Form chỉnh sửa sản phẩm.
 </section>
 
 @section Scripts {
+<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
 <script>
+  ClassicEditor
+    .create(document.querySelector('#Description'), {
+      placeholder: 'Nhập mô tả chi tiết sản phẩm tại đây...',
+      ckfinder: {
+        uploadUrl: '/Post/UploadImage'
+      }
+    })
+    .catch(error => {
+      console.error('Lỗi khi tải CKEditor 5:', error);
+    });
+
   document.addEventListener("DOMContentLoaded", function () {
     // Xử lý xác nhận submit form
     document.getElementById('product-edit-form').addEventListener('submit', function (e) {

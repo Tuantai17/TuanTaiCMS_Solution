@@ -349,6 +349,7 @@ const ProductDetail = () => {
                     if (parsed < 1) {
                       setQuantity(1);
                     } else if (parsed > product.stockQuantity) {
+                      alert("Số lượng sản phẩm trong kho không đủ!");
                       setQuantity(product.stockQuantity);
                     } else {
                       setQuantity(parsed);
@@ -363,10 +364,17 @@ const ProductDetail = () => {
                   style={{ width: '55px', height: '38px', borderRadius: '4px', border: '1px solid #dee2e6', fontWeight: 'bold' }}
                 />
                 <button 
-                  onClick={() => setQuantity(prev => Math.min(product.stockQuantity, (parseInt(prev, 10) || 1) + 1))}
+                  onClick={() => {
+                    const currentQty = parseInt(quantity, 10) || 1;
+                    if (currentQty >= product.stockQuantity) {
+                      alert("Số lượng sản phẩm trong kho không đủ!");
+                    } else {
+                      setQuantity(currentQty + 1);
+                    }
+                  }}
                   className="btn btn-outline-secondary d-flex align-items-center justify-content-center"
                   style={{ width: '38px', height: '38px', borderRadius: '4px', border: '1px solid #dee2e6' }}
-                  disabled={product.stockQuantity === 0 || Number(quantity) >= product.stockQuantity}
+                  disabled={product.stockQuantity === 0}
                 >
                   <i className="fa-solid fa-plus"></i>
                 </button>

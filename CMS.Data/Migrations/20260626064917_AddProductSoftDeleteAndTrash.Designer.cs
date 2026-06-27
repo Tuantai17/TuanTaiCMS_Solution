@@ -4,6 +4,7 @@ using CMS.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CMS.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260626064917_AddProductSoftDeleteAndTrash")]
+    partial class AddProductSoftDeleteAndTrash
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -523,48 +526,6 @@ namespace CMS.Data.Migrations
                     b.ToTable("Orders");
                 });
 
-            modelBuilder.Entity("CMS.Data.Entities.OrderActivityLog", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ActionType")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<string>("NewValue")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("OldValue")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("OrderId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("PerformedBy")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OrderId");
-
-                    b.ToTable("OrderActivityLogs");
-                });
-
             modelBuilder.Entity("CMS.Data.Entities.OrderDetail", b =>
                 {
                     b.Property<int>("Id")
@@ -573,49 +534,7 @@ namespace CMS.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("AdjustedQuantity")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("CustomerConfirmedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CustomerConfirmedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CustomerDecision")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("DamagedQuantity")
-                        .HasColumnType("int");
-
-                    b.Property<int>("FulfillableQuantity")
-                        .HasColumnType("int");
-
-                    b.Property<string>("InternalNote")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("IssueReason")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("IssueReportedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("IssueReportedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("IssueType")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("ItemStatus")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MissingQuantity")
-                        .HasColumnType("int");
-
                     b.Property<int>("OrderId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("OriginalQuantity")
                         .HasColumnType("int");
 
                     b.Property<int>("ProductId")
@@ -634,86 +553,6 @@ namespace CMS.Data.Migrations
                     b.HasIndex("ProductId");
 
                     b.ToTable("OrderDetails");
-                });
-
-            modelBuilder.Entity("CMS.Data.Entities.OrderItemIssue", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("CustomerDecision")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<string>("CustomerNote")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<int>("DamagedQuantity")
-                        .HasColumnType("int");
-
-                    b.Property<int>("FulfillableQuantity")
-                        .HasColumnType("int");
-
-                    b.Property<string>("InternalNote")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<int>("IssueType")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MissingQuantity")
-                        .HasColumnType("int");
-
-                    b.Property<int>("OrderDetailId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("OrderId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("OrderedQuantity")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ProductId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Reason")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<DateTime>("ReportedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ReportedBy")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<DateTime?>("ResolvedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ResolvedBy")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OrderDetailId");
-
-                    b.HasIndex("OrderId");
-
-                    b.HasIndex("ProductId");
-
-                    b.HasIndex("Status");
-
-                    b.ToTable("OrderItemIssues");
                 });
 
             modelBuilder.Entity("CMS.Data.Entities.PasswordResetToken", b =>
@@ -997,17 +836,6 @@ namespace CMS.Data.Migrations
                     b.Navigation("Customer");
                 });
 
-            modelBuilder.Entity("CMS.Data.Entities.OrderActivityLog", b =>
-                {
-                    b.HasOne("CMS.Data.Entities.Order", "Order")
-                        .WithMany()
-                        .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Order");
-                });
-
             modelBuilder.Entity("CMS.Data.Entities.OrderDetail", b =>
                 {
                     b.HasOne("CMS.Data.Entities.Order", "Order")
@@ -1023,33 +851,6 @@ namespace CMS.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Order");
-
-                    b.Navigation("Product");
-                });
-
-            modelBuilder.Entity("CMS.Data.Entities.OrderItemIssue", b =>
-                {
-                    b.HasOne("CMS.Data.Entities.OrderDetail", "OrderDetail")
-                        .WithMany()
-                        .HasForeignKey("OrderDetailId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("CMS.Data.Entities.Order", "Order")
-                        .WithMany()
-                        .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("CMS.Data.Entities.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Order");
-
-                    b.Navigation("OrderDetail");
 
                     b.Navigation("Product");
                 });

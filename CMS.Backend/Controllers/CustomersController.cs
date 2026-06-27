@@ -103,6 +103,7 @@ namespace CMS.Backend.Controllers
                     email = customer.Email,
                     phone = customer.Phone,
                     address = customer.Address,
+                    avatarUrl = customer.AvatarUrl,
                     accessToken,
                     expiresAt = expiresAt.UtcDateTime,
                 });

@@ -1,0 +1,326 @@
+@model CMS.Backend.Models.ResolveOrderItemIssueViewModel
+@using CMS.Data.Enums
+
+<style>
+    .resolve-modal-header {
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 15px;
+        margin-bottom: 15px;
+    }
+    .resolve-modal-title {
+        text-transform: uppercase;
+        font-weight: 700;
+        color: #1f2937;
+        margin: 0;
+        font-size: 1.1rem;
+    }
+    .info-card {
+        background-color: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 15px;
+        height: 100%;
+    }
+    .info-card-title {
+        font-weight: 600;
+        color: #374151;
+        font-size: 0.95rem;
+        margin-bottom: 12px;
+    }
+    .product-info-img {
+        width: 70px;
+        height: 70px;
+        object-fit: contain;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        background: #fff;
+    }
+    .product-info-name {
+        font-weight: 700;
+        color: #1f2937;
+        font-size: 0.9rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .product-info-sku {
+        font-size: 0.8rem;
+        color: #6b7280;
+        margin-top: 4px;
+    }
+    .issue-stat-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 6px;
+        font-size: 0.85rem;
+    }
+    .issue-stat-label {
+        color: #6b7280;
+    }
+    .issue-stat-value {
+        color: #1f2937;
+        font-weight: 600;
+    }
+    .issue-reason-text {
+        font-size: 0.85rem;
+        color: #374151;
+        margin-top: 6px;
+        font-style: italic;
+    }
+    .form-group-label {
+        font-weight: 600;
+        color: #374151;
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+    }
+    .required-star {
+        color: #dc2626;
+    }
+    .radio-option {
+        margin-bottom: 10px;
+    }
+    .radio-option label {
+        color: #374151;
+        font-size: 0.95rem;
+        cursor: pointer;
+    }
+    .preview-card {
+        background-color: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 15px;
+    }
+    .preview-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        font-size: 0.9rem;
+    }
+    .preview-label {
+        color: #6b7280;
+    }
+    .preview-value {
+        color: #1f2937;
+        font-weight: 500;
+    }
+    .preview-value-new {
+        font-weight: 700;
+        font-size: 1rem;
+    }
+    .preview-value-diff {
+        color: #dc2626;
+        font-weight: 600;
+    }
+    .custom-input {
+        border-radius: 6px;
+        border: 1px solid #d1d5db;
+        box-shadow: none;
+    }
+    .custom-input:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+    .btn-submit-resolve {
+        background-color: #16a34a;
+        color: white;
+        border: none;
+    }
+    .btn-submit-resolve:hover {
+        background-color: #15803d;
+        color: white;
+    }
+    .alert-warning-custom {
+        background-color: #fffbeb;
+        border-left: 4px solid #fbbf24;
+        padding: 10px 15px;
+        font-size: 0.85rem;
+        color: #92400e;
+        border-radius: 4px;
+        margin-top: 10px;
+    }
+    .alert-danger-custom {
+        background-color: #fef2f2;
+        border-left: 4px solid #ef4444;
+        padding: 10px 15px;
+        font-size: 0.85rem;
+        color: #991b1b;
+        border-radius: 4px;
+        margin-top: 10px;
+    }
+</style>
+
+<div class="modal fade" id="resolveItemIssueModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg" style="max-width: 800px;">
+        <div class="modal-content" style="border-radius: 8px; border: none; box-shadow: 0 12px 35px rgba(0, 0, 0, 0.22);">
+            <div class="modal-body p-4">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center resolve-modal-header">
+                    <h5 class="resolve-modal-title">GHI NHẬN PHƯƠNG ÁN XỬ LÝ</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+
+                <!-- Two Cards: Product Info & Issue Info -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <div class="info-card">
+                            <div class="info-card-title">Sản phẩm</div>
+                            <div class="d-flex align-items-start">
+                                @if (!string.IsNullOrWhiteSpace(Model.ProductImageUrl))
+                                {
+                                    <img src="@Model.ProductImageUrl" class="product-info-img me-3" alt="@Model.ProductName" />
+                                }
+                                else
+                                {
+                                    <div class="product-info-img me-3 d-flex align-items-center justify-content-center bg-light">
+                                        <i class="bi bi-box fs-3 text-muted"></i>
+                                    </div>
+                                }
+                                <div>
+                                    <div class="product-info-name">@Model.ProductName</div>
+                                    <div class="product-info-sku">SKU: @Model.SKU</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-card">
+                            <div class="info-card-title">Thông tin sự cố</div>
+                            <div class="issue-stat-row">
+                                <span class="issue-stat-label">Số lượng đặt:</span>
+                                <span class="issue-stat-value">@Model.OrderedQuantity</span>
+                            </div>
+                            <div class="issue-stat-row">
+                                <span class="issue-stat-label">Có thể giao:</span>
+                                <span class="issue-stat-value">@Model.FulfillableQuantity</span>
+                            </div>
+                            <div class="issue-stat-row">
+                                <span class="issue-stat-label">Hư hỏng:</span>
+                                <span class="issue-stat-value">@Model.DamagedQuantity</span>
+                            </div>
+                            <div class="issue-stat-row">
+                                <span class="issue-stat-label">Thiếu:</span>
+                                <span class="issue-stat-value">@Model.MissingQuantity</span>
+                            </div>
+                            <div class="issue-stat-row" style="margin-top: 8px;">
+                                <span class="issue-stat-label">Lý do:</span>
+                            </div>
+                            <div class="issue-reason-text">@Model.IssueReason</div>
+                        </div>
+                    </div>
+                </div>
+
+                <form id="frmResolveIssue" autocomplete="off">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="IssueId" />
+                    <input type="hidden" asp-for="OrderId" />
+                    <input type="hidden" asp-for="OrderDetailId" />
+                    <input type="hidden" id="hdnResolveFulfillableQty" value="@Model.FulfillableQuantity" />
+                    
+                    <div class="row mb-4">
+                        <!-- Left Column: Decision -->
+                        <div class="col-md-6">
+                            <label class="form-group-label">Phương án khách hàng lựa chọn <span class="required-star">*</span></label>
+                            
+                            <div class="radio-option">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="Decision" id="decision0" value="0" @(Model.FulfillableQuantity == 0 ? "disabled" : "")>
+                                    <label class="form-check-label" for="decision0">1. Đồng ý nhận số lượng còn lại</label>
+                                </div>
+                            </div>
+                            
+                            <div class="radio-option">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="Decision" id="decision1" value="1">
+                                    <label class="form-check-label" for="decision1">2. Loại sản phẩm này khỏi đơn hàng</label>
+                                </div>
+                            </div>
+                            
+                            <div class="radio-option">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="Decision" id="decision2" value="2">
+                                    <label class="form-check-label" for="decision2">3. Chờ bổ sung hàng</label>
+                                </div>
+                            </div>
+                            
+                            <div class="radio-option mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="Decision" id="decision3" value="3">
+                                    <label class="form-check-label" for="decision3">4. Hủy toàn bộ đơn hàng</label>
+                                </div>
+                            </div>
+
+                            <!-- Dynamic Inputs based on Decision -->
+                            <div id="divAdjustedQty" style="display: none;" class="mb-3">
+                                <label class="form-group-label" asp-for="AdjustedQuantity">Số lượng khách đồng ý nhận <span class="required-star">*</span></label>
+                                <input type="number" asp-for="AdjustedQuantity" class="form-control custom-input" id="txtAdjustedQty" min="1" max="@Model.FulfillableQuantity" step="1" />
+                                <div class="form-text">Tối đa: @Model.FulfillableQuantity</div>
+                                <div class="invalid-feedback">Vui lòng nhập số lượng hợp lệ.</div>
+                            </div>
+
+                            <div id="divExpectedRestockDate" style="display: none;" class="mb-3">
+                                <label class="form-group-label" asp-for="ExpectedRestockDate">Ngày dự kiến có hàng</label>
+                                <input type="date" asp-for="ExpectedRestockDate" class="form-control custom-input" id="txtExpectedRestockDate" />
+                                <div class="form-text">Đơn hàng sẽ tiếp tục ở trạng thái chờ bổ sung hàng.</div>
+                            </div>
+                            
+                            <div id="alertRemoveItem" class="alert-warning-custom" style="display: none;">
+                                Sản phẩm sẽ được loại khỏi đơn hàng và không được tính vào tổng thanh toán.
+                            </div>
+                            
+                            <div id="alertCancelOrder" class="alert-danger-custom" style="display: none;">
+                                Toàn bộ đơn hàng sẽ bị hủy. Các sản phẩm còn tốt đang giữ sẽ được hoàn lại kho.
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Preview -->
+                        <div class="col-md-6">
+                            <label class="form-group-label">Tổng tiền dự kiến</label>
+                            <div class="preview-card">
+                                <div class="preview-row">
+                                    <span class="preview-label">Tổng tiền cũ:</span>
+                                    <span class="preview-value" id="previewOldTotal">0 ₫</span>
+                                </div>
+                                <div class="preview-row">
+                                    <span class="preview-label">Tổng tiền mới:</span>
+                                    <span class="preview-value preview-value-new" id="previewNewTotal">0 ₫</span>
+                                </div>
+                                <div class="preview-row mb-0">
+                                    <span class="preview-label" id="previewDiffLabel">Giảm:</span>
+                                    <span class="preview-value preview-value-diff" id="previewDiffAmount">0 ₫</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact Method & Notes -->
+                    <div class="mb-3">
+                        <label class="form-group-label" asp-for="ContactMethod">Phương thức liên hệ <span class="required-star">*</span></label>
+                        <select asp-for="ContactMethod" class="form-select custom-input" id="ddlContactMethod" required>
+                            <option value="">-- Chọn phương thức liên hệ --</option>
+                            <option value="Điện thoại">Điện thoại</option>
+                            <option value="Email">Email</option>
+                            <option value="Zalo">Zalo</option>
+                            <option value="Tin nhắn hệ thống">Tin nhắn hệ thống</option>
+                            <option value="Khác">Khác</option>
+                        </select>
+                        <div class="invalid-feedback">Vui lòng chọn phương thức liên hệ.</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-group-label" asp-for="CustomerNote">Ghi chú phản hồi của khách</label>
+                        <textarea asp-for="CustomerNote" class="form-control custom-input" id="txtCustomerNote" rows="2" placeholder="Nhập nội dung khách hàng đã trao đổi hoặc yêu cầu..." maxlength="2000"></textarea>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="d-flex justify-content-end border-top pt-3 mt-2">
+                        <button type="button" class="btn btn-light border me-2 text-secondary fw-semibold" data-bs-dismiss="modal">Hủy</button>
+                        <button type="button" class="btn btn-submit-resolve fw-semibold" id="btnSubmitResolve">
+                            <i class="bi bi-check2-circle me-1"></i> Xác nhận phương án
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

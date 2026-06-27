@@ -1,0 +1,339 @@
+@model CMS.Backend.Models.ProductTrashViewModel
+
+@{
+    ViewData["Title"] = "Thùng rác sản phẩm";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+
+    // Phân trang
+    int currentPage = Model.Page;
+    int pageSize = Model.PageSize;
+    int totalItems = Model.TotalItems;
+    int totalPages = Model.TotalPages;
+
+    int startItem = totalItems == 0 ? 0 : (currentPage - 1) * pageSize + 1;
+    int endItem = Math.Min(currentPage * pageSize, totalItems);
+}
+
+<section class="admin-card">
+    <div class="admin-card__header flex-column flex-md-row align-items-md-center gap-3">
+        <div>
+            <p class="admin-eyebrow mb-1">Product Management</p>
+            <h2 class="h4 fw-bold mb-0">THÙNG RÁC SẢN PHẨM</h2>
+            <p class="text-muted small mt-1 mb-0">Quản lý các sản phẩm đã xóa tạm. Bạn có thể khôi phục hoặc xóa vĩnh viễn các sản phẩm đủ điều kiện.</p>
+        </div>
+        <div class="d-flex gap-2 ms-md-auto">
+            <a asp-action="Index" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+                <i class="bi bi-arrow-left"></i> Quay lại sản phẩm
+            </a>
+        </div>
+    </div>
+
+    <div class="admin-card__body">
+        @* --- Bảng điều khiển tác vụ hàng loạt --- *@
+        <div class="d-flex align-items-center gap-2 mb-4">
+            <button type="button" class="btn btn-success" id="btnRestoreSelected" disabled>
+                <i class="bi bi-arrow-counterclockwise"></i> Khôi phục đã chọn
+            </button>
+            <button type="button" class="btn btn-danger" id="btnDeletePermanentSelected" disabled>
+                <i class="bi bi-trash"></i> Xóa vĩnh viễn đã chọn
+            </button>
+            <span class="text-muted ms-2 small" id="selectedCountText">Đã chọn 0 sản phẩm</span>
+        </div>
+
+        @* --- Form ẩn để submit tác vụ hàng loạt --- *@
+        <form id="bulkRestoreForm" asp-action="BulkRestore" method="post" style="display:none;">
+            @Html.AntiForgeryToken()
+        </form>
+        <form id="bulkDeletePermanentForm" asp-action="BulkPermanentDelete" method="post" style="display:none;">
+            @Html.AntiForgeryToken()
+        </form>
+
+        @* --- Bộ lọc --- *@
+        <form asp-action="Trash" method="get" id="filterForm" class="bg-light p-3 rounded mb-4 border">
+            <div class="row g-2 align-items-end">
+                <div class="col-12 col-md-3">
+                    <label class="form-label small fw-bold">Tìm kiếm</label>
+                    <input type="text" name="Keyword" class="form-control form-control-sm" placeholder="Tìm tên, mã sản phẩm..." value="@Model.Keyword">
+                </div>
+                <div class="col-12 col-md-2">
+                    <label class="form-label small fw-bold">Danh mục</label>
+                    <select name="CategoryId" class="form-select form-select-sm">
+                        <option value="">-- Tất cả --</option>
+                        @if (ViewBag.CategoryProductList != null)
+                        {
+                            foreach (var item in (SelectList)ViewBag.CategoryProductList)
+                            {
+                                <option value="@item.Value" selected="@(Model.CategoryId?.ToString() == item.Value)">@item.Text</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-12 col-md-2">
+                    <label class="form-label small fw-bold">Thời gian xóa</label>
+                    <select name="DeletedTime" class="form-select form-select-sm">
+                        <option value="">Tất cả</option>
+                        <option value="today" selected="@(Model.DeletedTime == "today")">Hôm nay</option>
+                        <option value="7days" selected="@(Model.DeletedTime == "7days")">7 ngày gần đây</option>
+                        <option value="30days" selected="@(Model.DeletedTime == "30days")">30 ngày gần đây</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-2">
+                    <label class="form-label small fw-bold">Sắp xếp</label>
+                    <select name="SortBy" class="form-select form-select-sm">
+                        <option value="newest" selected="@(Model.SortBy == "newest")">Mới xóa gần đây</option>
+                        <option value="oldest" selected="@(Model.SortBy == "oldest")">Xóa lâu nhất</option>
+                        <option value="name_asc" selected="@(Model.SortBy == "name_asc")">Tên A-Z</option>
+                        <option value="name_desc" selected="@(Model.SortBy == "name_desc")">Tên Z-A</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-funnel"></i> Lọc</button>
+                    <a asp-action="Trash" class="btn btn-sm btn-outline-secondary w-100"><i class="bi bi-arrow-repeat"></i> Làm mới</a>
+                </div>
+            </div>
+            <input type="hidden" name="PageSize" value="@Model.PageSize" />
+        </form>
+
+        @* --- Bảng danh sách rác --- *@
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 40px;">
+                            <input type="checkbox" class="form-check-input" id="selectAll" />
+                        </th>
+                        <th style="width: 80px;">Mã SP</th>
+                        <th style="width: 60px;">Ảnh</th>
+                        <th>Tên sản phẩm</th>
+                        <th>Danh mục</th>
+                        <th>Giá</th>
+                        <th>Thời gian xóa</th>
+                        <th>Lý do xóa</th>
+                        <th class="text-end" style="width: 150px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="form-check-input product-checkbox" value="@item.ProductId" />
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border">@item.ProductCode</span>
+                            </td>
+                            <td>
+                                <img src="@(string.IsNullOrWhiteSpace(item.ImageUrl) ? "https://placehold.co/80x60/e9ecef/6c757d?text=No+Image" : item.ImageUrl)"
+                                     class="rounded" style="width: 40px; height: 40px; object-fit: cover;"
+                                     alt="Ảnh SP"
+                                     onerror="this.onerror=null;this.src='https://placehold.co/80x60/e9ecef/6c757d?text=No+Image';" />
+                            </td>
+                            <td>
+                                <strong>@item.ProductName</strong>
+                            </td>
+                            <td><span class="badge bg-light text-dark">@item.CategoryName</span></td>
+                            <td>
+                                <strong class="text-success">@item.Price.ToString("N0") ₫</strong>
+                            </td>
+                            <td>
+                                <div class="small">
+                                    <i class="bi bi-clock"></i> @(item.DeletedAt?.ToString("dd/MM/yyyy HH:mm") ?? "N/A")
+                                </div>
+                                <div class="small text-muted">Bởi: @item.DeletedBy</div>
+                            </td>
+                            <td>
+                                <span class="text-muted small" title="@item.DeleteReason">@(item.DeleteReason?.Length > 30 ? item.DeleteReason.Substring(0, 30) + "..." : (item.DeleteReason ?? "Không có"))</span>
+                            </td>
+                            <td class="text-end">
+                                <form asp-action="Restore" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn khôi phục sản phẩm này?');">
+                                    <input type="hidden" name="id" value="@item.ProductId" />
+                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Khôi phục">
+                                        <i class="bi bi-arrow-counterclockwise"></i>
+                                    </button>
+                                </form>
+                                @if (item.CanPermanentDelete)
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-danger ms-1" title="Xóa vĩnh viễn"
+                                            onclick="showPermanentDeleteModal(@item.ProductId, '@Html.Raw(item.ProductName.Replace("'", "\\'"))')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-sm btn-outline-secondary ms-1" disabled title="Không thể xóa vĩnh viễn vì đã phát sinh đơn hàng">
+                                        <i class="bi bi-lock-fill"></i>
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Items.Any())
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="bi bi-trash3 fs-1 d-block mb-3 opacity-50"></i>
+                                    <h5>Thùng rác đang trống</h5>
+                                    <p>Chưa có sản phẩm nào bị xóa tạm.</p>
+                                    <a asp-action="Index" class="btn btn-outline-primary mt-2">Quay lại quản lý sản phẩm</a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @* --- Phân trang --- *@
+        @if (totalPages > 1)
+        {
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div class="text-muted small">
+                    Hiển thị <strong>@startItem–@endItem</strong> trên tổng <strong>@totalItems</strong> sản phẩm đã xóa
+                </div>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                            <a class="page-link" asp-action="Trash" asp-route-Page="@(currentPage - 1)" asp-route-Keyword="@Model.Keyword" asp-route-CategoryId="@Model.CategoryId" asp-route-DeletedTime="@Model.DeletedTime" asp-route-SortBy="@Model.SortBy"><i class="bi bi-chevron-left"></i></a>
+                        </li>
+                        @for (int i = 1; i <= totalPages; i++)
+                        {
+                            <li class="page-item @(i == currentPage ? "active" : "")">
+                                <a class="page-link" asp-action="Trash" asp-route-Page="@i" asp-route-Keyword="@Model.Keyword" asp-route-CategoryId="@Model.CategoryId" asp-route-DeletedTime="@Model.DeletedTime" asp-route-SortBy="@Model.SortBy">@i</a>
+                            </li>
+                        }
+                        <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                            <a class="page-link" asp-action="Trash" asp-route-Page="@(currentPage + 1)" asp-route-Keyword="@Model.Keyword" asp-route-CategoryId="@Model.CategoryId" asp-route-DeletedTime="@Model.DeletedTime" asp-route-SortBy="@Model.SortBy"><i class="bi bi-chevron-right"></i></a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        }
+    </div>
+</section>
+
+@* --- Modal Xóa Vĩnh Viễn --- *@
+<div class="modal fade" id="permanentDeleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form asp-action="PermanentDelete" method="post">
+                <div class="modal-header bg-danger text-white border-bottom-0">
+                    <h5 class="modal-title"><i class="bi bi-exclamation-octagon-fill me-2"></i>Xóa vĩnh viễn sản phẩm?</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Sản phẩm <strong id="pdProductName"></strong> sẽ bị xóa hoàn toàn khỏi cơ sở dữ liệu và không thể khôi phục.</p>
+                    <p class="text-danger fw-bold"><i class="bi bi-exclamation-triangle"></i> Thao tác này không thể hoàn tác.</p>
+                    <input type="hidden" name="id" id="pdProductId" />
+                    
+                    <div class="form-check mt-4">
+                        <input class="form-check-input" type="checkbox" id="confirmPermanentDelete" required>
+                        <label class="form-check-label text-danger" for="confirmPermanentDelete">
+                            Tôi hiểu rằng thao tác này không thể hoàn tác.
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-top-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-danger" id="btnConfirmDelete" disabled>
+                        <i class="bi bi-trash"></i> Xóa vĩnh viễn
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // Checkbox xử lý xóa vĩnh viễn
+    const confirmCheckbox = document.getElementById("confirmPermanentDelete");
+    const btnConfirmDelete = document.getElementById("btnConfirmDelete");
+    
+    if (confirmCheckbox) {
+        confirmCheckbox.addEventListener("change", function () {
+            if (this.checked) {
+                btnConfirmDelete.removeAttribute("disabled");
+            } else {
+                btnConfirmDelete.setAttribute("disabled", "true");
+            }
+        });
+    }
+
+    // Modal reset
+    document.getElementById('permanentDeleteModal').addEventListener('hidden.bs.modal', function () {
+        if(confirmCheckbox) confirmCheckbox.checked = false;
+        if(btnConfirmDelete) btnConfirmDelete.setAttribute("disabled", "true");
+    });
+
+    // Checkbox hàng loạt
+    const selectAllCheckbox = document.getElementById("selectAll");
+    const productCheckboxes = document.querySelectorAll(".product-checkbox");
+    const btnRestoreSelected = document.getElementById("btnRestoreSelected");
+    const btnDeletePermanentSelected = document.getElementById("btnDeletePermanentSelected");
+    const selectedCountText = document.getElementById("selectedCountText");
+    const bulkRestoreForm = document.getElementById("bulkRestoreForm");
+    const bulkDeletePermanentForm = document.getElementById("bulkDeletePermanentForm");
+
+    function updateCheckboxUI() {
+        const checkedCheckboxes = document.querySelectorAll(".product-checkbox:checked");
+        const count = checkedCheckboxes.length;
+        selectedCountText.textContent = `Đã chọn ${count} sản phẩm`;
+
+        if (count > 0) {
+            btnRestoreSelected.removeAttribute("disabled");
+            btnDeletePermanentSelected.removeAttribute("disabled");
+        } else {
+            btnRestoreSelected.setAttribute("disabled", "true");
+            btnDeletePermanentSelected.setAttribute("disabled", "true");
+        }
+
+        selectAllCheckbox.checked = (count === productCheckboxes.length && productCheckboxes.length > 0);
+    }
+
+    selectAllCheckbox.addEventListener("change", function () {
+        productCheckboxes.forEach(cb => { cb.checked = selectAllCheckbox.checked; });
+        updateCheckboxUI();
+    });
+
+    productCheckboxes.forEach(cb => {
+        cb.addEventListener("change", function () { updateCheckboxUI(); });
+    });
+
+    btnRestoreSelected.addEventListener("click", function () {
+        if (confirm(`Khôi phục ${document.querySelectorAll(".product-checkbox:checked").length} sản phẩm đã chọn?`)) {
+            submitBulkForm(bulkRestoreForm);
+        }
+    });
+
+    btnDeletePermanentSelected.addEventListener("click", function () {
+        if (confirm(`CẢNH BÁO: Xóa vĩnh viễn ${document.querySelectorAll(".product-checkbox:checked").length} sản phẩm?\nThao tác không thể hoàn tác.`)) {
+            submitBulkForm(bulkDeletePermanentForm);
+        }
+    });
+
+    function submitBulkForm(form) {
+        const checkedCheckboxes = document.querySelectorAll(".product-checkbox:checked");
+        const oldInputs = form.querySelectorAll("input[name='ids']");
+        oldInputs.forEach(input => input.remove());
+
+        checkedCheckboxes.forEach(cb => {
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = "ids";
+            input.value = cb.value;
+            form.appendChild(input);
+        });
+
+        form.submit();
+    }
+});
+
+function showPermanentDeleteModal(id, name) {
+    document.getElementById('pdProductId').value = id;
+    document.getElementById('pdProductName').textContent = name;
+    new bootstrap.Modal(document.getElementById('permanentDeleteModal')).show();
+}
+</script>
+}

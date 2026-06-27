@@ -87,6 +87,18 @@ namespace CMS.Backend.Controllers
             ViewBag.CustomerPhone = order.Customer?.Phone ?? "-";
             ViewBag.CustomerEmail = order.Customer?.Email ?? "-";
 
+            // Lấy danh sách sự cố và lịch sử
+            ViewBag.Issues = _context.OrderItemIssues
+                .Include(i => i.Product)
+                .Where(i => i.OrderId == id)
+                .OrderByDescending(i => i.ReportedAt)
+                .ToList();
+                
+            ViewBag.ActivityLogs = _context.OrderActivityLogs
+                .Where(l => l.OrderId == id)
+                .OrderByDescending(l => l.CreatedAt)
+                .ToList();
+
             return View(order);
         }
 
@@ -110,6 +122,19 @@ namespace CMS.Backend.Controllers
 
             if (oldStatus != newStatus)
             {
+                // Kiểm tra validation cho OrderItemIssue
+                bool hasOpenIssues = _context.OrderItemIssues.Any(i => i.OrderId == existingOrder.Id && 
+                                                                       (i.Status == CMS.Data.Enums.OrderItemIssueStatus.Open || 
+                                                                        i.Status == CMS.Data.Enums.OrderItemIssueStatus.WaitingForCustomer || 
+                                                                        i.Status == CMS.Data.Enums.OrderItemIssueStatus.WaitingForRestock));
+                
+                if (hasOpenIssues && (newStatus == 3 || newStatus == 4))
+                {
+                    ModelState.AddModelError("", "Không thể chuyển sang trạng thái Đang giao hàng hoặc Hoàn thành khi đơn hàng có sự cố chưa được giải quyết.");
+                    PrepareEditViewBag(existingOrder);
+                    return View(existingOrder);
+                }
+
                 // Kiểm tra Validation Quy trình
                 bool isValidTransition = false;
                 switch (oldStatus)
@@ -125,6 +150,12 @@ namespace CMS.Backend.Controllers
                         break;
                     case 3: // SHIPPING
                         isValidTransition = (newStatus == 4);
+                        break;
+                    case 6: // AWAITING_CUSTOMER_CONFIRMATION
+                        isValidTransition = (newStatus == 2 || newStatus == 5);
+                        break;
+                    case 7: // WAITING_FOR_RESTOCK
+                        isValidTransition = (newStatus == 2 || newStatus == 5);
                         break;
                     case 4: // COMPLETED
                     case 5: // CANCELLED
@@ -273,6 +304,17 @@ namespace CMS.Backend.Controllers
             ViewBag.CustomerName = order.Customer?.FullName ?? "Không xác định";
             ViewBag.CustomerPhone = order.Customer?.Phone ?? "-";
             ViewBag.CustomerEmail = order.Customer?.Email ?? "-";
+
+            ViewBag.Issues = _context.OrderItemIssues
+                .Include(i => i.Product)
+                .Where(i => i.OrderId == order.Id)
+                .OrderByDescending(i => i.ReportedAt)
+                .ToList();
+                
+            ViewBag.ActivityLogs = _context.OrderActivityLogs
+                .Where(l => l.OrderId == order.Id)
+                .OrderByDescending(l => l.CreatedAt)
+                .ToList();
         }
 
         // Action Cancel: Hủy đơn hàng và hoàn trả tồn kho sản phẩm.
