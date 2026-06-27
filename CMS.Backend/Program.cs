@@ -35,6 +35,8 @@ builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Emai
 builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddTransient<INotificationService, NotificationService>();
 builder.Services.AddTransient<IProductFavoriteService, ProductFavoriteService>();
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IOrderIssueService, OrderIssueService>();
 
 // 1. Đăng ký các dịch vụ bổ trợ khám phá Endpoint phục vụ Web API
 builder.Services.AddEndpointsApiExplorer();

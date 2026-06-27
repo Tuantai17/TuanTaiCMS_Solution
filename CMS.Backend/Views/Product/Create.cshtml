@@ -62,19 +62,19 @@ Mô tả: Form thêm sản phẩm mới.
                         </div>
                         <div class="input-group input-group-sm mb-1" style="width: 150px;">
                             <span class="input-group-text">Thứ tự</span>
-                            <input asp-for="DisplayOrderSale" class="form-control" type="number" min="0" placeholder="0" />
+                            <input asp-for="DisplayOrderSale" class="form-control" type="number" min="0" placeholder="0" value="0" />
                         </div>
                     </div>
 
                     <div class="mb-3" id="SalePriceWrapper" style="display: none;">
                         <label asp-for="SalePrice" class="form-label fw-bold text-danger">Giá khuyến mãi (₫):</label>
-                        <input asp-for="SalePrice" class="form-control border-danger" type="number" min="0" step="1000" placeholder="0" />
+                        <input asp-for="SalePrice" class="form-control border-danger" type="number" min="0" step="1000" placeholder="0" value="0" />
                         <span asp-validation-for="SalePrice" class="text-danger small"></span>
                     </div>
 
                     <div class="mb-3">
                         <label asp-for="StockQuantity" class="form-label fw-bold">Số lượng tồn kho:</label>
-                        <input asp-for="StockQuantity" class="form-control" type="number" min="0" placeholder="0" />
+                        <input asp-for="StockQuantity" class="form-control" type="number" min="0" placeholder="0" value="0" />
                     </div>
 
                     <div class="mb-3 d-flex gap-4 border p-2 rounded bg-light">
@@ -85,7 +85,7 @@ Mô tả: Form thêm sản phẩm mới.
                             </div>
                             <div class="input-group input-group-sm" style="width: 140px;">
                                 <span class="input-group-text">Thứ tự</span>
-                                <input asp-for="DisplayOrderNew" class="form-control" type="number" min="0" placeholder="0" />
+                                <input asp-for="DisplayOrderNew" class="form-control" type="number" min="0" placeholder="0" value="0" />
                             </div>
                         </div>
 
@@ -96,7 +96,7 @@ Mô tả: Form thêm sản phẩm mới.
                             </div>
                             <div class="input-group input-group-sm" style="width: 140px;">
                                 <span class="input-group-text">Thứ tự</span>
-                                <input asp-for="DisplayOrderBestSelling" class="form-control" type="number" min="0" placeholder="0" />
+                                <input asp-for="DisplayOrderBestSelling" class="form-control" type="number" min="0" placeholder="0" value="0" />
                             </div>
                         </div>
                     </div>
@@ -126,7 +126,19 @@ Mô tả: Form thêm sản phẩm mới.
 </section>
 
 @section Scripts {
+<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
 <script>
+  ClassicEditor
+    .create(document.querySelector('#Description'), {
+      placeholder: 'Nhập mô tả chi tiết sản phẩm tại đây...',
+      ckfinder: {
+        uploadUrl: '/Post/UploadImage'
+      }
+    })
+    .catch(error => {
+      console.error('Lỗi khi tải CKEditor 5:', error);
+    });
+
   document.addEventListener("DOMContentLoaded", function () {
     // Xử lý xác nhận submit form
     document.getElementById('product-create-form').addEventListener('submit', function (e) {

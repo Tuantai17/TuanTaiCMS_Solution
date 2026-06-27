@@ -1,5 +1,4 @@
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://localhost:7238/api';
-const BACKEND_ORIGIN = API_BASE_URL.replace(/\/api\/?$/i, '');
+const IMAGE_BASE_URL = process.env.REACT_APP_IMAGE_BASE_URL || (process.env.REACT_APP_API_URL || 'https://localhost:7238/api').replace(/\/api\/?$/i, '');
 
 export const getMediaUrl = (url, fallback = '') => {
   if (!url) {
@@ -11,5 +10,5 @@ export const getMediaUrl = (url, fallback = '') => {
   }
 
   const normalizedPath = url.startsWith('/') ? url : `/${url}`;
-  return `${BACKEND_ORIGIN}${normalizedPath}`;
+  return `${IMAGE_BASE_URL}${normalizedPath}`;
 };

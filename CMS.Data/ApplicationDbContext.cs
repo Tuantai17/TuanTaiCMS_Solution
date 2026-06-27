@@ -25,6 +25,10 @@ namespace CMS.Data
         public DbSet<Inventory> Inventories { get; set; }
         public DbSet<InventoryTransaction> InventoryTransactions { get; set; }
         public DbSet<ProductFavorite> ProductFavorites { get; set; }
+        
+        // Cập nhật: Luồng xử lý lỗi đơn hàng
+        public DbSet<OrderItemIssue> OrderItemIssues { get; set; }
+        public DbSet<OrderActivityLog> OrderActivityLogs { get; set; }
 
         // Entities ho tro Email, Notification, Password Reset
         public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
@@ -63,6 +67,39 @@ namespace CMS.Data
             modelBuilder.Entity<ProductFavorite>()
                 .HasIndex(pf => new { pf.CustomerId, pf.ProductId })
                 .IsUnique();
+
+            // Global Query Filter cho Product (Soft Delete)
+            modelBuilder.Entity<Product>()
+                .HasQueryFilter(p => !p.IsDeleted);
+
+            // Index và cấu hình khoá ngoại cho luồng xử lý lỗi
+            modelBuilder.Entity<OrderItemIssue>()
+                .HasIndex(i => i.OrderId);
+            modelBuilder.Entity<OrderItemIssue>()
+                .HasIndex(i => i.OrderDetailId);
+            modelBuilder.Entity<OrderItemIssue>()
+                .HasIndex(i => i.Status);
+
+            modelBuilder.Entity<OrderItemIssue>()
+                .HasOne(i => i.Order)
+                .WithMany()
+                .HasForeignKey(i => i.OrderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<OrderItemIssue>()
+                .HasOne(i => i.OrderDetail)
+                .WithMany()
+                .HasForeignKey(i => i.OrderDetailId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<OrderItemIssue>()
+                .HasOne(i => i.Product)
+                .WithMany()
+                .HasForeignKey(i => i.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<OrderActivityLog>()
+                .HasIndex(l => l.OrderId);
         }
     }
 }

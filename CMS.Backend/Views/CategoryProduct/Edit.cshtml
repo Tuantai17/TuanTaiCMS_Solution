@@ -82,7 +82,19 @@ Mô tả: Form chỉnh sửa thông tin loại sản phẩm, hỗ trợ upload/t
 </section>
 
 @section Scripts {
+<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
 <script>
+  ClassicEditor
+    .create(document.querySelector('#Description'), {
+      placeholder: 'Nhập mô tả chi tiết tại đây...',
+      ckfinder: {
+        uploadUrl: '/Post/UploadImage'
+      }
+    })
+    .catch(error => {
+      console.error('Lỗi khi tải CKEditor 5:', error);
+    });
+
   // Xem trước ảnh khi chọn file mới
   document.getElementById('imageInput').addEventListener('change', function (e) {
     var file = e.target.files[0];

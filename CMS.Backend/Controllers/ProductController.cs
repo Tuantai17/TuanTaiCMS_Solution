@@ -12,6 +12,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using CMS.Backend.Services;
+using CMS.Backend.Models;
 
 namespace CMS.Backend.Controllers
 {
@@ -20,10 +22,12 @@ namespace CMS.Backend.Controllers
     public class ProductController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IProductService _productService;
 
-        public ProductController(ApplicationDbContext context)
+        public ProductController(ApplicationDbContext context, IProductService productService)
         {
             _context = context;
+            _productService = productService;
         }
 
         // Action Index hiển thị danh sách sản phẩm có phân trang và bộ lọc danh mục.
@@ -107,7 +111,7 @@ namespace CMS.Backend.Controllers
         public IActionResult Create()
         {
             LoadCategoryProductList();
-            return View();
+            return View(new Product());
         }
 
         // Action POST Create lưu sản phẩm mới, xử lý upload ảnh nếu có.
@@ -235,17 +239,21 @@ namespace CMS.Backend.Controllers
             return RedirectToAction("Index");
         }
 
-        // Action Delete xóa sản phẩm theo id.
-        public IActionResult Delete(int id)
+        // Action SoftDelete xóa tạm sản phẩm theo id.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SoftDelete(int id, string? reason)
         {
-            var product = _context.Products.Find(id);
+            var username = User.Identity?.Name ?? "Unknown Admin";
+            var result = await _productService.SoftDeleteAsync(id, username, reason);
 
-            if (product != null)
+            if (result.Success)
             {
-                _context.Products.Remove(product);
-                _context.SaveChanges();
-
-                TempData["SuccessMessage"] = "Sản phẩm đã được xóa thành công!";
+                TempData["SuccessMessage"] = result.Message;
+            }
+            else
+            {
+                TempData["ErrorMessage"] = result.Message;
             }
 
             return RedirectToAction("Index");
@@ -363,23 +371,130 @@ namespace CMS.Backend.Controllers
             return Json(new { success = true, type = type, displayOrder = displayOrder });
         }
 
-        // Action POST: Xóa nhiều sản phẩm đã chọn.
+        // Action POST: Chuyển nhiều sản phẩm đã chọn vào thùng rác.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult DeleteSelected(List<int> ids)
+        public async Task<IActionResult> BulkSoftDelete(List<int> ids, string? reason)
         {
             if (ids == null || ids.Count == 0)
             {
-                TempData["ErrorMessage"] = "Vui lòng chọn ít nhất một sản phẩm để xóa.";
+                TempData["ErrorMessage"] = "Vui lòng chọn ít nhất một sản phẩm để thao tác.";
                 return RedirectToAction("Index");
             }
 
-            var products = _context.Products.Where(p => ids.Contains(p.Id)).ToList();
-            _context.Products.RemoveRange(products);
-            _context.SaveChanges();
+            var username = User.Identity?.Name ?? "Unknown Admin";
+            var result = await _productService.BulkSoftDeleteAsync(ids, username, reason);
 
-            TempData["SuccessMessage"] = $"Đã xóa thành công {products.Count} sản phẩm.";
+            if (result.SuccessCount > 0 && result.FailedCount == 0)
+            {
+                TempData["SuccessMessage"] = $"Đã chuyển thành công {result.SuccessCount} sản phẩm vào thùng rác.";
+            }
+            else if (result.SuccessCount > 0 && result.FailedCount > 0)
+            {
+                TempData["SuccessMessage"] = $"Đã chuyển {result.SuccessCount} sản phẩm vào thùng rác. Có {result.FailedCount} sản phẩm được giữ lại do đã phát sinh đơn hàng.";
+            }
+            else if (result.SuccessCount == 0 && result.FailedCount > 0)
+            {
+                TempData["ErrorMessage"] = $"Không thể xóa bất kỳ sản phẩm nào vì tất cả đã phát sinh đơn hàng.";
+            }
+
             return RedirectToAction("Index");
+        }
+
+        // Action GET Trash
+        public async Task<IActionResult> Trash([FromQuery] ProductTrashViewModel filter)
+        {
+            var result = await _productService.GetTrashAsync(filter);
+            LoadCategoryProductList(filter.CategoryId);
+            return View(result);
+        }
+
+        // Action POST Restore
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Restore(int id)
+        {
+            var result = await _productService.RestoreAsync(id);
+            if (result.Success)
+            {
+                TempData["SuccessMessage"] = result.Message;
+            }
+            else
+            {
+                TempData["ErrorMessage"] = result.Message;
+            }
+            return RedirectToAction("Trash");
+        }
+
+        // Action POST Bulk Restore
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BulkRestore(List<int> ids)
+        {
+            if (ids == null || ids.Count == 0)
+            {
+                TempData["ErrorMessage"] = "Vui lòng chọn ít nhất một sản phẩm để thao tác.";
+                return RedirectToAction("Trash");
+            }
+
+            var result = await _productService.BulkRestoreAsync(ids);
+            if (result.SuccessCount > 0)
+            {
+                TempData["SuccessMessage"] = $"Đã khôi phục thành công {result.SuccessCount} sản phẩm.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Không thể khôi phục các sản phẩm đã chọn.";
+            }
+
+            return RedirectToAction("Trash");
+        }
+
+        // Action POST Permanent Delete
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> PermanentDelete(int id)
+        {
+            var result = await _productService.PermanentDeleteAsync(id);
+            if (result.Success)
+            {
+                TempData["SuccessMessage"] = result.Message;
+            }
+            else
+            {
+                TempData["ErrorMessage"] = result.Message;
+            }
+            return RedirectToAction("Trash");
+        }
+
+        // Action POST Bulk Permanent Delete
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BulkPermanentDelete(List<int> ids)
+        {
+            if (ids == null || ids.Count == 0)
+            {
+                TempData["ErrorMessage"] = "Vui lòng chọn ít nhất một sản phẩm để thao tác.";
+                return RedirectToAction("Trash");
+            }
+
+            var result = await _productService.BulkPermanentDeleteAsync(ids);
+            if (result.SuccessCount > 0 && result.FailedCount == 0)
+            {
+                TempData["SuccessMessage"] = $"Đã xóa vĩnh viễn thành công {result.SuccessCount} sản phẩm.";
+            }
+            else if (result.SuccessCount > 0 && result.FailedCount > 0)
+            {
+                TempData["SuccessMessage"] = $"Đã xóa vĩnh viễn {result.SuccessCount} sản phẩm. Có {result.FailedCount} sản phẩm không thể xóa vì đã phát sinh đơn hàng.";
+            }
+            else if (result.SuccessCount == 0 && result.FailedCount > 0)
+            {
+                TempData["ErrorMessage"] = $"Không thể xóa vĩnh viễn các sản phẩm này do đã phát sinh đơn hàng.";
+            }
+
+            return RedirectToAction("Trash");
         }
 
         // Hàm dùng chung để nạp dropdown loại sản phẩm cho form Create/Edit.

@@ -18,7 +18,9 @@ const ORDER_STATUS_CONFIG = {
   2: { label: "Đang chuẩn bị", step: 3, icon: "fa-solid fa-box-open" },
   3: { label: "Đang giao hàng", step: 4, icon: "fa-solid fa-truck-fast" },
   4: { label: "Hoàn thành", step: 5, icon: "fa-regular fa-circle-check" },
-  5: { label: "Đã hủy", step: -1, icon: "fa-regular fa-circle-xmark" }
+  5: { label: "Đã hủy", step: -1, icon: "fa-regular fa-circle-xmark" },
+  6: { label: "Chờ khách xác nhận", step: 3, icon: "fa-solid fa-triangle-exclamation", color: "#f59e0b" },
+  7: { label: "Chờ bổ sung hàng", step: 3, icon: "fa-solid fa-clock", color: "#f59e0b" }
 };
 
 function OrderDetailPage() {
@@ -234,16 +236,39 @@ function OrderDetailPage() {
           ) : error ? (
             <div className="order-history-not-found" style={{ textAlign: 'center', padding: '60px 0' }}>
               <div style={{ fontSize: '48px', color: '#dc2626', marginBottom: '16px' }}>
-                <i className="fa-regular fa-circle-xmark"></i>
+                <i className="fa-solid fa-triangle-exclamation"></i>
               </div>
-              <h3 style={{ fontSize: '20px', fontWeight: 'bold' }}>{error}</h3>
-              <p style={{ color: '#6b7280', marginBottom: '24px' }}>Đơn hàng này có thể không tồn tại hoặc không thuộc quyền truy cập của tài khoản hiện tại.</p>
-              <Link to="/account/orders" className="order-back-btn" style={{ background: '#d71920', color: '#fff', border: 'none' }}>
-                Về lịch sử mua hàng
+              <h3>{error}</h3>
+              <Link to="/account/orders" className="btn-back-list mt-3">
+                Quay lại danh sách đơn
               </Link>
             </div>
-          ) : (
+          ) : order ? (
             <>
+              {/* Banner cảnh báo sự cố */}
+              {(order.status === 6 || order.status === 7) && (
+                <div style={{
+                  backgroundColor: '#fffbeb',
+                  borderLeft: '4px solid #f59e0b',
+                  padding: '16px',
+                  marginBottom: '24px',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px'
+                }}>
+                  <i className="fa-solid fa-triangle-exclamation" style={{ color: '#d97706', fontSize: '24px', marginTop: '4px' }}></i>
+                  <div>
+                    <h4 style={{ margin: 0, color: '#b45309', fontSize: '16px', fontWeight: '600' }}>
+                      Đơn hàng đang chờ xử lý sự cố!
+                    </h4>
+                    <p style={{ margin: '4px 0 0', color: '#92400e', fontSize: '14px' }}>
+                      Trong quá trình chuẩn bị hàng, hệ thống phát hiện có sản phẩm bị lỗi/thiếu. Bộ phận CSKH sẽ sớm liên hệ trực tiếp với bạn qua số điện thoại để tư vấn và chốt phương án xử lý (như giảm số lượng, loại sản phẩm hoặc hủy đơn) trước khi tiếp tục giao hàng. Mong bạn thông cảm vì sự bất tiện này.
+                    </p>
+                  </div>
+                </div>
+              )}
+                
               {/* Header */}
               <div className="order-detail-header">
                 <div>
@@ -482,7 +507,7 @@ function OrderDetailPage() {
               </div>
 
             </>
-          )}
+          ) : null}
         </section>
       </div>
 

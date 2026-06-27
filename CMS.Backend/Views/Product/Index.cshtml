@@ -11,6 +11,8 @@ Mô tả: Trang danh sách sản phẩm trong khu vực quản trị (có phân 
 @{
     ViewData["Title"] = "Quản lý sản phẩm";
     Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    @inject CMS.Backend.Services.IProductService ProductService
+    var trashCount = await ProductService.GetTrashCountAsync();
 
     // Lấy thông tin phân trang từ ViewBag
     int currentPage = ViewBag.CurrentPage;
@@ -29,16 +31,26 @@ Mô tả: Trang danh sách sản phẩm trong khu vực quản trị (có phân 
             <p class="admin-eyebrow mb-1">Product Management</p>
             <h2 class="h4 fw-bold mb-0">Danh sách sản phẩm</h2>
         </div>
-        <a asp-action="Create" class="btn btn-success" id="product-create-button">
-            <i class="bi bi-plus-circle"></i> Thêm sản phẩm
-        </a>
+        <div class="d-flex align-items-center gap-2">
+            <a asp-action="Trash" class="btn btn-outline-danger d-flex align-items-center gap-2 bg-white text-danger border-danger border-opacity-50 hover-bg-danger hover-text-white transition-all">
+                <i class="bi bi-trash3"></i> 
+                Thùng rác
+                @if(trashCount > 0)
+                {
+                    <span class="badge bg-danger rounded-pill">@trashCount</span>
+                }
+            </a>
+            <a asp-action="Create" class="btn btn-success" id="product-create-button">
+                <i class="bi bi-plus-circle"></i> Thêm sản phẩm
+            </a>
+        </div>
     </div>
 
     <div class="admin-card__body">
         @* --- Bảng điều khiển xóa hàng loạt --- *@
         <div class="d-flex align-items-center gap-2 mb-3">
             <button type="button" class="btn btn-danger" id="btnDeleteSelected" disabled>
-                <i class="bi bi-trash"></i> Xóa đã chọn
+                <i class="bi bi-trash"></i> Chuyển vào thùng rác
             </button>
             <button type="button" class="btn btn-secondary" id="btnDeselectAll" disabled>
                 Bỏ chọn
@@ -47,7 +59,7 @@ Mô tả: Trang danh sách sản phẩm trong khu vực quản trị (có phân 
         </div>
 
         @* --- Form ẩn để submit POST xóa nhiều --- *@
-        <form id="deleteSelectedForm" asp-action="DeleteSelected" method="post" style="display:none;">
+        <form id="deleteSelectedForm" asp-action="BulkSoftDelete" method="post" style="display:none;">
             @Html.AntiForgeryToken()
         </form>
 
@@ -118,6 +130,7 @@ Mô tả: Trang danh sách sản phẩm trong khu vực quản trị (có phân 
                 <tbody>
                     @foreach (var item in Model)
                     {
+                        var hasOrder = await ProductService.HasOrderHistoryAsync(item.Id);
                         var discountPercent = item.IsSale && item.Price > 0
                             ? (int)Math.Round((1 - item.SalePrice / item.Price) * 100)
                             : 0;
@@ -221,10 +234,19 @@ Mô tả: Trang danh sách sản phẩm trong khu vực quản trị (có phân 
                                 <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">
                                     <i class="bi bi-pencil"></i> Sửa
                                 </a>
-                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger"
-                                   onclick="return confirm('Bạn có chắc muốn xóa sản phẩm này không?')">
-                                    <i class="bi bi-trash"></i> Xóa
-                                </a>
+                                @if (hasOrder)
+                                {
+                                    <button class="btn btn-sm btn-outline-secondary" disabled title="Không thể xóa vì sản phẩm đã phát sinh đơn hàng">
+                                        <i class="bi bi-lock-fill"></i>
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-danger" title="Chuyển sản phẩm vào thùng rác"
+                                            onclick="showSoftDeleteModal(@item.Id, '@Html.Raw(item.Name.Replace("'", "\\'"))')">
+                                        <i class="bi bi-trash"></i> Xóa
+                                    </button>
+                                }
                             </td>
                         </tr>
                     }
@@ -345,6 +367,57 @@ Mô tả: Trang danh sách sản phẩm trong khu vực quản trị (có phân 
     </div>
 </div>
 
+@* --- Modal Soft Delete --- *@
+<div class="modal fade" id="softDeleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form asp-action="SoftDelete" method="post" id="softDeleteForm">
+                <div class="modal-header bg-light border-bottom-0">
+                    <h5 class="modal-title text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Chuyển sản phẩm vào thùng rác?</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Sản phẩm <strong id="sdProductName"></strong> sẽ bị ẩn khỏi website và được chuyển vào thùng rác. Bạn có thể khôi phục sản phẩm sau này.</p>
+                    <input type="hidden" name="id" id="sdProductId" />
+                    
+                    <div class="mb-3 mt-4">
+                        <label class="form-label text-muted small fw-bold">Lý do xóa (không bắt buộc)</label>
+                        <input type="hidden" name="reason" id="actualDeleteReason" />
+                        
+                        <div class="form-check mb-2">
+                            <input class="form-check-input reason-radio" type="radio" name="reasonOption" id="reasonOpt1" value="Ngừng kinh doanh sản phẩm này">
+                            <label class="form-check-label" for="reasonOpt1">Ngừng kinh doanh sản phẩm này</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input reason-radio" type="radio" name="reasonOption" id="reasonOpt2" value="Sản phẩm bị lỗi / hỏng">
+                            <label class="form-check-label" for="reasonOpt2">Sản phẩm bị lỗi / hỏng</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input reason-radio" type="radio" name="reasonOption" id="reasonOpt3" value="Tạo nhầm sản phẩm">
+                            <label class="form-check-label" for="reasonOpt3">Tạo nhầm sản phẩm</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input reason-radio" type="radio" name="reasonOption" id="reasonOpt4" value="other">
+                            <label class="form-check-label" for="reasonOpt4">Khác (nhập văn bản)</label>
+                        </div>
+
+                        <div id="otherReasonContainer" style="display: none; margin-top: 10px;">
+                            <textarea id="otherReasonText" class="form-control" rows="3" placeholder="Nhập lý do xóa sản phẩm..." maxlength="500"></textarea>
+                            <div class="form-text text-end">Tối đa 500 ký tự</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-top-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Chuyển vào thùng rác
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
 <script>
 document.addEventListener("DOMContentLoaded", function () {
@@ -420,7 +493,7 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        if (confirm(`Bạn có chắc muốn xóa ${checkedCheckboxes.length} sản phẩm đã chọn không?`)) {
+        if (confirm(`Chuyển ${checkedCheckboxes.length} sản phẩm đã chọn vào thùng rác?\nNhững sản phẩm đã phát sinh đơn hàng sẽ được giữ lại.`)) {
             // Xóa input cũ
             const oldInputs = deleteSelectedForm.querySelectorAll("input[name='ids']");
             oldInputs.forEach(input => input.remove());
@@ -650,6 +723,52 @@ document.addEventListener("DOMContentLoaded", function () {
             alert('Lỗi kết nối server.');
         });
     });
+
+    // Handle soft delete reason radio buttons
+    const reasonRadios = document.querySelectorAll('.reason-radio');
+    const otherReasonContainer = document.getElementById('otherReasonContainer');
+
+    reasonRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'other') {
+                otherReasonContainer.style.display = 'block';
+            } else {
+                otherReasonContainer.style.display = 'none';
+            }
+        });
+    });
+
+    // Handle soft delete form submission
+    const softDeleteForm = document.getElementById('softDeleteForm');
+    if (softDeleteForm) {
+        softDeleteForm.addEventListener('submit', function(e) {
+            const selectedRadio = document.querySelector('.reason-radio:checked');
+            let finalReason = '';
+            
+            if (selectedRadio) {
+                if (selectedRadio.value === 'other') {
+                    finalReason = document.getElementById('otherReasonText').value;
+                } else {
+                    finalReason = selectedRadio.value;
+                }
+            }
+            
+            document.getElementById('actualDeleteReason').value = finalReason;
+        });
+    }
 });
+
+function showSoftDeleteModal(id, name) {
+    document.getElementById('sdProductId').value = id;
+    document.getElementById('sdProductName').textContent = name;
+    
+    // Reset form states
+    document.querySelectorAll('.reason-radio').forEach(r => r.checked = false);
+    document.getElementById('otherReasonContainer').style.display = 'none';
+    document.getElementById('otherReasonText').value = '';
+    document.getElementById('actualDeleteReason').value = '';
+
+    new bootstrap.Modal(document.getElementById('softDeleteModal')).show();
+}
 </script>
 }

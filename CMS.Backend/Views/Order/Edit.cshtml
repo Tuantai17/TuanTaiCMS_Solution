@@ -1,11 +1,12 @@
 @model CMS.Data.Entities.Order
 @using System.Text.RegularExpressions
+@using CMS.Data.Enums
 
 @{
     ViewData["Title"] = "Cập nhật trạng thái đơn hàng";
     Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
-    var currentStatusText = Model.Status switch { 0 => "Chờ duyệt", 1 => "Đã duyệt", 2 => "Đang chuẩn bị hàng", 3 => "Đang giao hàng", 4 => "Hoàn thành", 5 => "Đã hủy", _ => "Không xác định" };
-    var currentBadgeClass = Model.Status switch { 0 => "bg-warning text-dark", 1 => "bg-info text-dark", 2 => "bg-primary", 3 => "bg-primary", 4 => "bg-success", 5 => "bg-danger", _ => "bg-secondary" };
+    var currentStatusText = Model.Status switch { 0 => "Chờ duyệt", 1 => "Đã duyệt", 2 => "Đang chuẩn bị hàng", 3 => "Đang giao hàng", 4 => "Hoàn thành", 5 => "Đã hủy", 6 => "Chờ khách xác nhận", 7 => "Chờ bổ sung hàng", 8 => "Sẵn sàng giao", _ => "Không xác định" };
+    var currentBadgeClass = Model.Status switch { 0 => "bg-warning text-dark", 1 => "bg-info text-dark", 2 => "bg-primary", 3 => "bg-primary", 4 => "bg-success", 5 => "bg-danger", 6 => "bg-danger text-white", 7 => "bg-warning text-dark", 8 => "bg-info", _ => "bg-secondary" };
 
     // Phân tích ghi chú lấy thông tin nhận hàng thực tế
     string recipientName = "";
@@ -202,9 +203,11 @@
                                     <th style="width:50px;">STT</th>
                                     <th>Hình ảnh</th>
                                     <th>Tên sản phẩm</th>
+                                    <th class="text-center">Tình trạng</th>
                                     <th class="text-center">Số lượng</th>
                                     <th class="text-end">Đơn giá</th>
                                     <th class="text-end">Thành tiền</th>
+                                    <th class="text-center">Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -227,10 +230,63 @@
                                                     </div>
                                                 }
                                             </td>
-                                            <td><strong>@(detail.Product?.Name ?? "Sản phẩm đã xóa")</strong></td>
-                                            <td class="text-center">x@(detail.Quantity)</td>
+                                            <td>
+                                                <strong>@(detail.Product?.Name ?? "Sản phẩm đã xóa")</strong>
+                                                @if (detail.ItemStatus != OrderItemStatus.Normal)
+                                                {
+                                                    var issueTypeStr = detail.IssueType == "Damaged" ? "Hư hỏng" :
+                                                                       detail.IssueType == "Shortage" ? "Thiếu hàng" :
+                                                                       detail.IssueType == "Lost" ? "Mất mát" :
+                                                                       detail.IssueType == "QualityFailed" ? "Kém chất lượng" : "Khác";
+                                                    <div class="small text-danger mt-1"><i class="bi bi-exclamation-triangle"></i> Lỗi: @issueTypeStr</div>
+                                                }
+                                            </td>
+                                            <td class="text-center">
+                                                @if (detail.ItemStatus == OrderItemStatus.Normal)
+                                                {
+                                                    <span class="badge bg-success">Bình thường</span>
+                                                }
+                                                else if (detail.ItemStatus == OrderItemStatus.AwaitingCustomer)
+                                                {
+                                                    <span class="badge bg-warning text-dark">Chờ XN</span>
+                                                }
+                                                else if (detail.ItemStatus == OrderItemStatus.QuantityAdjusted)
+                                                {
+                                                    <span class="badge bg-info">Đã điều chỉnh SL</span>
+                                                }
+                                                else if (detail.ItemStatus == OrderItemStatus.Removed)
+                                                {
+                                                    <span class="badge bg-danger">Đã xóa</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">@detail.ItemStatus</span>
+                                                }
+                                            </td>
+                                            <td class="text-center">
+                                                <div>Gốc: x@(detail.OriginalQuantity > 0 ? detail.OriginalQuantity : detail.Quantity)</div>
+                                                @if (detail.ItemStatus != OrderItemStatus.Normal)
+                                                {
+                                                    <div class="text-danger small">Hư: @detail.DamagedQuantity | Thiếu: @detail.MissingQuantity</div>
+                                                    <div class="text-success small fw-bold">Hiện tại: x@(detail.Quantity)</div>
+                                                }
+                                            </td>
                                             <td class="text-end">@detail.UnitPrice.ToString("N0") ₫</td>
                                             <td class="text-end fw-bold">@((detail.Quantity * detail.UnitPrice).ToString("N0")) ₫</td>
+                                            <td class="text-center">
+                                                @if (Model.Status <= 2 && detail.ItemStatus == OrderItemStatus.Normal)
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="openReportModal(@Model.Id, @detail.Id, @detail.Quantity, '@(detail.Product?.Name?.Replace("'", "\\'"))')">
+                                                        <i class="bi bi-megaphone"></i> Báo lỗi
+                                                    </button>
+                                                }
+                                                @if (detail.ItemStatus == OrderItemStatus.AwaitingCustomer)
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-warning" onclick="openResolveModal(@detail.Id, @Model.Id)">
+                                                        <i class="bi bi-wrench"></i> Xử lý
+                                                    </button>
+                                                }
+                                            </td>
                                         </tr>
                                     }
                                 }
@@ -242,20 +298,10 @@
                             @if (Model.OrderDetails != null && Model.OrderDetails.Any())
                             {
                                 var total = Model.OrderDetails?.Sum(x => x.Quantity * x.UnitPrice) ?? 0;
-                                var shippingFee = 35000m;
-                                var grandTotal = total + shippingFee;
                                 <tfoot class="table-light">
                                     <tr>
-                                        <td colspan="5" class="text-end text-muted">Tạm tính:</td>
-                                        <td class="text-end fw-bold">@total.ToString("N0") ₫</td>
-                                    </tr>
-                                    <tr>
-                                        <td colspan="5" class="text-end text-muted">Phí vận chuyển:</td>
-                                        <td class="text-end">@shippingFee.ToString("N0") ₫</td>
-                                    </tr>
-                                    <tr class="table-success">
-                                        <td colspan="5" class="text-end fw-bold fs-5">Tổng thanh toán:</td>
-                                        <td class="text-end fw-bold fs-5 text-success">@grandTotal.ToString("N0") ₫</td>
+                                        <td colspan="7" class="text-end fw-bold fs-5">Tổng thanh toán:</td>
+                                        <td class="text-end fw-bold fs-5 text-success">@total.ToString("N0") ₫</td>
                                     </tr>
                                 </tfoot>
                             }
@@ -267,7 +313,121 @@
     </div>
 </section>
 
+<!-- Khu vực hiển thị Lịch sử xử lý sự cố & Hoạt động -->
+<section class="section mt-4">
+    <div class="row">
+        <!-- Sự cố sản phẩm -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title text-danger"><i class="bi bi-exclamation-triangle"></i> Lịch sử sự cố sản phẩm</h5>
+                    @{
+                        var issues = ViewBag.Issues as List<CMS.Data.Entities.OrderItemIssue>;
+                    }
+                    @if (issues != null && issues.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Thời gian</th>
+                                        <th>Sản phẩm</th>
+                                        <th>Loại lỗi</th>
+                                        <th>Trạng thái</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var issue in issues)
+                                    {
+                                        <tr>
+                                            <td>@issue.ReportedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    @if (!string.IsNullOrWhiteSpace(issue.Product?.ImageUrl))
+                                                    {
+                                                        <img src="@issue.Product.ImageUrl" alt="@issue.Product?.Name" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px; margin-right: 10px; border: 1px solid #eee;" />
+                                                    }
+                                                    <span>@issue.Product?.Name</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                @if (issue.IssueType == CMS.Data.Enums.OrderItemIssueType.Damaged)
+                                                { <span class="badge bg-danger">Hư hỏng (@issue.DamagedQuantity)</span> }
+                                                else if (issue.IssueType == CMS.Data.Enums.OrderItemIssueType.Shortage)
+                                                { <span class="badge bg-warning text-dark">Thiếu hàng (@issue.MissingQuantity)</span> }
+                                                else
+                                                { <span class="badge bg-secondary">Khác</span> }
+                                            </td>
+                                            <td>
+                                                @if (issue.Status == CMS.Data.Enums.OrderItemIssueStatus.Resolved)
+                                                { 
+                                                    <span class="badge bg-success">Đã xử lý</span> 
+                                                    var decisionStr = issue.CustomerDecision == "AcceptReducedQuantity" ? "Khách đồng ý giảm số lượng" :
+                                                                      issue.CustomerDecision == "RemoveItem" ? "Khách hủy món" :
+                                                                      issue.CustomerDecision == "WaitForRestock" ? "Khách đợi nhập hàng" :
+                                                                      issue.CustomerDecision == "CancelEntireOrder" ? "Khách hủy toàn bộ đơn" : issue.CustomerDecision;
+                                                    <div class="small mt-1 text-muted">@decisionStr</div>
+                                                }
+                                                else
+                                                { 
+                                                    <span class="badge bg-warning text-dark">Đang chờ</span> 
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted fst-italic">Chưa có sự cố nào được báo cáo.</p>
+                    }
+                </div>
+            </div>
+        </div>
+        
+        <!-- Nhật ký hoạt động -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title text-primary"><i class="bi bi-journal-text"></i> Nhật ký hoạt động đơn hàng</h5>
+                    @{
+                        var logs = ViewBag.ActivityLogs as List<CMS.Data.Entities.OrderActivityLog>;
+                    }
+                    @if (logs != null && logs.Any())
+                    {
+                        <div class="timeline mt-3">
+                            @foreach (var log in logs.Take(10))
+                            {
+                                <div class="mb-3 border-start border-primary border-2 ps-3 py-1">
+                                    <div class="text-muted small">@log.CreatedAt.ToString("dd/MM/yyyy HH:mm") - <strong>@log.PerformedBy</strong></div>
+                                    <div>@log.Description</div>
+                                </div>
+                            }
+                        </div>
+                        @if(logs.Count > 10)
+                        {
+                            <div class="text-center"><small class="text-muted">Chỉ hiển thị 10 hoạt động gần nhất</small></div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted fst-italic">Chưa có hoạt động nào.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Container cho Modal Báo Cáo Sự Cố -->
+<div id="reportIssueModalContainer"></div>
+<!-- Container cho Modal Xử Lý Sự Cố -->
+<div id="resolveIssueModalContainer"></div>
+
 @section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script>
   document.getElementById('order-edit-form').addEventListener('submit', function (e) {
     var statusSelect = document.getElementById('status-select');
@@ -276,5 +436,264 @@
       e.preventDefault();
     }
   });
+
+  let reportModal, resolveModal;
+  document.addEventListener("DOMContentLoaded", function() {
+      // Dynamic modals are initialized after loading their content
+  });
+
+  function openReportModal(orderId, orderDetailId, qty, productName) {
+      axios.get(`/Admin/OrderIssue/GetReportItemIssueModal?orderId=${orderId}&orderDetailId=${orderDetailId}`)
+          .then(res => {
+              document.getElementById('reportIssueModalContainer').innerHTML = res.data;
+              reportModal = new bootstrap.Modal(document.getElementById('reportItemIssueModal'));
+              
+              // Bind logic to the new modal
+              bindReportModalLogic();
+              
+              reportModal.show();
+          })
+          .catch(err => {
+              alert("Lỗi tải thông tin sản phẩm: " + (err.response?.data || err.message));
+          });
+  }
+
+  function bindReportModalLogic() {
+      const form = document.getElementById('frmReportIssue');
+      const submitBtn = document.getElementById('btnSubmitReportIssue');
+      const fulfillableQty = document.getElementById('txtFulfillableQty');
+      const damagedQty = document.getElementById('txtDamagedQty');
+      const missingQty = document.getElementById('txtMissingQty');
+      const orderedQty = parseInt(document.getElementById('hdnOrderedQuantity').value);
+      const errorMsg = document.getElementById('qtyErrorMsg');
+      const ddlIssueType = document.getElementById('ddlIssueType');
+
+      function validateQuantities() {
+          let fQty = parseInt(fulfillableQty.value) || 0;
+          let dQty = parseInt(damagedQty.value) || 0;
+          let mQty = parseInt(missingQty.value) || 0;
+          let total = fQty + dQty + mQty;
+
+          if (total > orderedQty || (dQty === 0 && mQty === 0)) {
+              errorMsg.style.display = 'block';
+              submitBtn.disabled = true;
+          } else {
+              errorMsg.style.display = 'none';
+              submitBtn.disabled = false;
+          }
+      }
+
+      ddlIssueType.addEventListener('change', function() {
+          if (this.value === '1') { // Damaged
+              let fQty = parseInt(fulfillableQty.value) || 0;
+              damagedQty.value = Math.max(0, orderedQty - fQty);
+              missingQty.value = 0;
+          } else if (this.value === '0') { // Shortage
+              let fQty = parseInt(fulfillableQty.value) || 0;
+              missingQty.value = Math.max(0, orderedQty - fQty);
+              damagedQty.value = 0;
+          }
+          validateQuantities();
+      });
+
+      fulfillableQty.addEventListener('input', validateQuantities);
+      damagedQty.addEventListener('input', validateQuantities);
+      missingQty.addEventListener('input', validateQuantities);
+
+      submitBtn.addEventListener('click', function() {
+          if (!form.checkValidity()) {
+              form.classList.add('was-validated');
+              return;
+          }
+
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang xử lý...';
+
+          var data = {
+              OrderId: parseInt(document.getElementById('OrderId').value) || parseInt(document.querySelector('input[name="OrderId"]').value),
+              OrderDetailId: parseInt(document.getElementById('OrderDetailId').value) || parseInt(document.querySelector('input[name="OrderDetailId"]').value),
+              IssueType: parseInt(document.getElementById('ddlIssueType').value),
+              FulfillableQuantity: parseInt(fulfillableQty.value) || 0,
+              DamagedQuantity: parseInt(damagedQty.value) || 0,
+              MissingQuantity: parseInt(missingQty.value) || 0,
+              Reason: document.getElementById('txtReason').value,
+              InternalNote: document.querySelector('textarea[name="InternalNote"]').value
+          };
+
+          axios.post('/Admin/OrderIssue/Report', data)
+              .then(res => {
+                  if (res.data.success) {
+                      reportModal.hide();
+                      alert(res.data.message);
+                      location.reload();
+                  } else {
+                      alert("Lỗi: " + res.data.message);
+                      submitBtn.disabled = false;
+                      submitBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Xác nhận sự cố';
+                  }
+              })
+              .catch(err => {
+                  alert("Lỗi hệ thống: " + (err.response?.data?.message || err.message));
+                  submitBtn.disabled = false;
+                  submitBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Xác nhận sự cố';
+              });
+      });
+  }
+
+  function openResolveModal(orderDetailId, orderId) {
+      axios.get(`/Admin/OrderIssue/List/${orderId}`)
+          .then(res => {
+              if (res.data.success) {
+                  var issues = res.data.data;
+                  var issue = issues.find(i => i.orderDetailId == orderDetailId && (i.status === 0 || i.status === 1));
+                  if (issue) {
+                      loadResolveModalContent(issue.id);
+                  } else {
+                      alert("Không tìm thấy sự cố đang mở.");
+                  }
+              }
+          })
+          .catch(err => alert("Lỗi lấy danh sách sự cố: " + err.message));
+  }
+
+  function loadResolveModalContent(issueId) {
+      axios.get(`/Admin/OrderIssue/GetResolveIssueModal?issueId=${issueId}`)
+          .then(res => {
+              document.getElementById('resolveIssueModalContainer').innerHTML = res.data;
+              resolveModal = new bootstrap.Modal(document.getElementById('resolveItemIssueModal'));
+              
+              bindResolveModalLogic();
+              
+              resolveModal.show();
+          })
+          .catch(err => {
+              alert("Lỗi tải thông tin phương án: " + (err.response?.data || err.message));
+          });
+  }
+
+  function bindResolveModalLogic() {
+      const form = document.getElementById('frmResolveIssue');
+      const submitBtn = document.getElementById('btnSubmitResolve');
+      const issueId = document.getElementById('IssueId').value;
+      const fulfillableQty = parseInt(document.getElementById('hdnResolveFulfillableQty').value);
+      
+      const radDecisions = document.querySelectorAll('input[name="Decision"]');
+      const divAdjustedQty = document.getElementById('divAdjustedQty');
+      const txtAdjustedQty = document.getElementById('txtAdjustedQty');
+      const divExpectedRestockDate = document.getElementById('divExpectedRestockDate');
+      const alertRemoveItem = document.getElementById('alertRemoveItem');
+      const alertCancelOrder = document.getElementById('alertCancelOrder');
+      
+      const previewOldTotal = document.getElementById('previewOldTotal');
+      const previewNewTotal = document.getElementById('previewNewTotal');
+      const previewDiffAmount = document.getElementById('previewDiffAmount');
+      const previewDiffLabel = document.getElementById('previewDiffLabel');
+
+      function onDecisionChanged() {
+          const selected = document.querySelector('input[name="Decision"]:checked');
+          if (!selected) return;
+          
+          let decisionVal = selected.value;
+
+          // Reset visibility
+          divAdjustedQty.style.display = 'none';
+          divExpectedRestockDate.style.display = 'none';
+          alertRemoveItem.style.display = 'none';
+          alertCancelOrder.style.display = 'none';
+          txtAdjustedQty.removeAttribute('required');
+
+          if (decisionVal === '0') {
+              divAdjustedQty.style.display = 'block';
+              txtAdjustedQty.setAttribute('required', 'required');
+          } else if (decisionVal === '1') {
+              alertRemoveItem.style.display = 'block';
+          } else if (decisionVal === '2') {
+              divExpectedRestockDate.style.display = 'block';
+          } else if (decisionVal === '3') {
+              alertCancelOrder.style.display = 'block';
+          }
+          
+          updatePreview();
+      }
+
+      function updatePreview() {
+          const selected = document.querySelector('input[name="Decision"]:checked');
+          if (!selected) return;
+          
+          let decisionVal = selected.value;
+          let adjustedQty = txtAdjustedQty.value;
+
+          if (decisionVal === '0' && !adjustedQty) return; // Need qty to preview
+
+          axios.get(`/Admin/OrderIssue/PreviewResolution?issueId=${issueId}&decision=${decisionVal}&adjustedQuantity=${adjustedQty}`)
+              .then(res => {
+                  if (res.data.success) {
+                      let p = res.data.preview;
+                      previewOldTotal.textContent = p.oldTotal.toLocaleString('vi-VN') + ' ₫';
+                      previewNewTotal.textContent = p.newTotal.toLocaleString('vi-VN') + ' ₫';
+                      
+                      if (p.refundAmount > 0) {
+                          previewDiffLabel.textContent = "Giảm:";
+                          previewDiffAmount.textContent = p.refundAmount.toLocaleString('vi-VN') + ' ₫';
+                          previewDiffAmount.style.color = '#dc2626';
+                      } else {
+                          previewDiffLabel.textContent = "Chênh lệch:";
+                          previewDiffAmount.textContent = '0 ₫';
+                          previewDiffAmount.style.color = '#1f2937';
+                      }
+                  }
+              });
+      }
+
+      radDecisions.forEach(rad => {
+          rad.addEventListener('change', onDecisionChanged);
+      });
+
+      txtAdjustedQty.addEventListener('input', function() {
+          if (parseInt(this.value) > fulfillableQty) {
+              this.value = fulfillableQty;
+          }
+          updatePreview();
+      });
+
+      submitBtn.addEventListener('click', function() {
+          if (!form.checkValidity()) {
+              form.classList.add('was-validated');
+              return;
+          }
+
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang xử lý...';
+
+          var data = {
+              IssueId: parseInt(issueId),
+              OrderId: parseInt(document.getElementById('OrderId').value) || parseInt(document.querySelector('#frmResolveIssue input[name="OrderId"]').value),
+              OrderDetailId: parseInt(document.getElementById('OrderDetailId').value) || parseInt(document.querySelector('#frmResolveIssue input[name="OrderDetailId"]').value),
+              Decision: parseInt(document.querySelector('input[name="Decision"]:checked').value),
+              AdjustedQuantity: txtAdjustedQty.value ? parseInt(txtAdjustedQty.value) : null,
+              ExpectedRestockDate: document.getElementById('txtExpectedRestockDate').value || null,
+              ContactMethod: document.getElementById('ddlContactMethod').value,
+              CustomerNote: document.getElementById('txtCustomerNote').value
+          };
+
+          axios.post('/Admin/OrderIssue/Resolve', data)
+              .then(res => {
+                  if (res.data.success) {
+                      resolveModal.hide();
+                      alert(res.data.message);
+                      location.reload();
+                  } else {
+                      alert("Lỗi: " + res.data.message);
+                      submitBtn.disabled = false;
+                      submitBtn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Xác nhận phương án';
+                  }
+              })
+              .catch(err => {
+                  alert("Lỗi hệ thống: " + (err.response?.data?.message || err.message));
+                  submitBtn.disabled = false;
+                  submitBtn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Xác nhận phương án';
+              });
+      });
+  }
 </script>
 }

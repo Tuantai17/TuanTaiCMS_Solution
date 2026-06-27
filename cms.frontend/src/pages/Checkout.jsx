@@ -156,8 +156,7 @@ const Checkout = () => {
   }
 
   const subTotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-  const shippingFee = 35000;
-  const total = subTotal + shippingFee;
+  const total = subTotal;
 
   const handleSelectSavedAddress = (e) => {
     const addrId = e.target.value;
@@ -467,10 +466,6 @@ const Checkout = () => {
               <div className="summary-row">
                 <span>Tạm tính hàng hóa:</span>
                 <span className="font-weight-bold text-dark">{new Intl.NumberFormat('vi-VN').format(subTotal)} ₫</span>
-              </div>
-              <div className="summary-row">
-                <span>Phí vận chuyển:</span>
-                <span className="font-weight-bold text-dark">{new Intl.NumberFormat('vi-VN').format(shippingFee)} ₫</span>
               </div>
               
               <div className="summary-row total">

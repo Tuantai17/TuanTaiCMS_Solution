@@ -1,12 +1,5 @@
+using System;
 using System.ComponentModel.DataAnnotations;
-/*
-Sinh Viên: Nguy?n Tu?n Tài 
-Mã Sinh Viên: 2123110166
-L?p: CCQ2311E
-Ngày T?o: 15/5/2026
-Mô t?: ??nh ngh?a th?c th? chi ti?t ??n hàng, l?u s?n ph?m, s? l??ng và ??n giá t?i th?i ?i?m mua.
-*/
-
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CMS.Data.Entities
@@ -23,7 +16,24 @@ namespace CMS.Data.Entities
         public int Quantity { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]
-        public decimal UnitPrice { get; set; } // Giá t?i th?i ?i?m mua
+        public decimal UnitPrice { get; set; } // Gia tai thoi diem mua
+
+        // Cac thuoc tinh xu ly su co chuan bi hang
+        public int OriginalQuantity { get; set; }
+        public int FulfillableQuantity { get; set; }
+        public int? AdjustedQuantity { get; set; }
+        public int DamagedQuantity { get; set; }
+        public int MissingQuantity { get; set; }
+        public CMS.Data.Enums.OrderItemStatus ItemStatus { get; set; } = CMS.Data.Enums.OrderItemStatus.Normal;
+        
+        public string? IssueType { get; set; }
+        public string? IssueReason { get; set; }
+        public string? InternalNote { get; set; }
+        public string? CustomerDecision { get; set; }
+        public DateTime? IssueReportedAt { get; set; }
+        public string? IssueReportedBy { get; set; }
+        public DateTime? CustomerConfirmedAt { get; set; }
+        public string? CustomerConfirmedBy { get; set; }
 
         [ForeignKey("OrderId")]
         public virtual Order? Order { get; set; }

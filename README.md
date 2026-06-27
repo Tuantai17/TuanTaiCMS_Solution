@@ -126,7 +126,9 @@ dotnet ef database update --project ../CMS.Data/CMS.Data.csproj
 ```
 
 #### **C. Chạy ứng dụng Backend**
-Khởi chạy dự án ASP.NET Core:
+Khởi chạy dự án ASP.NET Core bằng 1 trong 2 cách:
+- **Cách 1 (Khuyên dùng):** Mở file `TuanTaiCMS_Solution.sln` bằng Visual Studio và nhấn phím **F5** để chạy dự án (Start Debugging).
+- **Cách 2:** Dành cho người dùng Terminal/CLI:
 ```powershell
 dotnet run
 ```

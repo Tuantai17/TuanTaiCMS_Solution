@@ -193,17 +193,21 @@ Mô tả: Trang Dashboard quản trị bán hàng thương mại điện tử hi
                                 var statusText = order.Status switch
                                 {
                                     0 => "Chờ duyệt",
-                                    1 => "Đang giao",
-                                    2 => "Hoàn thành",
-                                    3 => "Đã hủy",
+                                    1 => "Đã duyệt",
+                                    2 => "Đang chuẩn bị hàng",
+                                    3 => "Đang giao hàng",
+                                    4 => "Hoàn thành",
+                                    5 => "Đã hủy",
                                     _ => "Không rõ"
                                 };
                                 var statusClass = order.Status switch
                                 {
                                     0 => "db-badge--pending",
-                                    1 => "db-badge--shipping",
-                                    2 => "db-badge--completed",
-                                    3 => "db-badge--cancelled",
+                                    1 => "db-badge--pending",
+                                    2 => "db-badge--shipping",
+                                    3 => "db-badge--shipping",
+                                    4 => "db-badge--completed",
+                                    5 => "db-badge--cancelled",
                                     _ => "db-badge--pending"
                                 };
 
