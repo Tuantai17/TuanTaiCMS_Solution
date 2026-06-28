@@ -107,6 +107,59 @@ const Cart = () => {
     saveCartToStorage(updatedCart);
   };
 
+  // Hàm nhập trực tiếp số lượng
+  const handleInputChange = (id, e) => {
+    let value = parseInt(e.target.value, 10);
+    
+    // Nếu người dùng xóa hết (chuỗi rỗng), tạm thời set thành chuỗi rỗng để họ nhập tiếp
+    // Nhưng nếu tính toán để lưu thì nếu isNaN ta bỏ qua hoặc xử lý sau.
+    // Cách tốt nhất là cho onChange cập nhật tạm thời, rồi onBlur mới lưu. 
+    // Tuy nhiên, theo yêu cầu đơn giản, ta chỉ lọc nếu nhập đúng số.
+    if (isNaN(value)) {
+      if (e.target.value === '') {
+        value = ''; // Cho phép xóa rỗng tạm thời
+      } else {
+        return; 
+      }
+    } else {
+        const itemToUpdate = cartItems.find(i => i.id === id);
+        if (itemToUpdate) {
+            if (value > itemToUpdate.stockQuantity) {
+                alert(`Sản phẩm này chỉ còn tối đa ${itemToUpdate.stockQuantity} sản phẩm trong kho!`);
+                value = itemToUpdate.stockQuantity;
+            }
+        }
+    }
+    
+    const updatedCart = cartItems.map(item => {
+      if (item.id === id) {
+        return { ...item, quantity: value };
+      }
+      return item;
+    });
+    setCartItems(updatedCart);
+    // Chỉ lưu khi value hợp lệ (khác rỗng)
+    if (value !== '') {
+        localStorage.setItem('cart', JSON.stringify(updatedCart));
+        window.dispatchEvent(new Event('cartChange'));
+    }
+  };
+
+  // Xử lý khi người dùng click ra ngoài (onBlur) để đảm bảo quantity không bị rỗng
+  const handleInputBlur = (id, e) => {
+      let value = parseInt(e.target.value, 10);
+      if (isNaN(value) || value < 1) {
+          value = 1;
+      }
+      const updatedCart = cartItems.map(item => {
+        if (item.id === id) {
+          return { ...item, quantity: value };
+        }
+        return item;
+      });
+      saveCartToStorage(updatedCart);
+  };
+
   // Hàm xóa sản phẩm khỏi giỏ
   const handleRemoveItem = (id) => {
     const updatedCart = cartItems.filter(item => item.id !== id);
@@ -313,11 +366,16 @@ const Cart = () => {
                               >
                                 <i className="fa-solid fa-minus"></i>
                               </button>
-                              <input type="text" className="cart-qty-input" value={item.quantity} readOnly />
+                              <input 
+                                type="text" 
+                                className="cart-qty-input" 
+                                value={item.quantity} 
+                                onChange={(e) => handleInputChange(item.id, e)}
+                                onBlur={(e) => handleInputBlur(item.id, e)}
+                              />
                               <button 
                                 className="cart-qty-btn" 
                                 onClick={() => handleQuantityChange(item.id, 1)}
-                                disabled={item.quantity >= item.stockQuantity}
                               >
                                 <i className="fa-solid fa-plus"></i>
                               </button>

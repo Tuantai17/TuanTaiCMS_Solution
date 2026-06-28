@@ -12,10 +12,12 @@ namespace CMS.Backend.Services
     public class OrderIssueService : IOrderIssueService
     {
         private readonly ApplicationDbContext _context;
+        private readonly IEmailService _emailService;
 
-        public OrderIssueService(ApplicationDbContext context)
+        public OrderIssueService(ApplicationDbContext context, IEmailService emailService)
         {
             _context = context;
+            _emailService = emailService;
         }
 
         public async Task<bool> CheckCanReportIssueAsync(int orderId, int orderDetailId)
@@ -92,6 +94,7 @@ namespace CMS.Backend.Services
             try
             {
                 var order = await _context.Orders
+                    .Include(o => o.Customer)
                     .Include(o => o.OrderDetails)
                     .FirstOrDefaultAsync(o => o.Id == request.OrderId);
 
@@ -136,6 +139,37 @@ namespace CMS.Backend.Services
                 order.Status = (int)OrderStatus.AWAITING_CUSTOMER_CONFIRMATION;
 
                 await _context.SaveChangesAsync();
+
+                // Tạo thông báo và gửi email
+                if (order.Customer != null)
+                {
+                    var notification = new Notification
+                    {
+                        Title = "Sự cố đơn hàng",
+                        Message = $"Đơn hàng #{order.Id} của bạn đang gặp sự cố: {request.Reason}. Vui lòng kiểm tra lại.",
+                        TargetCustomerId = order.CustomerId,
+                        NotificationType = "OrderIssue",
+                        ReferenceType = "Order",
+                        ReferenceId = order.Id,
+                        IsRead = false,
+                        CreatedAt = DateTime.Now
+                    };
+                    _context.Notifications.Add(notification);
+                    await _context.SaveChangesAsync();
+
+                    if (!string.IsNullOrWhiteSpace(order.Customer.Email))
+                    {
+                        var emailBody = $@"
+                            <h3>Kính chào {order.Customer.FullName},</h3>
+                            <p>Đơn hàng <b>#{order.Id}</b> của quý khách đang gặp sự cố với lý do: <b>{request.Reason}</b>.</p>
+                            <p>Vui lòng đăng nhập vào hệ thống hoặc liên hệ với chúng tôi để kiểm tra và xác nhận lại phương án xử lý.</p>
+                            <br/>
+                            <p><a href='http://localhost:3000/order-history' style='padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px;'>Xem chi tiết đơn hàng</a></p>
+                            <br/><p>Trân trọng,<br/>Đội ngũ MyKingdom</p>
+                        ";
+                        await _emailService.SendEmailAsync(order.Customer.Email, order.Customer.FullName, $"[MyKingdom] Thông báo sự cố đơn hàng #{order.Id}", emailBody);
+                    }
+                }
 
                 // Add activity log
                 var product = await _context.Products.FindAsync(detail.ProductId);
@@ -241,7 +275,9 @@ namespace CMS.Backend.Services
             {
                 var issue = await _context.OrderItemIssues
                     .Include(i => i.Order)
-                    .ThenInclude(o => o.OrderDetails)
+                        .ThenInclude(o => o.Customer)
+                    .Include(i => i.Order)
+                        .ThenInclude(o => o.OrderDetails)
                     .FirstOrDefaultAsync(i => i.Id == request.IssueId);
 
                 if (issue == null || issue.Order == null) throw new Exception("Không tìm thấy sự cố.");
@@ -336,7 +372,7 @@ namespace CMS.Backend.Services
                 }
 
                 await _context.SaveChangesAsync();
-                
+
                 if (request.Decision == CustomerIssueDecision.AcceptReducedQuantity || request.Decision == CustomerIssueDecision.RemoveItem)
                 {
                     await RecalculateOrderTotalsAsync(order.Id);
@@ -366,6 +402,37 @@ namespace CMS.Backend.Services
                 if (newSubtotal != oldSubtotal)
                 {
                      await AddOrderActivityAsync(order.Id, "Cập nhật tổng tiền", $"Tổng tiền thay đổi từ {oldSubtotal:N0}đ xuống {newSubtotal:N0}đ.", performedBy);
+                }
+
+                // Tạo thông báo và gửi email về kết quả xử lý
+                if (order.Customer != null)
+                {
+                    var notification = new Notification
+                    {
+                        Title = "Xử lý sự cố đơn hàng",
+                        Message = $"Sự cố của đơn hàng #{order.Id} đã được xử lý xong theo phương án bạn đồng ý.",
+                        TargetCustomerId = order.CustomerId,
+                        NotificationType = "OrderIssueResolved",
+                        ReferenceType = "Order",
+                        ReferenceId = order.Id,
+                        IsRead = false,
+                        CreatedAt = DateTime.Now
+                    };
+                    _context.Notifications.Add(notification);
+                    await _context.SaveChangesAsync();
+
+                    if (!string.IsNullOrWhiteSpace(order.Customer.Email))
+                    {
+                        var emailBody = $@"
+                            <h3>Kính chào {order.Customer.FullName},</h3>
+                            <p>Sự cố của đơn hàng <b>#{order.Id}</b> đã được giải quyết thành công dựa trên phương án quý khách đã chọn.</p>
+                            <p>Đơn hàng sẽ tiếp tục được chuẩn bị và giao đến quý khách. Cảm ơn quý khách đã đồng hành cùng chúng tôi.</p>
+                            <br/>
+                            <p><a href='http://localhost:3000/order-history' style='padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px;'>Xem chi tiết đơn hàng</a></p>
+                            <br/><p>Trân trọng,<br/>Đội ngũ MyKingdom</p>
+                        ";
+                        await _emailService.SendEmailAsync(order.Customer.Email, order.Customer.FullName, $"[MyKingdom] Đã xử lý sự cố đơn hàng #{order.Id}", emailBody);
+                    }
                 }
 
                 await transaction.CommitAsync();

@@ -23,6 +23,7 @@ namespace CMS.Backend.Controllers
         [FromQuery] int? categoryId = null,
         [FromQuery] string? sortBy = null,
         [FromQuery] string? filter = null,
+        [FromQuery] int? skip = null,
         [FromQuery] int? take = null)
     {
       try
@@ -115,6 +116,10 @@ namespace CMS.Backend.Controllers
         }
 
         var finalQuery = sortedProducts.AsQueryable();
+        if (skip.HasValue && skip.Value > 0)
+        {
+          finalQuery = finalQuery.Skip(skip.Value);
+        }
         if (take.HasValue && take.Value > 0)
         {
           finalQuery = finalQuery.Take(take.Value);

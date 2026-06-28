@@ -465,7 +465,11 @@ const ProductDetail = () => {
                 }}
               >
                 <p className="text-secondary lh-lg mb-0 font-weight-normal" style={{ fontSize: '0.92rem', whiteSpace: 'pre-line' }}>
-                  {product.description || "Đang tiến hành bổ sung nội dung mô tả chi tiết chất liệu, phom dáng và hướng dẫn cách chơi cặn kẽ cho bộ sản phẩm đồ chơi thông minh cao cấp này."}
+                  {product.description ? (
+                    <div className="product-description-content" dangerouslySetInnerHTML={{ __html: product.description }} />
+                  ) : (
+                    "Đang tiến hành bổ sung nội dung mô tả chi tiết chất liệu, phom dáng và hướng dẫn cách chơi cặn kẽ cho bộ sản phẩm đồ chơi thông minh cao cấp này."
+                  )}
                 </p>
                 {!isExpanded && (
                   <div style={{

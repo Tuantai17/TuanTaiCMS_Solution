@@ -26,7 +26,7 @@ import ReturnPolicyPage from './pages/ReturnPolicyPage';
 import SupportPage from './pages/SupportPage';
 import AboutPage from './pages/AboutPage';
 import FavoriteProductsPage from './pages/FavoriteProductsPage';
-
+import OrderSuccess from './pages/OrderSuccess';
 // Import CSS từ assets/css/ theo đúng sơ đồ module hóa
 import './assets/css/App.css';
 
@@ -65,6 +65,7 @@ function App() {
             <Route path="/doi-tra-trong-7-ngay" element={<ReturnPolicyPage />} />
             <Route path="/ho-tro-khach-hang" element={<SupportPage />} />
             <Route path="/gioi-thieu" element={<AboutPage />} />
+            <Route path="/order-success" element={<OrderSuccess />} />
           </Routes>
         </main>
         
