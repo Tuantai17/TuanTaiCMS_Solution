@@ -45,6 +45,11 @@ Giao diện Frontend ReactJS phục vụ toàn bộ các nhu cầu của **Custo
 - **Lịch sử đơn hàng (Order History & Detail):** Xem danh sách đơn hàng đã mua, ngày giờ đặt, trạng thái giao nhận và thông tin chi tiết từng mặt hàng trong đơn.
 - **Quên mật khẩu (ForgotPassword):** Khôi phục mật khẩu an toàn qua 3 bước xác thực mã OTP gửi về Email cá nhân.
 - **Blog / Cẩm nang:** Xem danh sách bài viết theo chuyên mục, tìm kiếm bài viết và đọc chi tiết nội dung tin tức có kèm định dạng rich text.
+- **Danh sách yêu thích (Wishlist):** Lưu trữ và quản lý các sản phẩm yêu thích (FavoriteProductsPage).
+- **Đánh giá sản phẩm (Reviews):** Gửi đánh giá cho sản phẩm đã mua và xem lại lịch sử đánh giá (MyReviewsPage).
+- **Thông báo (Notifications):** Xem thông báo cập nhật từ hệ thống quản trị (Notifications.jsx).
+- **Hỗ trợ khách hàng (Support):** Tạo và theo dõi yêu cầu hỗ trợ (SupportTickets, SupportNewTicket, SupportTicketDetail).
+- **Trang tĩnh (Static Pages):** Trang giới thiệu cửa hàng (AboutPage), Chính sách đổi trả (ReturnPolicyPage), Đồ chơi chính hãng (OriginalToysPage).
 
 ---
 
@@ -74,14 +79,18 @@ cms.frontend/
 │   │   ├── Header.jsx            # Header chung hiển thị menu động và giỏ hàng
 │   │   ├── Footer.jsx            # Chân trang hiển thị thông tin cửa hàng
 │   │   ├── ProductCard.jsx       # Thẻ hiển thị sản phẩm mẫu gồm nhãn (New/Sale)
+│   │   ├── ProductSection.jsx    # Phân vùng hiển thị danh sách sản phẩm
 │   │   ├── SearchableSelect.jsx  # Component lựa chọn dropdown nâng cao có tìm kiếm
-│   │   └── ScrollToTop.jsx       # Tự động cuộn màn hình lên đầu trang
+│   │   ├── ScrollToTop.jsx       # Tự động cuộn màn hình lên đầu trang
+│   │   ├── account/              # Các component dùng cho khu vực tài khoản cá nhân (Sidebar)
+│   │   └── reviews/              # Các component liên quan tới đánh giá sản phẩm (ReviewFormModal)
 │   ├── pages/
 │   │   ├── Home.jsx              # Trang chủ hiển thị Banners động, sản phẩm mới
 │   │   ├── Shop.jsx              # Trang danh sách sản phẩm với các bộ lọc thông minh
 │   │   ├── ProductDetail.jsx     # Trang chi tiết sản phẩm và các thông số đi kèm
 │   │   ├── Cart.jsx              # Giao diện giỏ hàng hỗ trợ thay đổi số lượng nhanh
 │   │   ├── Checkout.jsx          # Trang điền thông tin đặt mua hàng
+│   │   ├── OrderSuccess.jsx      # Thông báo đặt hàng thành công
 │   │   ├── Profile.jsx           # Trang hồ sơ cá nhân của khách hàng
 │   │   ├── AddressesPage.jsx     # Trang quản lý danh bạ địa chỉ giao hàng
 │   │   ├── ChangePassword.jsx    # Giao diện thay đổi mật khẩu
@@ -90,8 +99,17 @@ cms.frontend/
 │   │   ├── ForgotPassword.jsx    # Quy trình khôi phục mật khẩu qua Gmail
 │   │   ├── OrderHistory.jsx      # Tra cứu danh sách đơn hàng đã mua
 │   │   ├── OrderDetailPage.jsx   # Tra cứu thông tin chi tiết một đơn hàng
+│   │   ├── FavoriteProductsPage.jsx # Danh sách sản phẩm yêu thích (Wishlist)
+│   │   ├── MyReviewsPage.jsx     # Quản lý các đánh giá sản phẩm đã viết
+│   │   ├── Notifications.jsx     # Trang xem thông báo hệ thống
+│   │   ├── SupportTicketsPage.jsx# Danh sách các yêu cầu hỗ trợ (Tickets)
+│   │   ├── SupportNewTicketPage.jsx # Giao diện tạo mới yêu cầu hỗ trợ
+│   │   ├── SupportTicketDetailPage.jsx # Giao diện chat/chi tiết yêu cầu hỗ trợ
 │   │   ├── PostList.jsx          # Danh sách bài viết blog dạng lưới/dòng
-│   │   └── PostDetail.jsx        # Nội dung chi tiết của bài viết/tin tức
+│   │   ├── PostDetail.jsx        # Nội dung chi tiết của bài viết/tin tức
+│   │   ├── AboutPage.jsx         # Trang giới thiệu cửa hàng
+│   │   ├── ReturnPolicyPage.jsx  # Chính sách đổi trả hàng
+│   │   └── OriginalToysPage.jsx  # Landing page đồ chơi chính hãng
 │   ├── services/                 # Nơi gọi API giao tiếp với Backend
 │   │   ├── authService.js        
 │   │   ├── productService.js     
@@ -100,7 +118,11 @@ cms.frontend/
 │   │   ├── addressService.js     
 │   │   ├── categoryProductService.js
 │   │   ├── menuService.js        
-│   │   └── bannerService.js      
+│   │   ├── bannerService.js      
+│   │   ├── favoriteService.js    # Quản lý danh sách yêu thích
+│   │   ├── notificationService.js# Lấy thông báo từ server
+│   │   ├── reviewService.js      # Gửi/Lấy đánh giá sản phẩm
+│   │   └── supportService.js     # Giao tiếp API Ticket hỗ trợ
 │   ├── utils/
 │   │   ├── mediaUrl.js           # Tiện ích chuẩn hóa URL tài nguyên media
 │   │   ├── customerSession.js    # Tiện ích quản lý phiên đăng nhập
@@ -124,19 +146,27 @@ Các route được khai báo và quản lý tập trung trong file `src/App.js`
 | `/products/:id` | `ProductDetail.jsx` | Chi tiết sản phẩm, tồn kho và ảnh bổ sung |
 | `/cart` | `Cart.jsx` | Giỏ hàng tạm tính của khách hàng |
 | `/checkout` | `Checkout.jsx` | Điền thông tin giao hàng và đặt đơn |
+| `/order-success` | `OrderSuccess.jsx` | Chuyển hướng khi đặt hàng thành công |
 | `/profile` | `Profile.jsx` | Trang quản lý tài khoản và hồ sơ |
 | `/profile/change-password` | `ChangePassword.jsx` | Giao diện đổi mật khẩu bảo mật |
 | `/account/addresses` | `AddressesPage.jsx` | Sổ địa chỉ của người dùng |
+| `/account/favorites` | `FavoriteProductsPage.jsx` | Danh sách sản phẩm yêu thích |
+| `/account/reviews` | `MyReviewsPage.jsx` | Quản lý đánh giá cá nhân |
+| `/account/notifications` | `Notifications.jsx` | Xem thông báo từ hệ thống |
+| `/account/support` | `SupportTicketsPage.jsx` | Yêu cầu hỗ trợ (Tickets) |
+| `/account/support/new` | `SupportNewTicketPage.jsx` | Tạo yêu cầu hỗ trợ mới |
+| `/account/support/:id` | `SupportTicketDetailPage.jsx`| Chi tiết/Chat yêu cầu hỗ trợ |
 | `/login` | `Login.jsx` | Đăng nhập tài khoản |
 | `/register` | `Register.jsx` | Đăng ký tài khoản mới |
 | `/forgot-password` | `ForgotPassword.jsx` | Khôi phục mật khẩu qua mã OTP Gmail |
-| `/order-history` | `OrderHistory.jsx` | Lịch sử đơn hàng của bản thân |
-| `/my-orders` | `OrderHistory.jsx` | Lịch sử đơn hàng của bản thân |
-| `/account/orders` | `OrderHistory.jsx` | Lịch sử đơn hàng của bản thân |
+| `/order-history`, `/my-orders`, `/account/orders` | `OrderHistory.jsx` | Lịch sử đơn hàng của bản thân |
 | `/account/orders/:id` | `OrderDetailPage.jsx` | Xem chi tiết nội dung một đơn hàng |
 | `/blog` | `PostList.jsx` | Danh sách tất cả bài viết blog |
 | `/blog/category/:categoryId` | `PostList.jsx` | Danh sách bài viết theo chuyên mục |
 | `/blog/:id` | `PostDetail.jsx` | Nội dung chi tiết bài viết |
+| `/about` | `AboutPage.jsx` | Trang giới thiệu cửa hàng |
+| `/return-policy` | `ReturnPolicyPage.jsx` | Chính sách đổi trả |
+| `/original-toys` | `OriginalToysPage.jsx` | Landing page đồ chơi chính hãng |
 
 ---
 
@@ -169,6 +199,12 @@ Toàn bộ các tác vụ gọi API đều được cấu hình trong thư mục
 - Tạo đơn hàng mới: `POST /api/Orders`
 - Lịch sử đơn hàng: `GET /api/Orders/customer/{customerId}`
 - Quản lý sổ địa chỉ: `GET, POST, PUT, DELETE /api/Addresses`
+
+### 6.6. Nhóm API Khác (`favoriteService.js`, `reviewService.js`, `notificationService.js`, `supportService.js`)
+- Yêu thích (Wishlist): Các API thêm/xóa/lấy danh sách sản phẩm yêu thích.
+- Đánh giá (Review): Các API đăng đánh giá, đính kèm ảnh và xem đánh giá của mình.
+- Thông báo (Notification): Lấy danh sách các thông báo tới Customer.
+- Hỗ trợ (Support Ticket): Gửi yêu cầu hỗ trợ mới và phản hồi tin nhắn trong Ticket.
 
 ---
 

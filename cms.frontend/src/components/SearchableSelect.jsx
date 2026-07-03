@@ -1,29 +1,41 @@
 import React, { useState, useEffect, useRef } from 'react';
 import '../assets/css/SearchableSelect.css';
 
+/**
+ * Component SearchableSelect - Dropdown tùy chỉnh hỗ trợ tìm kiếm
+ * Cho phép người dùng gõ từ khóa để lọc các tùy chọn (ví dụ: chọn Tỉnh/Thành phố)
+ */
 const SearchableSelect = ({ options, value, onChange, placeholder, disabled, icon, hasError }) => {
+  // State quản lý việc đóng/mở danh sách dropdown
   const [isOpen, setIsOpen] = useState(false);
+  // State lưu trữ từ khóa tìm kiếm do người dùng nhập vào
   const [searchTerm, setSearchTerm] = useState('');
+  // Tham chiếu đến vùng div bao bọc component để xử lý click ra ngoài
   const wrapperRef = useRef(null);
 
+  // Effect: Đóng dropdown khi người dùng click chuột ra ngoài khu vực của component
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     };
+    // Đăng ký sự kiện lắng nghe click chuột toàn trang
     document.addEventListener('mousedown', handleClickOutside);
+    // Hủy đăng ký sự kiện khi component bị unmount để tránh rò rỉ bộ nhớ
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Lọc danh sách tùy chọn dựa trên từ khóa tìm kiếm (không phân biệt hoa/thường)
   const filteredOptions = options.filter(opt => 
     opt.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Xử lý khi người dùng chọn một mục trong danh sách
   const handleSelect = (val) => {
-    onChange(val);
-    setIsOpen(false);
-    setSearchTerm('');
+    onChange(val); // Truyền giá trị đã chọn ra component cha
+    setIsOpen(false); // Đóng dropdown
+    setSearchTerm(''); // Xóa từ khóa tìm kiếm
   };
 
   return (

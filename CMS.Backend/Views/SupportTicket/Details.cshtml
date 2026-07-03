@@ -1,0 +1,171 @@
+@model CMS.Backend.Models.SupportTicketAdminDetailPageViewModel
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+@functions {
+    public string GetStickerEmoji(string stickerCode)
+    {
+        return stickerCode switch
+        {
+            "bear-wave" => "🧸",
+            "bear-love" => "💗",
+            "rabbit-smile" => "🐰",
+            "party" => "🎉",
+            "star" => "⭐",
+            "gift" => "🎁",
+            _ => "✨"
+        };
+    }
+}
+
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a asp-action="Index" class="btn btn-light rounded-3 border"><i class="bi bi-arrow-left"></i></a>
+    <div>
+        <div class="text-muted small mb-1">Hỗ trợ khách hàng / Chi tiết yêu cầu</div>
+        <h2 class="fw-bold mb-0">@Model.Ticket.Code</h2>
+    </div>
+    <span class="support-admin-pill tone-@Model.Ticket.StatusTone ms-auto">@Model.Ticket.StatusLabel</span>
+</div>
+
+<div class="row g-4">
+    <div class="col-xl-8">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4">
+                <div class="mb-4">
+                    <h4 class="fw-bold mb-2">Thông tin yêu cầu</h4>
+                    <div class="text-muted">@Model.Ticket.Subject</div>
+                    <div class="text-muted mt-2">Yêu cầu được tạo: @Model.Ticket.CreatedAt.ToString("dd/MM/yyyy HH:mm")</div>
+                </div>
+
+                <div class="support-admin-conversation">
+                    @foreach (var message in Model.Messages)
+                    {
+                        <div class="support-admin-message-row @(message.SenderType == "customer" ? "from-customer" : "from-staff")">
+                            <div class="support-admin-avatar">
+                                <img src="https://ui-avatars.com/api/?background=@(message.SenderType == "customer" ? "fdecec&color=d71920" : "eef2ff&color=1d4ed8")&name=@Uri.EscapeDataString(message.SenderName)" alt="@message.SenderName" />
+                            </div>
+                            <div class="support-admin-message-card @(message.SenderType == "customer" ? "is-customer" : "")">
+                                <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                                    <strong>@message.SenderName</strong>
+                                    <span class="badge rounded-pill text-bg-light border">@message.SenderRole</span>
+                                </div>
+                                @if (!string.IsNullOrEmpty(message.Content))
+                                {
+                                    <p class="mb-3">@message.Content</p>
+                                }
+                                @if (!string.IsNullOrEmpty(message.StickerCode))
+                                {
+                                    <div class="support-admin-sticker mb-3">
+                                        @GetStickerEmoji(message.StickerCode)
+                                    </div>
+                                }
+                                @if (message.Attachments.Any())
+                                {
+                                    <div class="support-admin-attachments mb-3">
+                                        @foreach (var attachment in message.Attachments)
+                                        {
+                                            <img src="@attachment.Url" alt="Ảnh đính kèm" />
+                                        }
+                                    </div>
+                                }
+                                <div class="text-muted small text-end">@message.CreatedAt.ToString("dd/MM/yyyy HH:mm")</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="card border rounded-4 mt-4">
+                    <div class="card-body">
+                        <form asp-action="Reply" asp-controller="SupportTicket" method="post">
+                            <input type="hidden" name="id" value="@Model.Ticket.Id" />
+                            <label class="form-label fw-semibold">Nhập tin nhắn trả lời</label>
+                            <textarea name="content" class="form-control rounded-4 mb-3" rows="4" placeholder="Giao diện soạn phản hồi cho admin..." required></textarea>
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-light border rounded-3"><i class="bi bi-image"></i></button>
+                                    <button type="button" class="btn btn-light border rounded-3"><i class="bi bi-emoji-smile"></i></button>
+                                    <button type="button" class="btn btn-light border rounded-3"><i class="bi bi-paperclip"></i></button>
+                                </div>
+                                <button type="submit" class="btn btn-danger rounded-3 px-4">Gửi / Lưu</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4">
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-body p-4">
+                <h4 class="fw-bold mb-3">Thông tin yêu cầu</h4>
+                <div class="support-admin-info-grid">
+                    <div><span>Khách hàng</span><strong>@Model.Ticket.CustomerName</strong></div>
+                    <div><span>Email</span><strong>@Model.Ticket.CustomerEmail</strong></div>
+                    <div><span>Số điện thoại</span><strong>@Model.Ticket.CustomerPhone</strong></div>
+                    <div><span>Mã yêu cầu</span><strong>@Model.Ticket.Code</strong></div>
+                    <div><span>Đơn hàng liên quan</span><strong>@(string.IsNullOrWhiteSpace(Model.Ticket.RelatedOrderCode) ? "-" : Model.Ticket.RelatedOrderCode)</strong></div>
+                    <div><span>Kênh tiếp nhận</span><strong>@Model.Ticket.ChannelLabel</strong></div>
+                </div>
+                <hr />
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Trạng thái</label>
+                    <select class="form-select rounded-3">
+                        <option selected="@(Model.Ticket.Status == "new")">Mới tiếp nhận</option>
+                        <option selected="@(Model.Ticket.Status == "in-progress")">Đang xử lý</option>
+                        <option selected="@(Model.Ticket.Status == "waiting-customer")">Chờ phản hồi</option>
+                        <option selected="@(Model.Ticket.Status == "resolved")">Đã giải quyết</option>
+                        <option selected="@(Model.Ticket.Status == "closed")">Đã đóng</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Ưu tiên</label>
+                    <select class="form-select rounded-3">
+                        <option selected="@(Model.Ticket.Priority == "low")">Thấp</option>
+                        <option selected="@(Model.Ticket.Priority == "normal")">Bình thường</option>
+                        <option selected="@(Model.Ticket.Priority == "high")">Cao</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Nhóm phụ trách</label>
+                    <select class="form-select rounded-3">
+                        <option>Admin01</option>
+                        <option>CS Team</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Ghi chú nội bộ</label>
+                    <textarea class="form-control rounded-4" rows="4" placeholder="Nhập ghi chú nội bộ..."></textarea>
+                </div>
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-outline-success rounded-3">Đóng yêu cầu</button>
+                    <button type="button" class="btn btn-outline-danger rounded-3">Hủy yêu cầu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .support-admin-pill { display: inline-flex; align-items: center; justify-content: center; min-height: 34px; padding: 0 1rem; border-radius: 999px; font-size: .85rem; font-weight: 700; }
+    .support-admin-pill.tone-new { color: #d97706; background: #fff4e5; }
+    .support-admin-pill.tone-progress { color: #dc2626; background: #fff1f2; }
+    .support-admin-pill.tone-waiting { color: #f97316; background: #fff7ed; }
+    .support-admin-pill.tone-resolved { color: #16a34a; background: #eafbf0; }
+    .support-admin-pill.tone-closed { color: #64748b; background: #eef2f6; }
+    .support-admin-conversation { display: flex; flex-direction: column; gap: 1.25rem; }
+    .support-admin-message-row { display: flex; align-items: flex-start; gap: 1rem; }
+    .support-admin-message-row.from-customer { flex-direction: row-reverse; }
+    .support-admin-avatar { width: 52px; height: 52px; border-radius: 50%; overflow: hidden; flex-shrink: 0; border: 1px solid #e5e7eb; }
+    .support-admin-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .support-admin-message-card { width: min(100%, 38rem); padding: 1.1rem 1.2rem; border-radius: 1.2rem; border: 1px solid #e7ecf3; background: #fff; box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04); }
+    .support-admin-message-card.is-customer { background: linear-gradient(180deg, #fff7f7, #fff1f2); border-color: #f7c7cb; }
+    .support-admin-message-card p { white-space: pre-wrap; line-height: 1.7; }
+    .support-admin-attachments { display: flex; gap: .75rem; flex-wrap: wrap; }
+    .support-admin-attachments img { width: 6.6rem; height: 5.4rem; border-radius: 1rem; object-fit: cover; border: 1px solid #e5e7eb; }
+    .support-admin-sticker { font-size: 3rem; display: inline-flex; justify-content: center; align-items: center; background: #fff; width: 5.5rem; height: 5.5rem; border-radius: 1.2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.06); border: 1px solid #e5e7eb; }
+    .support-admin-info-grid { display: grid; gap: .95rem; }
+    .support-admin-info-grid span { display: block; color: #6b7280; font-size: .88rem; margin-bottom: .2rem; }
+    .support-admin-info-grid strong { display: block; color: #111827; }
+</style>

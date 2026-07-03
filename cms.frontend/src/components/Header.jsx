@@ -418,9 +418,6 @@ const Header = () => {
                           <Link className="dropdown-item font-weight-bold" to="/profile" onClick={() => setDropdownOpen(false)}>
                             <i className="fa-solid fa-id-card mr-2 text-danger"></i> Hồ sơ cá nhân
                           </Link>
-                          <Link className="dropdown-item font-weight-bold" to="/my-orders" onClick={() => setDropdownOpen(false)}>
-                            <i className="fa-solid fa-box-open mr-2 text-danger"></i> Đơn hàng của tôi
-                          </Link>
                           <div className="dropdown-divider"></div>
                           <button className="dropdown-item font-weight-bold text-danger" type="button" onClick={() => { handleLogout(); setDropdownOpen(false); }}>
                             <i className="fa-solid fa-right-from-bracket mr-2"></i> Đăng xuất
@@ -459,9 +456,6 @@ const Header = () => {
                         <div className={`dropdown-menu dropdown-menu-right ${dropdownOpen ? 'show' : ''}`} style={{ fontSize: '0.85rem', position: 'absolute' }}>
                           <Link className="dropdown-item font-weight-bold" to="/profile" onClick={() => setDropdownOpen(false)}>
                             <i className="fa-solid fa-id-card mr-2 text-danger"></i> Hồ sơ cá nhân
-                          </Link>
-                          <Link className="dropdown-item font-weight-bold" to="/my-orders" onClick={() => setDropdownOpen(false)}>
-                            <i className="fa-solid fa-box-open mr-2 text-danger"></i> Đơn hàng của tôi
                           </Link>
                           <div className="dropdown-divider"></div>
                           <button className="dropdown-item font-weight-bold text-danger" type="button" onClick={() => { handleLogout(); setDropdownOpen(false); }}>

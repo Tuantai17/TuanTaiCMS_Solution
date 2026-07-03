@@ -2,8 +2,13 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import ProductCard from './ProductCard';
 
+// Hằng số quy định số lượng sản phẩm tối đa hiển thị trên mỗi trang (nếu có bật phân trang)
 const DEFAULT_HOME_PRODUCTS_PER_PAGE = 8;
 
+/**
+ * Component hiển thị một danh sách (section) các sản phẩm theo dạng lưới (Grid)
+ * Có hỗ trợ tiêu đề, icon, nút xem tất cả và tính năng phân trang (tùy chọn)
+ */
 const ProductSection = ({
   title,
   iconClass,
@@ -15,8 +20,13 @@ const ProductSection = ({
   pageSize = DEFAULT_HOME_PRODUCTS_PER_PAGE,
   enablePagination = false
 }) => {
+  // Tính tổng số trang dựa trên độ dài của mảng sản phẩm truyền vào
   const totalPages = Math.ceil(products.length / pageSize);
+  
+  // Xác định vị trí bắt đầu cắt mảng sản phẩm (nếu đang ở chế độ phân trang)
   const startIndex = enablePagination ? (currentPage - 1) * pageSize : 0;
+  
+  // Lấy ra danh sách các sản phẩm hiển thị trên trang hiện tại
   const visibleProducts = products.slice(startIndex, startIndex + pageSize);
 
   return (
@@ -32,8 +42,10 @@ const ProductSection = ({
 
       <div className="row">
         {visibleProducts.length === 0 ? (
+          // Hiển thị thông báo nếu không có sản phẩm nào
           <div className="col-12 text-center py-4 text-muted">{emptyMessage}</div>
         ) : (
+          // Duyệt qua mảng sản phẩm và vẽ ra các thẻ ProductCard
           visibleProducts.map((item) => (
             <div className="col-6 col-md-3 mb-4" key={item.id}>
               <ProductCard item={item} />
@@ -42,6 +54,7 @@ const ProductSection = ({
         )}
       </div>
 
+      {/* Hiển thị thanh phân trang nếu tính năng này được bật và có nhiều hơn 1 trang */}
       {enablePagination && totalPages > 1 && (
         <nav aria-label={`${title} pagination`} className="mt-2">
           <ul className="pagination justify-content-center align-items-center mb-0">

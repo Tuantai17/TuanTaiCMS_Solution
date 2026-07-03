@@ -125,7 +125,16 @@ Mô tả: Trang chi tiết một sản phẩm.
                     </tr>
                     <tr>
                         <th class="bg-light">Mô tả</th>
-                        <td style="white-space: pre-line;">@(string.IsNullOrWhiteSpace(Model.Description) ? "Chưa có mô tả" : Model.Description)</td>
+                        <td>
+                            @if (string.IsNullOrWhiteSpace(Model.Description))
+                            {
+                                <span>Chưa có mô tả</span>
+                            }
+                            else
+                            {
+                                @Html.Raw(Model.Description)
+                            }
+                        </td>
                     </tr>
                 </table>
             </div>

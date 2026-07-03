@@ -5,6 +5,8 @@ import favoriteService from '../services/favoriteService';
 import { getMediaUrl } from '../utils/mediaUrl';
 import ProductCard from '../components/ProductCard';
 import { useFavorite } from '../contexts/FavoriteContext';
+import ProductReviewSection from '../components/reviews/ProductReviewSection';
+import '../assets/css/ProductReviews.css';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -499,6 +501,9 @@ const ProductDetail = () => {
         </div>
       </div>
 
+      {/* ĐÁNH GIÁ SẢN PHẨM */}
+      <ProductReviewSection productId={product.id} />
+
       {/* SẢN PHẨM LIÊN QUAN */}
       {relatedProducts && relatedProducts.length > 0 && (
         <div className="my-5">
@@ -548,4 +553,3 @@ const ProductDetail = () => {
 };
 
 export default ProductDetail;
-

@@ -23,32 +23,53 @@ CMS.Backend/
 │   │   ├── AccountController.cs        # Quản lý đăng nhập/đăng xuất bằng Cookie cho Admin/Staff
 │   │   ├── UserController.cs           # Quản lý tài khoản Admin/Staff
 │   │   ├── ProductController.cs        # Quản lý Sản phẩm (CRUD)
-│   │   ├── CategoryController.cs       # Quản lý danh mục
+│   │   ├── InventoryController.cs      # Quản lý kho hàng, nhập/xuất kho
 │   │   ├── OrderController.cs          # Quản lý đơn hàng
+│   │   ├── OrderIssueController.cs     # Quản lý sự cố đơn hàng (Đổi trả/Khiếu nại)
+│   │   ├── ProductReviewController.cs  # Quản lý & duyệt đánh giá sản phẩm
+│   │   ├── SupportTicketController.cs  # Quản lý & trả lời yêu cầu hỗ trợ từ khách hàng
+│   │   ├── CategoryController.cs       # Quản lý danh mục
 │   │   ├── PostController.cs           # Quản lý bài viết
 │   │   ├── BannerController.cs         # Quản lý Banner
 │   │   ├── MenuController.cs           # Quản lý Menu
 │   │   ├── CustomerController.cs       # Quản lý khách hàng
+│   │   ├── EmailLogController.cs       # Xem lịch sử gửi email hệ thống
+│   │   ├── NotificationController.cs   # Quản lý thông báo Admin/Staff
 │   │   └── ...                         # Các Controller MVC khác
 │   └── API Controllers (ReactJS Frontend)
 │       ├── AuthController.cs           # [API] Đăng nhập, đăng ký, OTP cho Customer
-│       ├── ProductsController.cs       # [API] Cung cấp danh sách sản phẩm, lọc
-│       ├── OrdersController.cs         # [API] Gửi/nhận đơn hàng từ React
+│       ├── HomePageController.cs       # [API] Dữ liệu tổng hợp cho trang chủ ReactJS
+│       ├── ProductsController.cs       # [API] Cung cấp danh sách sản phẩm, lọc, chi tiết
+│       ├── OrdersController.cs         # [API] Gửi/nhận đơn hàng từ React, sự cố đơn hàng
+│       ├── ProductReviewsController.cs # [API] Gửi đánh giá sản phẩm, lấy danh sách đánh giá
+│       ├── SupportTicketsController.cs # [API] Gửi & theo dõi yêu cầu hỗ trợ từ Customer
+│       ├── FavoritesController.cs      # [API] Quản lý danh sách sản phẩm yêu thích (Wishlist)
+│       ├── CustomerNotificationsController.cs # [API] Lấy thông báo cho Customer
 │       ├── BannersController.cs        # [API] Cung cấp Banners
 │       ├── MenusController.cs          # [API] Cung cấp Menus
 │       ├── PostsController.cs          # [API] Cung cấp Bài viết
 │       ├── CategoriesController.cs     # [API] Cung cấp Danh mục
 │       ├── CustomersController.cs      # [API] Quản lý thông tin tài khoản Customer
 │       └── AddressesController.cs      # [API] Quản lý sổ địa chỉ Customer
-├── Models/                   # Chứa ViewModels và DTOs truyền nhận dữ liệu (DashboardViewModel, HomePreviewDto,...)
+├── Models/                   # Chứa ViewModels và DTOs truyền nhận dữ liệu (DashboardViewModel, HomePreviewDto, ProductReviewAdminViewModels...)
+├── Services/                 # Chứa các dịch vụ nghiệp vụ phức tạp (Dependency Injection)
+│   ├── EmailService.cs       # Dịch vụ gửi email (sử dụng MailKit)
+│   ├── EmailTemplateBuilder.cs # Trình dựng mẫu email HTML (OTP, Đơn hàng)
+│   ├── OrderIssueService.cs  # Dịch vụ xử lý logic sự cố đơn hàng
+│   ├── ProductReviewService.cs # Dịch vụ xử lý đánh giá & tính toán Rating
+│   ├── SupportTicketService.cs # Dịch vụ xử lý Ticket hỗ trợ
+│   ├── NotificationService.cs  # Dịch vụ tạo và gửi thông báo
+│   └── ProductService.cs     # Dịch vụ xử lý logic phức tạp cho sản phẩm
 ├── Views/                    # Giao diện quản trị Razor View (.cshtml)
 │   ├── Account/              # Giao diện Đăng nhập, Từ chối quyền của Admin/Staff
 │   ├── User/                 # Giao diện quản lý Admin/Staff
 │   ├── Order/                # Giao diện quản lý & phê duyệt đơn hàng
+│   ├── ProductReview/        # Giao diện quản lý đánh giá
+│   ├── SupportTicket/        # Giao diện trả lời Ticket
 │   ├── Shared/               # Layout (Layout.cshtml), Sidebar và các partial view
 │   └── ...                   # Các View quản trị danh mục, sản phẩm, bài viết
 ├── Helpers/                  # Tiện ích bổ trợ cho hệ thống
-│   ├── EmailHelper.cs                  # Xử lý gửi thư HTML bảo mật (OTP, xác nhận đơn hàng)
+│   ├── EmailHelper.cs                  # Tiện ích gọi Email (Legacy)
 │   ├── PasswordHelper.cs               # Mã hóa mật khẩu một chiều bằng thuật toán BCrypt
 │   ├── DbInitializer.cs                # Seed dữ liệu mặc định ban đầu và dọn dẹp DB
 │   └── CustomerSessionTokenHelper.cs   # Quản lý session token cho khách hàng

@@ -27,6 +27,15 @@ import SupportPage from './pages/SupportPage';
 import AboutPage from './pages/AboutPage';
 import FavoriteProductsPage from './pages/FavoriteProductsPage';
 import OrderSuccess from './pages/OrderSuccess';
+import MyReviewsPage from './pages/MyReviewsPage';
+import SupportTicketsPage from './pages/SupportTicketsPage';
+import SupportNewTicketPage from './pages/SupportNewTicketPage';
+import SupportTicketDetailPage from './pages/SupportTicketDetailPage';
+import WarrantyPolicyPage from './pages/WarrantyPolicyPage';
+import ShippingPolicyPage from './pages/ShippingPolicyPage';
+import PaymentPolicyPage from './pages/PaymentPolicyPage';
+import StoresPage from './pages/StoresPage';
+import ContactPage from './pages/ContactPage';
 // Import CSS từ assets/css/ theo đúng sơ đồ module hóa
 import './assets/css/App.css';
 
@@ -55,6 +64,10 @@ function App() {
             <Route path="/my-orders" element={<OrderHistory />} />
             <Route path="/account/orders" element={<OrderHistory />} />
             <Route path="/account/orders/:id" element={<OrderDetailPage />} />
+            <Route path="/account/reviews" element={<MyReviewsPage />} />
+            <Route path="/account/support" element={<SupportTicketsPage />} />
+            <Route path="/account/support/new" element={<SupportNewTicketPage />} />
+            <Route path="/account/support/:ticketId" element={<SupportTicketDetailPage />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/profile/change-password" element={<ChangePassword />} />
             <Route path="/profile/favorites" element={<FavoriteProductsPage />} />
@@ -66,6 +79,11 @@ function App() {
             <Route path="/ho-tro-khach-hang" element={<SupportPage />} />
             <Route path="/gioi-thieu" element={<AboutPage />} />
             <Route path="/order-success" element={<OrderSuccess />} />
+            <Route path="/chinh-sach-bao-hanh" element={<WarrantyPolicyPage />} />
+            <Route path="/chinh-sach-van-chuyen" element={<ShippingPolicyPage />} />
+            <Route path="/phuong-thuc-thanh-toan" element={<PaymentPolicyPage />} />
+            <Route path="/he-thong-cua-hang" element={<StoresPage />} />
+            <Route path="/lien-he" element={<ContactPage />} />
           </Routes>
         </main>
         

@@ -37,6 +37,8 @@ builder.Services.AddTransient<INotificationService, NotificationService>();
 builder.Services.AddTransient<IProductFavoriteService, ProductFavoriteService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrderIssueService, OrderIssueService>();
+builder.Services.AddScoped<IProductReviewService, ProductReviewService>();
+builder.Services.AddScoped<ISupportTicketService, SupportTicketService>();
 
 // 1. Đăng ký các dịch vụ bổ trợ khám phá Endpoint phục vụ Web API
 builder.Services.AddEndpointsApiExplorer();
@@ -157,4 +159,3 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
-
