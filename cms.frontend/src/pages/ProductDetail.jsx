@@ -5,6 +5,8 @@ import favoriteService from '../services/favoriteService';
 import { getMediaUrl } from '../utils/mediaUrl';
 import ProductCard from '../components/ProductCard';
 import { useFavorite } from '../contexts/FavoriteContext';
+import ProductReviewSection from '../components/reviews/ProductReviewSection';
+import '../assets/css/ProductReviews.css';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -465,7 +467,11 @@ const ProductDetail = () => {
                 }}
               >
                 <p className="text-secondary lh-lg mb-0 font-weight-normal" style={{ fontSize: '0.92rem', whiteSpace: 'pre-line' }}>
-                  {product.description || "Đang tiến hành bổ sung nội dung mô tả chi tiết chất liệu, phom dáng và hướng dẫn cách chơi cặn kẽ cho bộ sản phẩm đồ chơi thông minh cao cấp này."}
+                  {product.description ? (
+                    <div className="product-description-content" dangerouslySetInnerHTML={{ __html: product.description }} />
+                  ) : (
+                    "Đang tiến hành bổ sung nội dung mô tả chi tiết chất liệu, phom dáng và hướng dẫn cách chơi cặn kẽ cho bộ sản phẩm đồ chơi thông minh cao cấp này."
+                  )}
                 </p>
                 {!isExpanded && (
                   <div style={{
@@ -494,6 +500,9 @@ const ProductDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* ĐÁNH GIÁ SẢN PHẨM */}
+      <ProductReviewSection productId={product.id} />
 
       {/* SẢN PHẨM LIÊN QUAN */}
       {relatedProducts && relatedProducts.length > 0 && (
@@ -544,4 +553,3 @@ const ProductDetail = () => {
 };
 
 export default ProductDetail;
-

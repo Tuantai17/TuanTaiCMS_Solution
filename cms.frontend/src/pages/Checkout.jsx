@@ -226,11 +226,9 @@ const Checkout = () => {
       // Hien thi thong bao phu hop dua vao emailSent
       const orderCode = result?.orderCode || `#${result?.orderId}`;
       if (result?.emailSent) {
-        alert(`Dat hang thanh cong! Ma don hang: ${orderCode}. Email xac nhan da duoc gui toi hop thu cua ban.`);
-      } else {
-        alert(`Dat hang thanh cong! Ma don hang: ${orderCode}. Cam on ban da mua hang tai TuanTaiCMS Shop.`);
+        console.log(`Email xác nhận đã được gửi cho đơn hàng ${orderCode}`);
       }
-      navigate('/account/orders');
+      navigate('/order-success');
     } catch (err) {
       if (err.response && err.response.data && err.response.data.message) {
         setError(err.response.data.message);

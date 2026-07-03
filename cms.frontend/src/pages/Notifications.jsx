@@ -11,13 +11,15 @@ const Notifications = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const [customer, setCustomer] = useState(null);
 
   useEffect(() => {
-    const customer = localStorage.getItem('customer');
-    if (!customer) {
+    const storedCustomer = localStorage.getItem('customer');
+    if (!storedCustomer) {
       navigate('/login');
       return;
     }
+    setCustomer(JSON.parse(storedCustomer));
     fetchNotifications(page);
   }, [page, navigate]);
 
@@ -55,24 +57,32 @@ const Notifications = () => {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('customer');
+    window.dispatchEvent(new Event('customerLoginStateChange'));
+    navigate('/');
+  };
+
   return (
-    <div className="bg-light py-4" style={{ minHeight: 'calc(100vh - 400px)' }}>
-      <div className="container">
-        <div className="row">
-          <div className="col-lg-3 mb-4 mb-lg-0">
-            <AccountSidebar />
-          </div>
+    <div className="profile-page">
+      <div className="profile-layout">
+        <AccountSidebar activeKey="notifications" customer={customer} onLogout={handleLogout} />
           
-          <div className="col-lg-9">
-            <div className="card border-0 shadow-sm rounded-lg">
-              <div className="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
-                <h5 className="mb-0 font-weight-bold"><i className="fa-regular fa-bell text-danger mr-2"></i> Thông báo của bạn</h5>
-                <button className="btn btn-sm btn-outline-secondary" onClick={handleMarkAllAsRead}>
-                  <i className="fa-solid fa-check-double mr-1"></i> Đánh dấu tất cả đã đọc
-                </button>
+        <div className="profile-content">
+          <div className="profile-content-card" style={{ padding: 0 }}>
+            <div className="d-flex justify-content-between align-items-center p-4 border-bottom">
+              <div>
+                <h2 className="profile-content-title mb-1" style={{ borderBottom: 'none', paddingBottom: 0, marginBottom: '0.5rem' }}>
+                  <i className="fa-regular fa-bell text-danger mr-2"></i> Thông báo của bạn
+                </h2>
+                <p className="profile-content-subtitle mb-0">Quản lý và xem tất cả các thông báo từ hệ thống.</p>
               </div>
-              
-              <div className="card-body p-0">
+              <button className="btn btn-sm btn-outline-secondary" onClick={handleMarkAllAsRead}>
+                <i className="fa-solid fa-check-double mr-1"></i> Đánh dấu tất cả đã đọc
+              </button>
+            </div>
+            
+            <div className="notifications-list-wrapper">
                 {loading ? (
                   <div className="text-center p-5">
                     <div className="spinner-border text-danger" role="status">
@@ -125,7 +135,7 @@ const Notifications = () => {
               </div>
 
               {totalPages > 1 && (
-                <div className="card-footer bg-white border-top py-3">
+                <div className="p-4 border-top">
                   <nav aria-label="Page navigation">
                     <ul className="pagination justify-content-center mb-0">
                       <li className={`page-item ${page === 1 ? 'disabled' : ''}`}>
@@ -147,7 +157,6 @@ const Notifications = () => {
           </div>
         </div>
       </div>
-    </div>
   );
 };
 

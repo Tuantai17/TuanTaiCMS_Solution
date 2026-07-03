@@ -332,7 +332,6 @@
   color: #333;
   padding: 0;
   outline: none;
-  pointer-events: none; /* User shouldn't type to avoid bugs for now */
 }
 
 .cart-item-total {

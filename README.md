@@ -77,10 +77,18 @@ TuanTaiCMS_Solution/
 2. **Quy trình Mua hàng & Email tự động:**
    - Khách hàng thêm sản phẩm vào giỏ, điền thông tin và thực hiện đặt hàng.
    - Hệ thống chạy transaction an toàn: chèn hóa đơn mới, trừ số lượng tồn kho sản phẩm trong database và kích hoạt tác vụ nền gửi email HTML xác nhận hóa đơn đến Gmail của khách hàng.
-3. **Khôi phục mật khẩu 3 bước qua OTP Email:**
-   - Người dùng yêu cầu khôi phục mật khẩu. Hệ thống gửi mã OTP 6 số qua email.
-   - Giao diện React thiết kế cao cấp (6 ô nhập tự chuyển focus, đếm ngược đếm giây trực quan) cho phép xác minh OTP và đổi mật khẩu mới bảo mật.
-4. **Nội dung hiển thị động (Dynamic Content):**
+3. **Đánh giá Sản phẩm (Product Reviews):**
+   - Khách hàng có thể viết đánh giá, chấm điểm (rating) và đính kèm hình ảnh thực tế cho sản phẩm đã mua.
+   - Nhân viên quản trị duyệt hiển thị đánh giá và có thể gửi phản hồi phản biện trực tiếp tới người dùng.
+4. **Hỗ trợ Khách hàng (Support Tickets):**
+   - Tích hợp hệ thống gửi yêu cầu hỗ trợ (Ticket), cho phép trao đổi và chat trực tiếp giữa khách hàng và Admin/Staff ngay trên web.
+5. **Quản lý Kho hàng & Sự cố đơn hàng (Inventory & Order Issues):**
+   - Ghi nhận lịch sử giao dịch nhập/xuất kho chi tiết (Inventory Transactions).
+   - Tiếp nhận và xử lý các sự cố (đổi/trả/bảo hành) liên quan đến từng mặt hàng trong một đơn hàng.
+6. **Khôi phục mật khẩu 3 bước qua OTP Email:**
+   - Người dùng yêu cầu khôi phục mật khẩu. Hệ thống gửi mã OTP 6 số qua email và lưu trữ lịch sử gửi mail (`EmailLogs`).
+   - Giao diện React thiết kế cao cấp (6 ô nhập tự chuyển focus, đếm ngược đếm giây trực quan) cho phép xác minh OTP an toàn.
+7. **Nội dung hiển thị động (Dynamic Content):**
    - Slider banner trang chủ và thanh menu điều hướng được load động từ Database thông qua Web API, giúp người quản trị dễ dàng thay đổi giao diện frontend từ trang Admin.
 
 ---

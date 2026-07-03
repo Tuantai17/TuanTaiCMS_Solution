@@ -150,7 +150,7 @@ Mô tả: Trang danh sách sản phẩm trong khu vực quản trị (có phân 
                             </td>
                             <td>
                                 <strong>@item.Name</strong>
-                                <div class="text-muted small text-truncate" style="max-width: 250px;">@item.Description</div>
+                                <div class="text-muted small text-truncate" style="max-width: 250px;">@(System.Text.RegularExpressions.Regex.Replace(item.Description ?? "", "<.*?>", string.Empty))</div>
                             </td>
                             <td>
                                 <span class="post-category-badge">@(item.CategoryProduct?.Name ?? "Chưa phân loại")</span>

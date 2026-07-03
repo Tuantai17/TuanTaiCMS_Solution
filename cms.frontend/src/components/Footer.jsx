@@ -33,11 +33,10 @@ const Footer = () => {
           <div className="col-12 col-md-3 mb-4 pl-md-5">
             <h6 className="text-dark font-weight-bold text-uppercase mb-3" style={{ fontSize: '0.95rem' }}>Hỗ trợ khách hàng</h6>
             <ul className="list-unstyled lh-lg">
-              <li><a href="#" className="text-secondary text-decoration-none hover-dark">Chính sách bảo hành</a></li>
-              <li><a href="#" className="text-secondary text-decoration-none hover-dark">Chính sách đổi trả 3 ngày</a></li>
-              <li><a href="#" className="text-secondary text-decoration-none hover-dark">Chính sách vận chuyển</a></li>
-              <li><a href="#" className="text-secondary text-decoration-none hover-dark">Phương thức thanh toán</a></li>
-              <li><a href="#" className="text-secondary text-decoration-none hover-dark">Hướng dẫn mua trả góp</a></li>
+              <li><Link to="/chinh-sach-bao-hanh" className="text-secondary text-decoration-none hover-dark">Chính sách bảo hành</Link></li>
+              <li><Link to="/doi-tra-trong-7-ngay" className="text-secondary text-decoration-none hover-dark">Chính sách đổi trả</Link></li>
+              <li><Link to="/chinh-sach-van-chuyen" className="text-secondary text-decoration-none hover-dark">Chính sách vận chuyển</Link></li>
+              <li><Link to="/phuong-thuc-thanh-toan" className="text-secondary text-decoration-none hover-dark">Phương thức thanh toán</Link></li>
             </ul>
           </div>
 
@@ -46,10 +45,9 @@ const Footer = () => {
             <h6 className="text-dark font-weight-bold text-uppercase mb-3" style={{ fontSize: '0.95rem' }}>Về chúng tôi</h6>
             <ul className="list-unstyled lh-lg">
               <li><Link to="/gioi-thieu" className="text-secondary text-decoration-none hover-dark">Giới thiệu MyKingdom</Link></li>
-              <li><a href="#" className="text-secondary text-decoration-none hover-dark">Hệ thống cửa hàng</a></li>
-              <li><a href="#" className="text-secondary text-decoration-none hover-dark">Tin tức & Sự kiện</a></li>
-              <li><a href="#" className="text-secondary text-decoration-none hover-dark">Liên hệ hợp tác</a></li>
-              <li><a href="#" className="text-secondary text-decoration-none hover-dark">Cơ hội nghề nghiệp</a></li>
+              <li><Link to="/he-thong-cua-hang" className="text-secondary text-decoration-none hover-dark">Hệ thống cửa hàng</Link></li>
+              <li><Link to="/blog" className="text-secondary text-decoration-none hover-dark">Tin tức & Sự kiện</Link></li>
+              <li><Link to="/lien-he" className="text-secondary text-decoration-none hover-dark">Liên hệ hợp tác</Link></li>
             </ul>
           </div>
 

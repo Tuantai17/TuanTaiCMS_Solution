@@ -177,6 +177,16 @@ Chú thích chi tiết:
                 <span>Đơn hàng</span>
             </a>
 
+            <a id="nav-support-ticket" class="admin-nav__link @IsActive("SupportTicket")" asp-controller="SupportTicket" asp-action="Index">
+                <i class="bi bi-headset"></i>
+                <span>Hỗ trợ khách hàng</span>
+            </a>
+
+            <a id="nav-product-review" class="admin-nav__link @IsActive("ProductReview")" asp-controller="ProductReview" asp-action="Index">
+                <i class="bi bi-chat-square-text-fill"></i>
+                <span>Danh gia san pham</span>
+            </a>
+
             <!-- Thong bao va Email -->
             <span class="admin-nav__group-label" style="display:block;padding:18px 16px 4px;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);font-weight:600;">Thông báo & Email</span>
             <a id="nav-notification" class="admin-nav__link @IsActive("Notification")" asp-controller="Notification" asp-action="Index">

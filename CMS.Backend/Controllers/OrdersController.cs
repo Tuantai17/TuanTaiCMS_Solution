@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using CMS.Data;
 using CMS.Data.Entities;
+using CMS.Data.Enums;
 using CMS.Backend.Helpers;
 using CMS.Backend.Models;
 using CMS.Backend.Services;
@@ -458,7 +459,11 @@ namespace CMS.Backend.Controllers
                   ProductImageUrl = od.Product != null ? od.Product.ImageUrl : null,
                   Quantity = od.Quantity,
                   UnitPrice = od.UnitPrice,
-                  LineTotal = od.UnitPrice * od.Quantity
+                  LineTotal = od.UnitPrice * od.Quantity,
+                  CanReview = o.Status == (int)OrderStatus.COMPLETED && od.ProductReview == null,
+                  HasReview = od.ProductReview != null,
+                  ReviewId = od.ProductReview != null ? od.ProductReview.Id : null,
+                  ReviewStatus = od.ProductReview != null ? od.ProductReview.Status : null
                 })
                 .ToList()
               : new List<OrderDetailItemDto>()
@@ -632,6 +637,10 @@ namespace CMS.Backend.Controllers
     public int Quantity { get; set; }
     public decimal UnitPrice { get; set; }
     public decimal LineTotal { get; set; }
+    public bool CanReview { get; set; }
+    public bool HasReview { get; set; }
+    public int? ReviewId { get; set; }
+    public ReviewStatus? ReviewStatus { get; set; }
   }
 
   public class CancelOrderRequestDto

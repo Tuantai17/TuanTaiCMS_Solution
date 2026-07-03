@@ -253,6 +253,17 @@ function OrderHistory() {
 
   const renderOrderActions = (order) => (
     <div className="order-history-actions">
+      {order.status === 4 && (
+        <button
+          type="button"
+          className="order-history-primary-btn"
+          style={{ backgroundColor: '#CF102D', color: '#fff', marginRight: '8px', border: 'none', padding: '6px 12px', borderRadius: '4px' }}
+          onClick={() => navigate(`/account/orders/${order.id}`)}
+        >
+          <i className="fa-solid fa-star" style={{ marginRight: '5px' }}></i>
+          Đánh giá
+        </button>
+      )}
       <button
         type="button"
         className="order-history-secondary-btn"

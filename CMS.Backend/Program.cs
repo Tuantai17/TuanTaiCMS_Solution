@@ -37,6 +37,8 @@ builder.Services.AddTransient<INotificationService, NotificationService>();
 builder.Services.AddTransient<IProductFavoriteService, ProductFavoriteService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrderIssueService, OrderIssueService>();
+builder.Services.AddScoped<IProductReviewService, ProductReviewService>();
+builder.Services.AddScoped<ISupportTicketService, SupportTicketService>();
 
 // 1. Đăng ký các dịch vụ bổ trợ khám phá Endpoint phục vụ Web API
 builder.Services.AddEndpointsApiExplorer();
@@ -45,8 +47,8 @@ builder.Services.AddSwaggerGen();
 
 // 3. Cấu hình chính sách chia sẻ tài nguyên CORS cho phép ReactJS kết nối rút dữ liệu
 builder.Services.AddCors(options => {
-    options.AddPolicy("AllowAll", policy => {
-        policy.AllowAnyOrigin()   // Cho phép tất cả các nguồn gửi yêu cầu đến
+    options.AddPolicy("AllowReactApp", policy => {
+        policy.WithOrigins("http://localhost:3000") // Mở cổng chính xác cho ReactJS
               .AllowAnyMethod()   // Cho phép tất cả phương thức HTTP (GET, POST, PUT, DELETE...)
               .AllowAnyHeader();  // Cho phép tất cả các thuộc tính tiêu đề (Header)
     });
@@ -140,7 +142,7 @@ app.UseStaticFiles(new StaticFileOptions
 app.UseRouting();
 
 // [VỊ TRÍ ĐẶT CORS]: Kích hoạt CORS ngay sau UseRouting và trước Authentication để mở cổng cho ReactJS kết nối
-app.UseCors("AllowAll");
+app.UseCors("AllowReactApp");
 
 // Buổi 5 - Thứ tự quan trọng: Authentication phải đứng TRƯỚC Authorization
 // BƯỚC A: Xác nhận "Anh là ai?" (Kiểm tra thẻ bài / Cookie)
@@ -157,4 +159,3 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
-

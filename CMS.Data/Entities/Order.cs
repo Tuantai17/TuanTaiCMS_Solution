@@ -36,5 +36,6 @@ namespace CMS.Data.Entities
         public virtual Customer? Customer { get; set; }
 
         public virtual ICollection<OrderDetail>? OrderDetails { get; set; }
+        public virtual ICollection<ProductReview> ProductReviews { get; set; } = new List<ProductReview>();
     }
 }

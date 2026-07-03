@@ -2,17 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
 import { getMediaUrl } from '../utils/mediaUrl';
+import AccountSidebar from '../components/account/AccountSidebar';
 import '../assets/css/Profile.css';
 
 const DEFAULT_AVATAR = 'https://ui-avatars.com/api/?background=c80f1e&color=fff&size=200&font-size=0.4&bold=true&name=';
-
-const MENU_ITEMS = [
-  { key: 'info', label: 'Thông tin tài khoản', icon: 'fa-solid fa-user', type: 'route', path: '/profile' },
-  { key: 'address', label: 'Sổ địa chỉ', icon: 'fa-solid fa-location-dot', type: 'tab' },
-  { key: 'order-history', label: 'Lịch sử mua hàng', icon: 'fa-solid fa-clock-rotate-left', type: 'route', path: '/account/orders' },
-  { key: 'change-password', label: 'Đổi mật khẩu', icon: 'fa-solid fa-key', type: 'current' },
-  { key: 'logout', label: 'Đăng xuất', icon: 'fa-solid fa-right-from-bracket', isLogout: true, type: 'logout' },
-];
 
 const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
 
@@ -178,22 +171,10 @@ function ChangePassword() {
     }
   };
 
-  const handleSidebarClick = (item) => {
-    if (item.type === 'logout') {
-      localStorage.removeItem('customer');
-      window.dispatchEvent(new Event('customerLoginStateChange'));
-      navigate('/');
-      return;
-    }
-
-    if (item.type === 'route' && item.path) {
-      navigate(item.path);
-      return;
-    }
-
-    if (item.type === 'tab') {
-      navigate('/profile', { state: { profileTab: item.key } });
-    }
+  const handleLogout = () => {
+    localStorage.removeItem('customer');
+    window.dispatchEvent(new Event('customerLoginStateChange'));
+    navigate('/');
   };
 
   if (fetching) {
@@ -214,44 +195,11 @@ function ChangePassword() {
   return (
     <div className="profile-page">
       <div className="profile-layout">
-        <aside className="profile-sidebar">
-          <div className="profile-sidebar-card">
-            <div className="profile-sidebar-header">
-              <div className="profile-avatar-wrapper profile-avatar-wrapper-static">
-                <img src={getAvatarSrc()} alt={fullName} className="profile-avatar-img" />
-              </div>
-              <h4 className="profile-sidebar-name">{fullName}</h4>
-              <p className="profile-sidebar-email">{email}</p>
-              <span className="profile-member-badge">
-                <i className="fa-solid fa-crown"></i>
-                Thành viên
-              </span>
-            </div>
-
-            <ul className="profile-sidebar-menu">
-              {MENU_ITEMS.map((item) => (
-                <React.Fragment key={item.key}>
-                  {item.isLogout && (
-                    <li>
-                      <div className="profile-menu-divider"></div>
-                    </li>
-                  )}
-                  <li>
-                    <button
-                      type="button"
-                      className={`profile-menu-item ${item.key === 'change-password' ? 'active' : ''} ${item.isLogout ? 'logout-item' : ''}`}
-                      onClick={() => handleSidebarClick(item)}
-                    >
-                      <i className={item.icon}></i>
-                      <span>{item.label}</span>
-                      {item.badge > 0 && <span className="menu-badge">{item.badge}</span>}
-                    </button>
-                  </li>
-                </React.Fragment>
-              ))}
-            </ul>
-          </div>
-        </aside>
+        <AccountSidebar 
+          activeKey="change-password" 
+          customer={{ fullName, email, avatarUrl }} 
+          onLogout={handleLogout} 
+        />
 
         <section className="profile-content">
           <div className="profile-content-card profile-password-card">

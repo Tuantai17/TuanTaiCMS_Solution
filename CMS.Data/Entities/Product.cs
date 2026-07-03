@@ -56,6 +56,7 @@ namespace CMS.Data.Entities
 
         // Bo suu tap anh chi tiet san pham
         public virtual ICollection<ProductImage> ProductImages { get; set; } = new List<ProductImage>();
+        public virtual ICollection<ProductReview> ProductReviews { get; set; } = new List<ProductReview>();
 
         // Cac thuoc tinh Soft Delete / Ngung kinh doanh
         public bool IsDeleted { get; set; } = false;

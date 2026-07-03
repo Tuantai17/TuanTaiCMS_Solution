@@ -40,5 +40,7 @@ namespace CMS.Data.Entities
 
         [ForeignKey("ProductId")]
         public virtual Product? Product { get; set; }
+
+        public virtual ProductReview? ProductReview { get; set; }
     }
 }

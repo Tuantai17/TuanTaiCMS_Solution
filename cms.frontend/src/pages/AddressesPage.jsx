@@ -4,17 +4,10 @@ import authService from '../services/authService';
 import addressService from '../services/addressService';
 import { getMediaUrl } from '../utils/mediaUrl';
 import SearchableSelect from '../components/SearchableSelect';
+import AccountSidebar from '../components/account/AccountSidebar';
 import '../assets/css/AddressesPage.css';
 
 const DEFAULT_AVATAR = 'https://ui-avatars.com/api/?background=c80f1e&color=fff&size=200&font-size=0.4&bold=true&name=';
-
-const MENU_ITEMS = [
-  { key: 'info', label: 'Thông tin tài khoản', icon: 'fa-solid fa-user' },
-  { key: 'address', label: 'Sổ địa chỉ', icon: 'fa-solid fa-location-dot' },
-  { key: 'order-history', label: 'Lịch sử mua hàng', icon: 'fa-solid fa-clock-rotate-left' },
-  { key: 'change-password', label: 'Đổi mật khẩu', icon: 'fa-solid fa-key' },
-  { key: 'logout', label: 'Đăng xuất', icon: 'fa-solid fa-right-from-bracket', isLogout: true },
-];
 
 const AddressesPage = () => {
   const navigate = useNavigate();
@@ -159,19 +152,10 @@ const AddressesPage = () => {
     }
   }, [districtName, availableDistricts]);
 
-  const handleTabChange = (key) => {
-    if (key === 'logout') {
-      localStorage.removeItem('customer');
-      window.dispatchEvent(new Event('customerLoginStateChange'));
-      navigate('/');
-      return;
-    }
-    if (key === 'address') return;
-    if (key === 'order-history') {
-      navigate('/account/orders');
-      return;
-    }
-    navigate(`/profile?tab=${key}`);
+  const handleLogout = () => {
+    localStorage.removeItem('customer');
+    window.dispatchEvent(new Event('customerLoginStateChange'));
+    navigate('/');
   };
 
   // Mở Modal
@@ -384,36 +368,11 @@ const AddressesPage = () => {
     <div className="address-page">
       <div className="address-layout">
         {/* ===== SIDEBAR TÀI KHOẢN ===== */}
-        <div className="address-sidebar">
-          <div className="address-sidebar-card">
-            <div className="address-sidebar-header">
-              <div className="address-avatar-wrapper">
-                <img src={getAvatarSrc()} alt={fullName} className="address-avatar-img" />
-              </div>
-              <h4 className="address-sidebar-name">{fullName}</h4>
-              <p className="address-sidebar-email">{email}</p>
-              <span className="address-member-badge"><i className="fa-solid fa-crown"></i> Thành viên</span>
-            </div>
-
-            <ul className="address-sidebar-menu">
-              {MENU_ITEMS.map((item) => (
-                <React.Fragment key={item.key}>
-                  {item.isLogout && <li><div className="address-menu-divider"></div></li>}
-                  <li>
-                    <button
-                      type="button"
-                      className={`address-menu-item ${item.key === 'address' ? 'active' : ''} ${item.isLogout ? 'logout-item' : ''}`}
-                      onClick={() => handleTabChange(item.key)}
-                    >
-                      <i className={item.icon}></i>
-                      <span>{item.label}</span>
-                    </button>
-                  </li>
-                </React.Fragment>
-              ))}
-            </ul>
-          </div>
-        </div>
+        <AccountSidebar 
+          activeKey="address" 
+          customer={{ fullName, email, avatarUrl }} 
+          onLogout={handleLogout} 
+        />
 
         {/* ===== NỘI DUNG CHÍNH ===== */}
         <div className="address-content animate--fade-in">

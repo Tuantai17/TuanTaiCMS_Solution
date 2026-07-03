@@ -1,0 +1,139 @@
+@model CMS.Backend.Models.AdminProductReviewDetailViewModel
+@using CMS.Data.Enums
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    var review = Model.Review;
+}
+
+<div class="mb-3">
+    <a asp-action="Index" class="btn btn-link text-decoration-none ps-0"><i class="bi bi-arrow-left"></i> Quay lại danh sách đánh giá</a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="mb-3">Nội dung đánh giá</h5>
+                <div class="mb-2">
+                    @for (var i = 1; i <= 5; i++)
+                    {
+                        <i class="bi @(i <= review.Rating ? "bi-star-fill text-warning" : "bi-star text-muted")"></i>
+                    }
+                    <span class="ms-2 fw-semibold">@review.Rating/5</span>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(review.Title))
+                {
+                    <div class="fw-semibold fs-5 mb-2">@review.Title</div>
+                }
+                <p class="mb-3">@review.Content</p>
+                @if (review.Images.Any())
+                {
+                    <div class="row g-2">
+                        @foreach (var image in review.Images)
+                        {
+                            <div class="col-md-3 col-6">
+                                <img src="@image.ImageUrl" class="img-fluid rounded border" alt="Review image" />
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h5 class="mb-3">Phản hồi từ cửa hàng</h5>
+                @if (review.Replies.Any())
+                {
+                    <div class="d-flex flex-column gap-3 mb-4">
+                        @foreach (var reply in review.Replies)
+                        {
+                            <div class="border rounded p-3 bg-light">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <strong>@reply.AdminName</strong>
+                                    <small class="text-muted">@reply.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+                                </div>
+                                <div>@reply.Content</div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-muted mb-3">Chưa có phản hồi nào.</div>
+                }
+
+                <form asp-action="Reply" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@review.Id" />
+                    <div class="mb-3">
+                        <textarea class="form-control" name="content" rows="4" placeholder="Nhập nội dung phản hồi cho khách hàng..." required></textarea>
+                    </div>
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-send"></i> Gửi phản hồi</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="mb-3">Thông tin khách hàng</h5>
+                <div class="mb-2"><strong>@review.UserDisplayName</strong></div>
+                <div class="text-muted mb-1">@review.CustomerEmail</div>
+                <div class="text-muted">@(string.IsNullOrWhiteSpace(review.CustomerPhone) ? "Chưa cập nhật số điện thoại" : review.CustomerPhone)</div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="mb-3">Thông tin sản phẩm</h5>
+                <div class="fw-semibold">@review.ProductName</div>
+                <div class="text-muted mt-1">Đơn hàng #@review.OrderId</div>
+                <div class="text-muted">Mã dòng sản phẩm #@review.OrderDetailId</div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h5 class="mb-3">Điều phối đánh giá</h5>
+                <div class="mb-3">
+                    <span class="badge @(review.Status == ReviewStatus.Published ? "bg-success" : review.Status == ReviewStatus.Pending ? "bg-warning text-dark" : review.Status == ReviewStatus.Hidden ? "bg-secondary" : "bg-danger")">
+                        @review.Status
+                    </span>
+                </div>
+
+                <form asp-action="Publish" method="post" class="mb-2">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@review.Id" />
+                    <button class="btn btn-success w-100" type="submit"><i class="bi bi-check-circle"></i> Duyệt đánh giá</button>
+                </form>
+
+                <form asp-action="Hide" method="post" class="mb-2">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@review.Id" />
+                    <div class="mb-2">
+                        <input class="form-control" name="reason" placeholder="Lý do ẩn đánh giá" />
+                    </div>
+                    <button class="btn btn-outline-secondary w-100" type="submit"><i class="bi bi-eye-slash"></i> Ẩn đánh giá</button>
+                </form>
+
+                <form asp-action="Reject" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@review.Id" />
+                    <div class="mb-2">
+                        <input class="form-control" name="reason" placeholder="Lý do từ chối" />
+                    </div>
+                    <button class="btn btn-outline-danger w-100" type="submit"><i class="bi bi-x-circle"></i> Từ chối</button>
+                </form>
+
+                @if (!string.IsNullOrWhiteSpace(review.ModerationReason))
+                {
+                    <div class="alert alert-warning mt-3 mb-0">
+                        <strong>Lý do kiểm duyệt:</strong> @review.ModerationReason
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

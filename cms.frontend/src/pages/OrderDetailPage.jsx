@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import AccountSidebar from '../components/account/AccountSidebar';
+import ReviewFormModal from '../components/reviews/ReviewFormModal';
 import '../assets/css/Profile.css';
 import '../assets/css/OrderDetail.css';
+import '../assets/css/ProductReviews.css';
 import orderService from '../services/orderService';
 import authService from '../services/authService';
 import { clearStoredCustomer, getStoredCustomer } from '../utils/customerSession';
@@ -11,16 +13,15 @@ import { formatOrderCode, parseOrderNotes } from '../utils/orderStatus';
 
 const FALLBACK_IMAGE = 'https://placehold.co/120x120/f3f4f6/9ca3af?text=No+Image';
 
-// Mapping for the timeline
 const ORDER_STATUS_CONFIG = {
-  0: { label: "Chờ duyệt", step: 1, icon: "fa-regular fa-hourglass-half" },
-  1: { label: "Đã duyệt", step: 2, icon: "fa-solid fa-clipboard-check" },
-  2: { label: "Đang chuẩn bị", step: 3, icon: "fa-solid fa-box-open" },
-  3: { label: "Đang giao hàng", step: 4, icon: "fa-solid fa-truck-fast" },
-  4: { label: "Hoàn thành", step: 5, icon: "fa-regular fa-circle-check" },
-  5: { label: "Đã hủy", step: -1, icon: "fa-regular fa-circle-xmark" },
-  6: { label: "Chờ khách xác nhận", step: 3, icon: "fa-solid fa-triangle-exclamation", color: "#f59e0b" },
-  7: { label: "Chờ bổ sung hàng", step: 3, icon: "fa-solid fa-clock", color: "#f59e0b" }
+  0: { label: 'Chờ duyệt', step: 1 },
+  1: { label: 'Đã duyệt', step: 2 },
+  2: { label: 'Đang chuẩn bị', step: 3 },
+  3: { label: 'Đang giao hàng', step: 4 },
+  4: { label: 'Hoàn thành', step: 5 },
+  5: { label: 'Đã hủy', step: -1 },
+  6: { label: 'Chờ khách xác nhận', step: 3 },
+  7: { label: 'Chờ bổ sung hàng', step: 3 },
 };
 
 function OrderDetailPage() {
@@ -32,12 +33,11 @@ function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [fetchingProfile, setFetchingProfile] = useState(true);
   const [error, setError] = useState('');
-
-  // Cancel Modal states
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [otherReason, setOtherReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
+  const [reviewingItem, setReviewingItem] = useState(null);
 
   const redirectToLogin = useCallback((message) => {
     const staleCustomer = getStoredCustomer();
@@ -57,13 +57,8 @@ function OrderDetailPage() {
 
   useEffect(() => {
     const storedCustomer = getStoredCustomer();
-    if (!storedCustomer?.customerId) {
+    if (!storedCustomer?.customerId || !storedCustomer?.accessToken) {
       redirectToLogin('Vui lòng đăng nhập để xem chi tiết đơn hàng.');
-      return;
-    }
-
-    if (!storedCustomer?.accessToken) {
-      redirectToLogin('Phiên đăng nhập cũ không còn phù hợp với bảo mật mới. Vui lòng đăng nhập lại để tiếp tục.');
       return;
     }
 
@@ -87,26 +82,18 @@ function OrderDetailPage() {
     }
 
     const loadOrder = async () => {
-      setLoading(true);
-      setError('');
-
       try {
+        setLoading(true);
+        setError('');
         const response = await orderService.getMyOrderDetail(id);
         setOrder(response);
       } catch (requestError) {
         if (requestError?.response?.status === 401) {
-          clearStoredCustomer();
-          window.dispatchEvent(new Event('customerLoginStateChange'));
-          redirectToLogin('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để xem chi tiết đơn hàng.');
+          redirectToLogin('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
           return;
         }
 
-        if (requestError?.response?.status === 404) {
-          setOrder(null);
-          setError('Không tìm thấy đơn hàng.');
-        } else {
-          setError(requestError?.response?.data?.message || 'Không thể tải chi tiết đơn hàng. Vui lòng thử lại.');
-        }
+        setError(requestError?.response?.data?.message || 'Không thể tải chi tiết đơn hàng.');
       } finally {
         setLoading(false);
       }
@@ -122,98 +109,78 @@ function OrderDetailPage() {
   };
 
   const handleReorder = () => {
-    if (!order || !order.items) return;
-    
+    if (!order?.items?.length) {
+      return;
+    }
+
     const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-    let addedCount = 0;
 
-    order.items.forEach(item => {
-      const index = cart.findIndex(c => c.id === item.productId);
-      const qtyToAdd = item.quantity || 1;
-
-      if (index > -1) {
-        cart[index].quantity += qtyToAdd;
-        cart[index].price = item.unitPrice; // Use latest historical price
+    order.items.forEach((item) => {
+      const existingIndex = cart.findIndex((cartItem) => cartItem.id === item.productId);
+      if (existingIndex >= 0) {
+        cart[existingIndex].quantity += item.quantity;
+        cart[existingIndex].price = item.unitPrice;
       } else {
         cart.push({
           id: item.productId,
           name: item.productName,
           price: item.unitPrice,
-          quantity: qtyToAdd,
+          quantity: item.quantity,
           imageUrl: getMediaUrl(item.productImageUrl),
-          sku: `#${1000 + item.productId}` // mock SKU since backend doesn't return it in OrderDetailItemDto
+          sku: `SKU${1000 + item.productId}`,
         });
       }
-      addedCount += qtyToAdd;
     });
 
     localStorage.setItem('cart', JSON.stringify(cart));
     window.dispatchEvent(new Event('cartChange'));
-    
-    alert(`Đã thêm ${addedCount} sản phẩm từ đơn hàng vào giỏ!`);
     navigate('/cart');
   };
 
   const handleCancelOrder = async () => {
     const finalReason = cancelReason === 'other' ? otherReason : cancelReason;
     if (!finalReason.trim()) {
-      alert('Vui lòng chọn hoặc nhập lý do hủy đơn hàng.');
       return;
     }
 
-    setCancelling(true);
     try {
+      setCancelling(true);
       await orderService.cancelMyOrder(order.id, finalReason);
-      alert('Đã hủy đơn hàng thành công!');
+      setOrder((current) => (current ? { ...current, status: 5 } : current));
       setShowCancelModal(false);
-      // Update local state to reflect cancellation immediately
-      setOrder(prev => ({ ...prev, status: 5 }));
-    } catch (err) {
-      alert(err?.response?.data?.message || 'Không thể hủy đơn hàng. Vui lòng thử lại.');
+    } catch (requestError) {
+      alert(requestError?.response?.data?.message || 'Không thể hủy đơn hàng. Vui lòng thử lại.');
     } finally {
       setCancelling(false);
     }
   };
 
-  if (fetchingProfile) {
-    return (
-      <div className="account-order-page">
-        <div className="account-order-layout">
-          <div className="profile-skeleton-sidebar">
-            <div className="skeleton-block" style={{ height: '320px' }}></div>
-          </div>
-          <div className="order-detail-main-card">
-            <div className="order-detail-skeleton">
-              <div className="skel-header"></div>
-              <div className="skel-timeline"></div>
-              <div className="skel-grid">
-                <div className="skel-box"></div>
-                <div className="skel-box"></div>
-                <div className="skel-box"></div>
-                <div className="skel-box"></div>
-              </div>
-              <div className="skel-row"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const handleReviewSubmitted = (review) => {
+    setOrder((current) => {
+      if (!current) {
+        return current;
+      }
+
+      return {
+        ...current,
+        items: current.items.map((item) =>
+          item.id === review.orderDetailId
+            ? {
+                ...item,
+                canReview: false,
+                hasReview: true,
+                reviewId: review.id,
+                reviewStatus: review.status,
+              }
+            : item
+        ),
+      };
+    });
+  };
 
   const parsedNotes = order ? parseOrderNotes(order.notes) : { deliveryInfo: '', paymentMethod: '', customerNotes: '' };
-  
-  // Parse detailed delivery info if present
-  let deliveryDetails = { name: '', phone: '', email: '', address: '' };
-  if (parsedNotes.deliveryInfo) {
-    const parts = parsedNotes.deliveryInfo.split(' - ');
-    deliveryDetails.name = parts[0] || '';
-    deliveryDetails.phone = parts[1] || '';
-    deliveryDetails.email = parts[2] || '';
-    deliveryDetails.address = parts.slice(3).join(' - ') || '';
-  }
-
-  const currentStatusConfig = order ? (ORDER_STATUS_CONFIG[order.status] || ORDER_STATUS_CONFIG[0]) : ORDER_STATUS_CONFIG[0];
-  const isCancelled = order?.status === 5;
+  const deliveryParts = parsedNotes.deliveryInfo ? parsedNotes.deliveryInfo.split(' - ') : [];
+  const currentStatus = ORDER_STATUS_CONFIG[order?.status] || ORDER_STATUS_CONFIG[0];
 
   return (
     <div className="account-order-page">
@@ -221,7 +188,7 @@ function OrderDetailPage() {
         <AccountSidebar activeKey="order-history" customer={customer} onLogout={handleLogout} />
 
         <section className="order-detail-main-card animate--fade-in">
-          {loading ? (
+          {fetchingProfile || loading ? (
             <div className="order-detail-skeleton">
               <div className="skel-header"></div>
               <div className="skel-timeline"></div>
@@ -233,43 +200,18 @@ function OrderDetailPage() {
               </div>
               <div className="skel-row"></div>
             </div>
-          ) : error ? (
+          ) : error || !order ? (
             <div className="order-history-not-found" style={{ textAlign: 'center', padding: '60px 0' }}>
               <div style={{ fontSize: '48px', color: '#dc2626', marginBottom: '16px' }}>
                 <i className="fa-solid fa-triangle-exclamation"></i>
               </div>
-              <h3>{error}</h3>
+              <h3>{error || 'Không tìm thấy đơn hàng.'}</h3>
               <Link to="/account/orders" className="btn-back-list mt-3">
                 Quay lại danh sách đơn
               </Link>
             </div>
-          ) : order ? (
+          ) : (
             <>
-              {/* Banner cảnh báo sự cố */}
-              {(order.status === 6 || order.status === 7) && (
-                <div style={{
-                  backgroundColor: '#fffbeb',
-                  borderLeft: '4px solid #f59e0b',
-                  padding: '16px',
-                  marginBottom: '24px',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '12px'
-                }}>
-                  <i className="fa-solid fa-triangle-exclamation" style={{ color: '#d97706', fontSize: '24px', marginTop: '4px' }}></i>
-                  <div>
-                    <h4 style={{ margin: 0, color: '#b45309', fontSize: '16px', fontWeight: '600' }}>
-                      Đơn hàng đang chờ xử lý sự cố!
-                    </h4>
-                    <p style={{ margin: '4px 0 0', color: '#92400e', fontSize: '14px' }}>
-                      Trong quá trình chuẩn bị hàng, hệ thống phát hiện có sản phẩm bị lỗi/thiếu. Bộ phận CSKH sẽ sớm liên hệ trực tiếp với bạn qua số điện thoại để tư vấn và chốt phương án xử lý (như giảm số lượng, loại sản phẩm hoặc hủy đơn) trước khi tiếp tục giao hàng. Mong bạn thông cảm vì sự bất tiện này.
-                    </p>
-                  </div>
-                </div>
-              )}
-                
-              {/* Header */}
               <div className="order-detail-header">
                 <div>
                   <h1 className="order-detail-title">Chi tiết đơn hàng</h1>
@@ -280,62 +222,6 @@ function OrderDetailPage() {
                 </Link>
               </div>
 
-              {/* Timeline */}
-              {isCancelled ? (
-                <div className="order-timeline-cancelled">
-                  <i className="fa-regular fa-circle-xmark"></i>
-                  Đơn hàng đã bị hủy
-                </div>
-              ) : (
-                <div className="order-status-timeline">
-                  {/* Step 1: Chờ duyệt */}
-                  <div className={`order-status-step ${currentStatusConfig.step > 1 ? 'completed' : currentStatusConfig.step === 1 ? 'active' : ''}`}>
-                    <div className="order-step-icon">
-                      <i className="fa-regular fa-hourglass-half"></i>
-                    </div>
-                    <span className="order-step-label">Chờ duyệt</span>
-                    {currentStatusConfig.step >= 1 && (
-                      <span className="order-step-time">
-                        {new Date(order.orderDate).toLocaleDateString('vi-VN')}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Step 2: Đã duyệt */}
-                  <div className={`order-status-step ${currentStatusConfig.step > 2 ? 'completed' : currentStatusConfig.step === 2 ? 'active' : ''}`}>
-                    <div className="order-step-icon">
-                      <i className="fa-solid fa-clipboard-check"></i>
-                    </div>
-                    <span className="order-step-label">Đã duyệt</span>
-                  </div>
-
-                  {/* Step 3: Đang chuẩn bị */}
-                  <div className={`order-status-step ${currentStatusConfig.step > 3 ? 'completed' : currentStatusConfig.step === 3 ? 'active' : ''}`}>
-                    <div className="order-step-icon">
-                      <i className="fa-solid fa-box-open"></i>
-                    </div>
-                    <span className="order-step-label">Đang chuẩn bị</span>
-                  </div>
-
-                  {/* Step 4: Đang giao hàng */}
-                  <div className={`order-status-step ${currentStatusConfig.step > 4 ? 'completed' : currentStatusConfig.step === 4 ? 'active' : ''}`}>
-                    <div className="order-step-icon">
-                      <i className="fa-solid fa-truck-fast"></i>
-                    </div>
-                    <span className="order-step-label">Đang giao hàng</span>
-                  </div>
-
-                  {/* Step 5: Hoàn thành */}
-                  <div className={`order-status-step ${currentStatusConfig.step === 5 ? 'completed' : ''}`}>
-                    <div className="order-step-icon">
-                      <i className="fa-regular fa-circle-check"></i>
-                    </div>
-                    <span className="order-step-label">Hoàn thành</span>
-                  </div>
-                </div>
-              )}
-
-              {/* 4-Card Overview */}
               <div className="order-overview-grid">
                 <div className="order-overview-card">
                   <div className="overview-lbl"><i className="fa-solid fa-bag-shopping"></i> Mã đơn hàng</div>
@@ -349,51 +235,40 @@ function OrderDetailPage() {
                 </div>
                 <div className="order-overview-card">
                   <div className="overview-lbl"><i className="fa-solid fa-hourglass-end"></i> Trạng thái</div>
-                  <div className="overview-val" style={{ color: currentStatusConfig.step === -1 ? '#dc2626' : currentStatusConfig.step === 5 ? '#16a34a' : '#d97706' }}>
-                    {currentStatusConfig.label}
+                  <div className="overview-val" style={{ color: currentStatus.step === 5 ? '#16a34a' : currentStatus.step === -1 ? '#dc2626' : '#d97706' }}>
+                    {currentStatus.label}
                   </div>
                 </div>
                 <div className="order-overview-card">
                   <div className="overview-lbl"><i className="fa-solid fa-money-bill-wave"></i> Tổng tiền</div>
-                  <div className="overview-val price">
-                    {Number(order.totalAmount || 0).toLocaleString('vi-VN')}đ
-                  </div>
+                  <div className="overview-val price">{Number(order.totalAmount || 0).toLocaleString('vi-VN')}đ</div>
                 </div>
               </div>
 
-              {/* 2-Column Information */}
               <div className="order-information-grid">
-                {/* Delivery Info */}
                 <div className="info-card">
                   <div className="info-card-title">
                     <i className="fa-solid fa-location-dot"></i> Thông tin giao hàng
                   </div>
-                  {deliveryDetails.name ? (
-                    <>
-                      <div className="shipping-info-row">
-                        <div className="info-lbl">Người nhận</div>
-                        <div className="info-val">{deliveryDetails.name}</div>
-                      </div>
-                      <div className="shipping-info-row">
-                        <div className="info-lbl">SĐT</div>
-                        <div className="info-val">{deliveryDetails.phone}</div>
-                      </div>
-                      <div className="shipping-info-row">
-                        <div className="info-lbl">Email</div>
-                        <div className="info-val">{deliveryDetails.email}</div>
-                      </div>
-                      <div className="shipping-info-row">
-                        <div className="info-lbl">Địa chỉ</div>
-                        <div className="info-val">{deliveryDetails.address}</div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="info-val">Không xác định</div>
-                  )}
+                  <div className="shipping-info-row">
+                    <div className="info-lbl">Người nhận</div>
+                    <div className="info-val">{deliveryParts[0] || customer?.fullName || 'Khách hàng'}</div>
+                  </div>
+                  <div className="shipping-info-row">
+                    <div className="info-lbl">Số điện thoại</div>
+                    <div className="info-val">{deliveryParts[1] || customer?.phone || 'Chưa cập nhật'}</div>
+                  </div>
+                  <div className="shipping-info-row">
+                    <div className="info-lbl">Email</div>
+                    <div className="info-val">{deliveryParts[2] || customer?.email || 'Chưa cập nhật'}</div>
+                  </div>
+                  <div className="shipping-info-row">
+                    <div className="info-lbl">Địa chỉ</div>
+                    <div className="info-val">{deliveryParts.slice(3).join(' - ') || customer?.address || 'Chưa cập nhật'}</div>
+                  </div>
                 </div>
 
-                {/* Payment Info */}
-                <div className="info-card" style={{ display: 'flex', flexDirection: 'column' }}>
+                <div className="info-card">
                   <div className="info-card-title">
                     <i className="fa-solid fa-credit-card"></i> Thông tin thanh toán
                   </div>
@@ -404,14 +279,13 @@ function OrderDetailPage() {
                   <div className="shipping-info-row">
                     <div className="info-lbl">Trạng thái</div>
                     <div className="info-val">
-                      {order?.status === 4 ? (
+                      {order.status === 4 ? (
                         <span className="payment-badge paid">Đã thanh toán</span>
                       ) : (
                         <span className="payment-badge unpaid">Chưa thanh toán</span>
                       )}
                     </div>
                   </div>
-
                   {parsedNotes.customerNotes && (
                     <div className="order-note-card">
                       <i className="fa-solid fa-pen-clip"></i>
@@ -424,17 +298,17 @@ function OrderDetailPage() {
                 </div>
               </div>
 
-              {/* Products Section */}
               <div className="order-products-section">
                 <h3 className="order-products-title">
                   <i className="fa-solid fa-box-open" style={{ color: '#d71920' }}></i> Sản phẩm trong đơn hàng
                 </h3>
-                
+
                 <div className="order-product-grid product-grid-header">
                   <div>Sản phẩm</div>
                   <div style={{ textAlign: 'right' }}>Đơn giá</div>
                   <div style={{ textAlign: 'center' }}>Số lượng</div>
                   <div style={{ textAlign: 'right' }}>Thành tiền</div>
+                  <div style={{ textAlign: 'right' }}>Đánh giá</div>
                 </div>
 
                 {order.items.map((item) => (
@@ -449,29 +323,34 @@ function OrderDetailPage() {
                         }}
                       />
                       <div>
-                        <Link to={`/product/${item.productId}`} className="product-name">
+                        <Link to={`/products/${item.productId}`} className="product-name">
                           {item.productName}
                         </Link>
                         <div className="product-sku">SKU{1000 + item.productId}</div>
                       </div>
                     </div>
-                    
-                    <div className="product-price-col">
-                      {Number(item.unitPrice || 0).toLocaleString('vi-VN')}đ
-                    </div>
-                    
-                    <div className="product-qty-col">
-                      x{item.quantity}
-                    </div>
-                    
+
+                    <div className="product-price-col">{Number(item.unitPrice || 0).toLocaleString('vi-VN')}đ</div>
+                    <div className="product-qty-col">x{item.quantity}</div>
+                    <div className="product-total-col">{Number(item.lineTotal || 0).toLocaleString('vi-VN')}đ</div>
                     <div className="product-total-col">
-                      {Number(item.lineTotal || 0).toLocaleString('vi-VN')}đ
+                      {item.canReview ? (
+                        <button type="button" className="review-action-btn review-action-btn--primary" onClick={() => setReviewingItem(item)}>
+                          <i className="fa-solid fa-star"></i> Đánh giá sản phẩm
+                        </button>
+                      ) : item.hasReview ? (
+                        <div className="review-action-stack">
+                          <span className="review-action-state"><i className="fa-solid fa-circle-check"></i> Đã gửi đánh giá</span>
+                          <Link to="/account/reviews" className="review-action-btn">Xem đánh giá</Link>
+                        </div>
+                      ) : (
+                        <span className="text-muted small">Chỉ đánh giá sau khi đơn hoàn thành</span>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Payment Summary */}
               <div className="order-summary-section">
                 <div className="order-summary-box">
                   <div className="summary-row">
@@ -485,17 +364,19 @@ function OrderDetailPage() {
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="order-actions-row">
-                <button className="btn-support" onClick={() => navigate('/contact')}>
+                <button className="btn-support" onClick={() => navigate(`/account/support/new?orderId=${order.id}`)}>
                   <i className="fa-solid fa-headset"></i> Liên hệ hỗ trợ
                 </button>
                 {order.status <= 1 && (
-                  <button className="btn-cancel-order" onClick={() => {
-                    setCancelReason('');
-                    setOtherReason('');
-                    setShowCancelModal(true);
-                  }}>
+                  <button
+                    className="btn-cancel-order"
+                    onClick={() => {
+                      setCancelReason('');
+                      setOtherReason('');
+                      setShowCancelModal(true);
+                    }}
+                  >
                     <i className="fa-solid fa-ban"></i> Hủy đơn hàng
                   </button>
                 )}
@@ -505,54 +386,54 @@ function OrderDetailPage() {
                   </button>
                 )}
               </div>
-
             </>
-          ) : null}
+          )}
         </section>
       </div>
 
-      {/* Cancel Modal */}
+      <ReviewFormModal
+        open={Boolean(reviewingItem)}
+        item={reviewingItem}
+        onClose={() => setReviewingItem(null)}
+        onSubmitted={handleReviewSubmitted}
+      />
+
       {showCancelModal && (
         <div className="cancel-modal-overlay" onClick={() => !cancelling && setShowCancelModal(false)}>
-          <div className="cancel-modal-content" onClick={e => e.stopPropagation()}>
+          <div className="cancel-modal-content" onClick={(event) => event.stopPropagation()}>
             <div className="cancel-modal-header">
               <h3><i className="fa-solid fa-triangle-exclamation"></i> Xác nhận hủy đơn hàng</h3>
               <button className="close-modal-btn" onClick={() => !cancelling && setShowCancelModal(false)}>
                 <i className="fa-solid fa-xmark"></i>
               </button>
             </div>
-            
+
             <div className="cancel-modal-body">
               <p>Vui lòng cho chúng tôi biết lý do bạn muốn hủy đơn hàng này:</p>
               <div className="cancel-reason-list">
+                {[
+                  'Muốn thay đổi địa chỉ giao hàng',
+                  'Đổi ý, không muốn mua nữa',
+                  'Đặt nhầm sản phẩm/số lượng',
+                  'Tìm thấy giá rẻ hơn ở nơi khác',
+                ].map((reason) => (
+                  <label className="cancel-reason-item" key={reason}>
+                    <input type="radio" name="cancelReason" value={reason} checked={cancelReason === reason} onChange={(event) => setCancelReason(event.target.value)} />
+                    <span className="cancel-reason-label">{reason}</span>
+                  </label>
+                ))}
                 <label className="cancel-reason-item">
-                  <input type="radio" name="cancelReason" value="Muốn thay đổi địa chỉ giao hàng" checked={cancelReason === 'Muốn thay đổi địa chỉ giao hàng'} onChange={(e) => setCancelReason(e.target.value)} />
-                  <span className="cancel-reason-label">Muốn thay đổi địa chỉ giao hàng</span>
-                </label>
-                <label className="cancel-reason-item">
-                  <input type="radio" name="cancelReason" value="Đổi ý, không muốn mua nữa" checked={cancelReason === 'Đổi ý, không muốn mua nữa'} onChange={(e) => setCancelReason(e.target.value)} />
-                  <span className="cancel-reason-label">Đổi ý, không muốn mua nữa</span>
-                </label>
-                <label className="cancel-reason-item">
-                  <input type="radio" name="cancelReason" value="Đặt nhầm sản phẩm/số lượng" checked={cancelReason === 'Đặt nhầm sản phẩm/số lượng'} onChange={(e) => setCancelReason(e.target.value)} />
-                  <span className="cancel-reason-label">Đặt nhầm sản phẩm/số lượng</span>
-                </label>
-                <label className="cancel-reason-item">
-                  <input type="radio" name="cancelReason" value="Tìm thấy giá rẻ hơn ở nơi khác" checked={cancelReason === 'Tìm thấy giá rẻ hơn ở nơi khác'} onChange={(e) => setCancelReason(e.target.value)} />
-                  <span className="cancel-reason-label">Tìm thấy giá rẻ hơn ở nơi khác</span>
-                </label>
-                <label className="cancel-reason-item">
-                  <input type="radio" name="cancelReason" value="other" checked={cancelReason === 'other'} onChange={(e) => setCancelReason(e.target.value)} />
+                  <input type="radio" name="cancelReason" value="other" checked={cancelReason === 'other'} onChange={(event) => setCancelReason(event.target.value)} />
                   <span className="cancel-reason-label">Lý do khác...</span>
                 </label>
               </div>
 
               {cancelReason === 'other' && (
-                <textarea 
-                  className="cancel-reason-input" 
+                <textarea
+                  className="cancel-reason-input"
                   placeholder="Nhập lý do của bạn..."
                   value={otherReason}
-                  onChange={(e) => setOtherReason(e.target.value)}
+                  onChange={(event) => setOtherReason(event.target.value)}
                 />
               )}
             </div>
@@ -561,8 +442,8 @@ function OrderDetailPage() {
               <button className="btn-cancel-modal-close" onClick={() => setShowCancelModal(false)} disabled={cancelling}>
                 Đóng
               </button>
-              <button 
-                className="btn-cancel-modal-submit" 
+              <button
+                className="btn-cancel-modal-submit"
                 onClick={handleCancelOrder}
                 disabled={cancelling || !cancelReason || (cancelReason === 'other' && !otherReason.trim())}
               >

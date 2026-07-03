@@ -31,5 +31,6 @@ namespace CMS.Data.Entities
 
         public virtual ICollection<Order>? Orders { get; set; }
         public virtual ICollection<CustomerAddress>? CustomerAddresses { get; set; }
+        public virtual ICollection<ProductReview> ProductReviews { get; set; } = new List<ProductReview>();
     }
 }
